@@ -4,7 +4,7 @@
 */
 import { cardPricing, type CardPricing } from "@/config";
 import type { AppData, Child, DateOnly, Enrollment, Family, PaymentMethod, Pool } from "@/data/types";
-import { ageInMonths } from "@/rules/dates";
+import { addDays, ageInMonths } from "@/rules/dates";
 import { cardPriceCents, money } from "@/rules/prices";
 import { DEVICE_ID } from "@/rules/booking";
 
@@ -107,4 +107,23 @@ export function familiesOnThisPhone(data: Readonly<AppData>): Family[] {
 
 export function movingFamily(data: Readonly<AppData>): Family | null {
   return data.families.find((f) => f.source === "moving-over") ?? null;
+}
+
+/**
+ * The lesson to show next: the first lesson until it has happened, then the
+ * next week's (a family moving over sees its next lesson). Weekly classes
+ * only; a free evaluation is one visit.
+ */
+export function upcomingLessonDate(data: Readonly<AppData>, info: LessonInfo, today: DateOnly): DateOnly {
+  if (info.lessonKind === "evaluation") return info.firstLessonDate;
+  const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
+  let d = info.firstLessonDate;
+  while (d < today || held.has(d)) d = addDays(d, 7);
+  return d;
+}
+
+/** Each child's soonest lesson. */
+export function lessonPerChild(data: Readonly<AppData>, familyId: string): LessonInfo[] {
+  const seen = new Set<string>();
+  return familyLessons(data, familyId).filter((l) => (seen.has(l.child.id) ? false : (seen.add(l.child.id), true)));
 }

@@ -6,9 +6,9 @@ export const RECORDED_LINE = "Every lesson is recorded for coaching and quality 
 export const UNDER_3_BRING_LINE = "Bring your suit, you're in the water too.";
 
 /** SAMPLE lines on how a first lesson goes. Describe; never promise. */
-export function whatHappensLines(coach: string): string[] {
+export function whatHappensLines(coach: string | null): string[] {
   return [
-    `Coach ${coach} meets you on deck and says hello.`,
+    `${coach ? `Coach ${coach}` : "Your coach"} meets you on deck and says hello.`,
     "Your swimmer spends the lesson getting comfortable in the water, at their own pace.",
     "At the end, the coach takes a minute to tell you how it went.",
   ];

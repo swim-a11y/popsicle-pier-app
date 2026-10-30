@@ -33,6 +33,8 @@ export type ChoiceKey = "research" | "marketing" | "underwater";
 export type ConsentKind = ChoiceKey | "texts" | "newsletter" | "marketing-emails";
 
 export interface FirstLessonNotes {
+  /** Short answers for the top of "Your first lesson". */
+  atAGlance: { park: string; bring: string };
   address: string;
   parking: string;
   door: string;

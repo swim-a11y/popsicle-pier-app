@@ -6,3 +6,5 @@ Step 2 done: DataStore interface and localStorage store (one key, reseed on vers
 Next: step 3, the sign-up screens from the start screen through You are in, then walk-throughs 1 and 5 in e2e/sign-up.spec.ts with counts in docs/check-report.md.
 Step 3 done: sign-up start, the nine steps (pool, swimmers, stage, times, you and the code, people, who stays, payment, release) and You are in; walk-throughs 1 and 5 pass on a 375 screen (27 taps and 0 typed with the fill; 23 taps and 13 typed cold) and are logged in docs/check-report.md.
 Next: step 4, Your first lesson and How it went (Progress), then npm run e2e and the first design-critic and rules-checker round.
+Step 4 done: Your first lesson (ticket per child, at-a-glance park, bring and stays above the tab bar, SAMPLE getting there, what to bring, who stays, what happens, email line) and Progress with How it went notes; Parent Home leads with the first lesson, then the newest note; walk-through 6 (first-Sunday part) passes; full e2e 29 passed.
+Next: first design-critic and rules-checker round on the step 4 screenshots, then step 5 (moving over, owner release versions, staff page polish).

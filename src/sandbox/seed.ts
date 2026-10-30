@@ -19,7 +19,7 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.1";
+export const SEED_VERSION = "2026-10-30.4";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {
@@ -165,6 +165,7 @@ export function buildSeed(): AppData {
       opensOn: null,
       schoolEmail: "madison.sample@example.com",
       firstLesson: {
+        atAGlance: { park: "Side lot, swim family spots", bring: "Swimsuit, towel, warm layer" },
         address: "100 Example Way, Madison",
         parking: "Park in the side lot, in the spots marked for swim families.",
         door: "Come in through the blue side door by that lot.",
@@ -181,6 +182,7 @@ export function buildSeed(): AppData {
       opensOn: "2026-11-08",
       schoolEmail: "buckhead.sample@example.com",
       firstLesson: {
+        atAGlance: { park: "Front lot, rows A to C", bring: "Swimsuit, towel, flip-flops" },
         address: "200 Example Way, Buckhead",
         parking: "Park in the front lot. Rows A to C are closest to the pool.",
         door: "Use the main entrance and follow the pool signs.",

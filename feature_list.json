@@ -711,14 +711,14 @@
     "area": "first-sunday",
     "description": "Only approved notes ever reach a parent screen; a draft note never does.",
     "test": "tests/unit/first-sunday.test.ts: first Sunday > only approved notes reach parent screens",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-note-shows",
     "area": "first-sunday",
     "description": "The How it went note shows date, pool, first name, Coach [name], the stage name only, the two lines, On deck (or In the water with [name]: you), Approved by Coach [name], marked Sample note, and \"Lesson clips come in a later version.\"",
     "test": "tests/unit/first-sunday.test.ts: first Sunday > notes show the child's own stage name only / under 3 notes say in the water with you",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-progress-before",
@@ -781,7 +781,7 @@
     "area": "walkthrough",
     "description": "New parent, one child (age 4) at Madison, with Fill in a sample family, through You're in: date, time, pool, instructor, bank-draft price; one spot gone; refresh books nothing; one signature and one bank-draft authorization saved; See your first lesson opens it.",
     "test": "e2e/sign-up.spec.ts: walk-through 1; tests/unit/walkthrough-rules.test.ts: walk-through 1",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-2",

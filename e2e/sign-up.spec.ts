@@ -262,6 +262,8 @@ test("walk-through 1: new parent, one child (age 4) at Madison, with the sample 
   screen("See your first lesson");
   await tap(page.getByRole("button", { name: "See your first lesson" }));
   await expect(page).toHaveURL(/\/first-lesson$/);
+  await expect(page.getByRole("heading", { name: "Your first lesson" })).toBeVisible();
+  await expect(page.getByTestId("lesson-ticket")).toContainText("Mia");
   run!.passed = true;
 });
 
@@ -337,5 +339,76 @@ test("walk-through 5: cold run, one child at Madison, every field typed, paying 
   await expect(page).toHaveURL(/\/sign-up\/youre-in$/);
   await expect(page.getByTestId("price-they-pay")).toHaveText("$35.00 a lesson by card");
   await check("youre-in");
+  run!.passed = true;
+});
+
+test("walk-through 6: the first Sunday, continuing walk-through 1", async () => {
+  begin(6, "The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)");
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia's family/ }));
+  await expect(page).toHaveURL(/\/$/);
+
+  screen("Home before the first lesson");
+  await expect(page.getByTestId("home-lead")).toContainText("Your first lesson");
+  await check("home-before");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "First lesson" }));
+
+  screen("Your first lesson");
+  await expect(page).toHaveURL(/\/first-lesson$/);
+  await expect(page.getByTestId("lesson-ticket")).toContainText("Mia");
+  await expect(page.getByTestId("lesson-ticket")).toContainText("The lesson runs 27 minutes.");
+  await expect(page.getByTestId("at-a-glance")).toContainText("Park");
+  await expect(page.getByTestId("parking")).toContainText("Park in the side lot");
+  await expect(page.getByTestId("door")).toContainText("blue side door");
+  await expect(page.getByTestId("arrive")).toContainText("Arrive 10 minutes early");
+  await expect(page.getByTestId("bring")).toContainText("A towel");
+  await expect(page.getByTestId("who-stays")).toContainText("No drop-off.");
+  await expect(page.getByTestId("at-a-glance")).toContainText("You, the whole lesson. No drop-off.");
+  await expect(page.getByTestId("who-stays").getByTestId("listed-adult")).toHaveCount(0);
+  await expect(page.getByTestId("email-us")).toHaveText("Need to miss, move or stop? Email us at madison.sample@example.com.");
+  // Where, what and who show on the first screen for one child.
+  const glance = await page.getByTestId("at-a-glance").boundingBox();
+  expect(glance && glance.y + glance.height).toBeLessThanOrEqual(667 - 64);
+  await check("first-lesson");
+
+  screen("Sandbox: Pretend the first lesson happened");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: "Pretend the first lesson happened" }));
+  await expect(page).toHaveURL(/\/$/);
+
+  screen("Home after the first lesson");
+  const lead = page.getByTestId("home-lead");
+  await expect(lead).toContainText("How it went for Mia");
+  await expect(lead).toContainText("Sample note");
+  await check("home-after");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "Progress" }));
+
+  screen("Progress: How it went");
+  await expect(page).toHaveURL(/\/progress$/);
+  const notes = page.getByTestId("how-it-went");
+  await expect(notes).toHaveCount(1);
+  await expect(notes.getByTestId("note-stage")).toHaveText(", The Shallows");
+  await expect(notes.getByTestId("coach-lines").locator("p")).toHaveCount(2);
+  await expect(notes.getByTestId("coach-lines")).toContainText(/^Today Mia /);
+  await expect(notes.getByTestId("on-deck")).toHaveText("On deck: you");
+  await expect(notes).toContainText("Approved by Coach Dev");
+  await expect(notes).toContainText("Sample note");
+  await expect(page.locator("main")).not.toContainText(/tier|level \d|\d+ of \d+ skills/i);
+  await expect(page.locator("main")).not.toContainText("Ada");
+  await expect(page.getByText("Lesson clips come in a later version.")).toBeVisible();
+  await expect(page.locator("main img, main video")).toHaveCount(0);
+  await check("progress");
+  const marks = (await stored()).attendanceMarks.length;
+
+  screen("Sandbox: press it again");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: "Pretend the first lesson happened" }));
+  await expect(page.getByRole("dialog")).toContainText("Nothing new to add.");
+  await page.keyboard.press("Escape");
+  expect((await stored()).attendanceMarks.length).toBe(marks);
+  await expect(page.getByTestId("how-it-went")).toHaveCount(1);
+  run!.notes.push("Pressing Pretend the first lesson happened again added nothing.");
   run!.passed = true;
 });

@@ -6,7 +6,7 @@
 <!-- wt-1 -->
 ### Walk-through 1: New parent, one child (age 4) at Madison, with Fill in a sample family
 
-Run 2026-10-30 16:32 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
+Run 2026-10-30 16:39 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
 
 - One spot gone from Sundays at 10:00 am; one release signature and one bank-draft authorization saved.
 - Refreshing You're in booked nothing.
@@ -32,7 +32,7 @@ Run 2026-10-30 16:32 UTC, Playwright at 375x667. Result: **passed**. 13 screens,
 <!-- wt-5 -->
 ### Walk-through 5: Cold run: one child at Madison, every field typed (no fill button), paying by card
 
-Run 2026-10-30 16:32 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
+Run 2026-10-30 16:39 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -49,4 +49,23 @@ Run 2026-10-30 16:32 UTC, Playwright at 375x667. Result: **passed**. 11 screens,
 | You're in | 0 | 0 |
 | **Total** | **23** | **13** |
 <!-- /wt-5 -->
+
+<!-- wt-6 -->
+### Walk-through 6: The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)
+
+Run 2026-10-30 16:39 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 8 taps, 0 typed fields.
+
+- Pressing Pretend the first lesson happened again added nothing.
+
+| Screen | Taps | Typed fields |
+|---|---|---|
+| Sandbox: play as Mia's family | 2 | 0 |
+| Home before the first lesson | 1 | 0 |
+| Your first lesson | 0 | 0 |
+| Sandbox: Pretend the first lesson happened | 2 | 0 |
+| Home after the first lesson | 1 | 0 |
+| Progress: How it went | 0 | 0 |
+| Sandbox: press it again | 2 | 0 |
+| **Total** | **8** | **0** |
+<!-- /wt-6 -->
 <!-- walkthroughs:end -->
