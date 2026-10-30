@@ -165,13 +165,15 @@ export interface LessonDay {
 /** The weeks ahead for one weekly class, closed days included and marked. A free evaluation is one visit. */
 export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today: DateOnly, weeks: number): LessonDay[] {
   if (info.lessonKind === "evaluation") {
-    return info.firstLessonDate >= today ? [{ date: info.firstLessonDate, closedReason: null, cancelledReason: null }] : [];
+    return info.firstLessonDate >= today && !evaluationDone(data, info) ? [{ date: info.firstLessonDate, closedReason: null, cancelledReason: null }] : [];
   }
-  const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
+  // A lesson of this class marked held has happened, wherever it falls in the weeks: it isn't listed as coming.
+  const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id && m.slot === info.startTime).map((m) => m.lessonDate));
   let d = info.firstLessonDate;
-  while (d < today || held.has(d)) d = addDays(d, 7);
+  while (d < today) d = addDays(d, 7);
   const days: LessonDay[] = [];
-  for (let i = 0; i < weeks; i++, d = addDays(d, 7)) {
+  for (; days.length < weeks; d = addDays(d, 7)) {
+    if (held.has(d)) continue;
     days.push({
       date: d,
       closedReason: closureOn(data, info.pool.id, d)?.reason ?? null,
@@ -179,6 +181,11 @@ export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today
     });
   }
   return days;
+}
+
+/** A free evaluation is one visit: done once it's marked held. */
+function evaluationDone(data: Readonly<AppData>, info: LessonInfo): boolean {
+  return data.attendanceMarks.some((m) => m.enrollmentId === info.enrollment.id);
 }
 
 /** One lesson to come: a weekly class's next date, a date booked in place of a lesson the school cancelled, or a fill-in. */
@@ -207,7 +214,9 @@ export function replacementLessons(data: Readonly<AppData>, familyId: string, to
     const info = enrollment ? lessonInfo(data, enrollment) : null;
     const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
     const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
-    if (!info || !time || !pool) continue;
+    // Not once the family has left the class it stood in for, or if that day is cancelled or closed.
+    if (!info || !time || !pool || !isActive(enrollment!)) continue;
+    if (cancellationOn(data, time.id, offer.date) || closureOn(data, pool.id, offer.date)) continue;
     // Already marked held: it's happened.
     if (data.attendanceMarks.some((m) => m.childRecordId === info.child.id && m.lessonDate === offer.date && m.slot === time.startTime)) continue;
     out.push({
@@ -234,7 +243,10 @@ function bySoonest(a: NextLesson, b: NextLesson): number {
 /** Every lesson to come for the family, one per weekly class (past any date they said they'll miss) plus any replacement dates and fill-ins, soonest first. */
 export function upcomingLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
   return [
-    ...familyLessons(data, familyId).map((l) => ({ ...l, date: upcomingLessonDate(data, l, today, { skipMissed: true }), inPlaceOf: null, fillIn: false })),
+    ...familyLessons(data, familyId)
+      // A free evaluation that has happened, or whose day has passed, isn't a lesson to come.
+      .filter((l) => l.lessonKind !== "evaluation" || (!evaluationDone(data, l) && l.firstLessonDate >= today))
+      .map((l) => ({ ...l, date: upcomingLessonDate(data, l, today, { skipMissed: true }), inPlaceOf: null, fillIn: false })),
     ...replacementLessons(data, familyId, today),
   ].sort(bySoonest);
 }

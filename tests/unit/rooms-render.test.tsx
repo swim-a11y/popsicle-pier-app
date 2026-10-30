@@ -17,7 +17,8 @@ import { SendNoteScreen } from "@/components/screens/send-note";
 import { StaffScreen } from "@/components/screens/staff";
 import type { LocalStore } from "@/data/store";
 import type { SignUpDraft } from "@/data/types";
-import { setCurrentFamily, signAndSave } from "@/rules/booking";
+import { bookTime, setCurrentFamily, signAndSave } from "@/rules/booking";
+import { answerFillIn, sendFillIn } from "@/rules/fillins";
 import { LATER_ROOM_RULES } from "@/rules/later-rooms";
 import { markNoteRead, sendNote } from "@/rules/notes";
 import { answerWaitlistOffer, leaveWaitlist, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
@@ -328,7 +329,8 @@ describe("the approvals inbox", () => {
     // Notes from families: a person marks each one read.
     const note = screen.getByTestId("inbox-note");
     expect(flat(within(note).getByTestId("inbox-note-words").textContent)).toBe("We'd like to talk about a different lesson time for Mia.");
-    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Mark as read" })));
+    // A different-time note: the person chooses to read it and offer nothing.
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Mark as read, no offer" })));
     expect(screen.queryByTestId("inbox-note")).toBeNull();
     expect(flat(screen.getByTestId("inbox-done").textContent)).toContain("Read: \"We'd like to talk about a different lesson time for Mia.\"");
   });
@@ -374,6 +376,143 @@ describe("fill-ins", () => {
     const missed = await screen.findByTestId("missing-day");
     expect(flat(missed.textContent)).toContain("You sent a note that Mia will miss it.");
     expect(flat(within(missed).getByTestId("fill-in-day").textContent)).toBe("Fill-inSunday, November 15 at 11:00 am with Coach Dev");
+  });
+});
+
+describe("a different time, from the inbox", () => {
+  it("a person picks an open time, sees the words, and sends it in place of the child's class", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store, completeDraft({ id: "draft-jules", kids: [{ firstName: "Jules", birth: "2023-06-15", stage: "pier", booking: { kind: "class", timeId: "mad-sun-0930-pier" } }] }));
+    await act(async () => {
+      const jules = (await store.snapshot()).children.find((c) => c.familyId === familyId)!;
+      await store.transaction((tx) => sendNote(tx, { familyId, childRecordId: jules.id, kind: "move", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<InboxScreen />);
+    const note = await screen.findByTestId("inbox-note");
+    expect(flat(note.textContent)).toContain("A different time: pick one to offer, or none.");
+    expect(within(note).queryByTestId("draft")).toBeNull();
+    await act(async () => fireEvent.click(within(note).getByTestId("different-time-buc-sun-0930-pier")));
+    expect(flat(within(note).getByTestId("draft-words").textContent)).toContain("Would you like Jules to move there from the Sunday 9:30 am class?");
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Send the offer (sample)" })));
+    expect(screen.queryByTestId("inbox-note")).toBeNull();
+    expect(within(await screen.findByTestId("inbox-waitlist")).getByTestId("inbox-waiting")).toHaveTextContent("Offer sent.");
+  });
+});
+
+describe("missed days and fill-ins on every screen", () => {
+  async function miaMisses(store: LocalStore, familyId: string, date: string) {
+    const data = await store.snapshot();
+    const mia = data.children.find((c) => c.familyId === familyId && c.firstName === "Mia")!;
+    const enrollmentId = data.enrollments.find((e) => e.childRecordId === mia.id && e.timeId === "mad-sun-1000-shallows")!.id;
+    return store.transaction((tx) => sendNote(tx, { familyId, childRecordId: mia.id, kind: "miss", enrollmentId, lessonDate: date, today: TODAY, now: NOW, newId: testId }));
+  }
+
+  it("a missed first day isn't the next lesson on Home or Your first lesson", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => void (await miaMisses(store, familyId, "2026-11-01")));
+    render(<HomeScreen />);
+    expect(flat((await screen.findByTestId("home-lead")).textContent)).toContain("Sunday, November 8, 10:00 am");
+    cleanup();
+    render(<FirstLessonScreen />);
+    expect(flat((await screen.findByTestId("lesson-ticket")).textContent)).toContain("Sunday, November 8");
+  });
+
+  it("a fill-in the same day as a weekly lesson shows on Home as its own row", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      const note = await miaMisses(store, familyId, "2026-11-01");
+      const f = await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-eval-sun-1100", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+      await store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+    });
+    render(<HomeScreen />);
+    const rows = within(await screen.findByTestId("home-lead-children")).getAllByRole("listitem").map((li) => flat(li.textContent));
+    expect(rows).toEqual(["Mia, 10:00 am with Coach Dev", "Mia, 11:00 am with Coach Dev, a fill-in for the lesson on Sunday, November 1"]);
+  });
+
+  it("a day that mixes pools names the pool on each row", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      await miaMisses(store, familyId, "2026-11-01");
+      // A brother at Buckhead, whose first Sunday is November 8 too.
+      const leo = await store.transaction((tx) =>
+        tx.add("children", { id: "child-leo-test", familyId, firstName: "Leo", birthDate: "2023-05-01", childId: null, stageId: "pier", flaggedForPerson: false, createdAt: NOW }),
+      );
+      await store.transaction((tx) => bookTime(tx, { familyId, childRecordId: leo.id, booking: { kind: "class", timeId: "buc-sun-0930-pier" }, poolId: "pool-buckhead", today: TODAY, now: NOW, newId: testId, alone: true }));
+    });
+    render(<HomeScreen />);
+    const lead = await screen.findByTestId("home-lead");
+    const rows = within(lead).getAllByRole("listitem").map((li) => flat(li.textContent));
+    expect(rows).toEqual(["Leo, 9:30 am with Coach Wren at Buckhead", "Mia, 10:00 am with Coach Dev at Madison"]);
+    expect(flat(lead.textContent)).not.toMatch(/At (Madison|Buckhead)/);
+  });
+
+  it("the inbox can read a miss with no fill-in; Messages can say no; Lesson dates say where each stands", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      await miaMisses(store, familyId, "2026-11-01");
+      const second = await miaMisses(store, familyId, "2026-11-08");
+      await store.transaction((tx) => sendFillIn(tx, { noteId: second.id, timeId: "mad-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<InboxScreen />);
+    // The November 1 note: the person reads it and offers no fill-in.
+    const note = await screen.findByTestId("inbox-note");
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Mark as read, no fill-in" })));
+    expect(screen.queryByTestId("inbox-note")).toBeNull();
+    cleanup();
+    render(<LessonDatesScreen />);
+    const before = (await screen.findAllByTestId("missing-day")).map((li) => flat(li.textContent));
+    expect(before).toEqual([
+      "Sunday, November 1MissingWe read your note. There's no fill-in for this one.",
+      "Sunday, November 8MissingYou sent a note that Mia will miss it. Messages has a fill-in for you to answer.",
+    ]);
+    cleanup();
+    render(<MessagesScreen />);
+    const card = await screen.findByTestId("school-fill-in");
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "No, thanks" })));
+    expect(flat((await within(screen.getByTestId("school-fill-in")).findByTestId("offer-status")).textContent)).toBe("You said no, thanks.");
+    cleanup();
+    render(<LessonDatesScreen />);
+    expect(flat((await screen.findAllByTestId("missing-day"))[1].textContent)).toBe("Sunday, November 8MissingYou sent a note that Mia will miss it. You said no, thanks, to the fill-in.");
+  });
+
+  it("a fill-in nobody answered says it closed; a fill-in at the other pool is named on the day's other row", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      const data = await store.snapshot();
+      const mia = data.children.find((c) => c.familyId === familyId)!;
+      // Mia's second class, Wednesdays at Buckhead; she'll miss November 11, and Coach Wren's Sunday private time is her fill-in.
+      await store.transaction((tx) => bookTime(tx, { familyId, childRecordId: mia.id, booking: { kind: "class", timeId: "buc-wed-1600-shallows" }, poolId: "pool-buckhead", today: TODAY, now: NOW, newId: testId, alone: true }));
+      const wed = (await store.snapshot()).enrollments.find((e) => e.childRecordId === mia.id && e.timeId === "buc-wed-1600-shallows")!;
+      const note = await store.transaction((tx) => sendNote(tx, { familyId, childRecordId: mia.id, kind: "miss", enrollmentId: wed.id, lessonDate: "2026-11-11", today: TODAY, now: NOW, newId: testId }));
+      const f = await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "buc-eval-sun-1130", date: "2026-11-15", today: TODAY, now: NOW, newId: testId }));
+      await store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+      // A second miss, whose fill-in nobody answered by its day (set in the past here).
+      const other = await miaMisses(store, familyId, "2026-11-01");
+      const g = await store.transaction((tx) => sendFillIn(tx, { noteId: other.id, timeId: "mad-eval-sun-1130", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+      await store.transaction((tx) => tx.update("fillIns", g.id, { offer: { ...g.offer, answerBy: "2026-10-29" } }));
+    });
+    render(<LessonDatesScreen />);
+    const madisonRows = (await screen.findAllByTestId("lesson-day")).map((li) => flat(li.textContent));
+    expect(madisonRows).toContain("Sunday, November 15 at 10:00 amMia also has a fill-in at 11:30 am at Buckhead that day.");
+    expect(flat((await screen.findAllByTestId("missing-day"))[0].textContent)).toBe(
+      "Sunday, November 1MissingYou sent a note that Mia will miss it. The fill-in we offered closed with no answer.",
+    );
+  });
+
+  it("the leave confirm's safe answer is the filled one", async () => {
+    const store = freshStore();
+    await signUp(store, adaDraft());
+    render(<HomeScreen />);
+    const line = await screen.findByTestId("home-waitlist");
+    await act(async () => fireEvent.click(within(line).getByRole("button", { name: "Leave this waitlist" })));
+    const [stay, leave] = within(screen.getByTestId("leave-confirm")).getAllByRole("button");
+    expect(stay.className).toContain("bg-primary");
+    expect(leave.className).not.toContain("bg-primary");
   });
 });
 

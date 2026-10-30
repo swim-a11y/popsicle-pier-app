@@ -4,7 +4,8 @@
   lesson either, but that lesson is owed to each child in it. New lesson
   dates skip both.
 */
-import type { AppData, Cancellation, Closure, DateOnly, SwimClass } from "@/data/types";
+import type { AppData, Cancellation, Closure, DateOnly, Pool, SwimClass } from "@/data/types";
+import { addDays, firstOpenLessonDate } from "@/rules/dates";
 import { datesFullOfOneOffs } from "@/rules/holds";
 
 export function closedDates(data: Readonly<AppData>, poolId: string): DateOnly[] {
@@ -23,7 +24,15 @@ export function cancellationOn(data: Readonly<AppData>, classId: string, date: D
   return data.cancellations.find((c) => c.classId === classId && c.date === date);
 }
 
-/** Dates a new weekly booking in this class skips: closed days, cancelled dates, and dates owed lessons fill. */
-export function skippedDates(data: Readonly<AppData>, cls: Pick<SwimClass, "id" | "poolId" | "openSpots">, today: DateOnly): DateOnly[] {
-  return [...closedDates(data, cls.poolId), ...cancelledDates(data, cls.id), ...datesFullOfOneOffs(data, cls, today)];
+/**
+ * A new weekly booking's first lesson in this class: never a closed or
+ * cancelled day, and after the last date that owed lessons and fill-ins
+ * already fill, so the weekly lessons never run through one.
+ */
+export function firstWeeklyDate(data: Readonly<AppData>, cls: Pick<SwimClass, "id" | "poolId" | "openSpots" | "weekday">, pool: Pick<Pool, "opensOn">, today: DateOnly): DateOnly {
+  const full = datesFullOfOneOffs(data, cls, today).sort();
+  let opens = pool.opensOn;
+  const after = full.length > 0 ? addDays(full[full.length - 1], 1) : null;
+  if (after && (!opens || after > opens)) opens = after;
+  return firstOpenLessonDate(cls.weekday, today, opens, [...closedDates(data, cls.poolId), ...cancelledDates(data, cls.id)]);
 }

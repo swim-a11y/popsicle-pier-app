@@ -4,7 +4,7 @@ The finish line: a new parent books one child and signs on a phone in under 2 mi
 
 **Owner's stopwatch time for walk-through 5 (typing everything, on a phone): ________** (fill in by hand)
 
-All twelve run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
+All thirteen run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 to 13 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
 
 Run them with `npm run e2e` (or `npx playwright test e2e/sign-up.spec.ts`).
 
@@ -58,6 +58,10 @@ Walk-through 1's family: Add a child or a class; Another class for Mia; the full
 
 Walk-through 1's family sends "We'll miss Mia's lesson on ..." (the next date she isn't already missing). As the owner, the note's card in the inbox offers a fill-in: one date with Mia's coach for that class, the week after; pick it, see the drafted words, "Send the fill-in (sample)". As the family: Home asks for the answer ("See Mia's fill-in"); Messages shows the fill-in; Yes, that works; Lesson dates show the fill-in right under the missed day.
 
+## 13. A different time, from the family's note
+
+Walk-through 1's family sends "We'd like a different time" for Jules. As the owner, the note's card lists open times that fit Jules; pick one, see the drafted words (in place of his Sunday 9:30 class), send. As the family: Home asks for the answer ("See Jules's spot"); Messages; Yes, book it; Home shows his new class.
+
 ## Counts
 
 The latest counts per screen are in `docs/check-report.md`. Totals from the last full run:
@@ -76,5 +80,6 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 10. A lesson the school cancels (and the other family in that class) | 17 | 26 | 0 |
 | 11. Join a waitlist, then leave it | 7 | 10 | 0 |
 | 12. A fill-in for a lesson the family will miss | 10 | 15 | 0 |
+| 13. A different time, from the family's note | 10 | 14 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

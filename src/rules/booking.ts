@@ -24,7 +24,7 @@ import {
 } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
 import { ensureChildId, nextProcessorRef } from "@/rules/child-id";
-import { closedDates, skippedDates } from "@/rules/closures";
+import { closedDates, firstWeeklyDate } from "@/rules/closures";
 import { firstOpenLessonDate } from "@/rules/dates";
 import { datesFullOfOneOffs, heldByWaitlistOffers } from "@/rules/holds";
 import { buildReleaseView, currentRelease, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
@@ -300,7 +300,7 @@ export function bookTime(
       throw new TimeFilledError(tx.get("children", childRecordId)?.firstName ?? "your swimmer");
     }
     const lt = tx.get("lessonTypes", cls.lessonTypeId)!;
-    const first = firstOpenLessonDate(cls.weekday, today, pool.opensOn, skippedDates(tx.data(), cls, today));
+    const first = firstWeeklyDate(tx.data(), cls, pool, today);
     const enrollment = tx.add("enrollments", {
       id: newId(),
       familyId,

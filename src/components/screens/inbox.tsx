@@ -12,11 +12,23 @@ import { newId } from "@/data/ids";
 import type { Transaction } from "@/data/store";
 import type { AppData, DateOnly, FamilyNote, OwedLesson } from "@/data/types";
 import { useAppData } from "@/data/use-data";
-import { addDays, clockTime, longDate, shownAtSchool, todayAtSchool } from "@/rules/dates";
+import { addDays, clockTime, longDate, shownAtSchool, todayAtSchool, weekdayName } from "@/rules/dates";
 import { doneItems, inboxCounts, owedToDo, recordTalk, talkItems, unreadNotes, type TalkItem } from "@/rules/inbox";
 import { fillInState, fillInWords, sendFillIn } from "@/rules/fillins";
 import { markNoteRead } from "@/rules/notes";
-import { ANSWER_DAYS, BY_THE_SCHOOL, classWords, sendWaitlistOffer, waitlistItems, waitlistOfferWords, type WaitlistItem } from "@/rules/offers";
+import {
+  ANSWER_DAYS,
+  BY_THE_SCHOOL,
+  classWords,
+  differentTimes,
+  offerDifferentTime,
+  sendWaitlistOffer,
+  waitForDifferentTime,
+  waitlistItems,
+  waitlistOfferWords,
+  type WaitlistItem,
+} from "@/rules/offers";
+import { familyLessons } from "@/rules/family";
 import { approveOwedCredit, owedOfferWords, sendOwedOffer, type OwedSlot, type OwedState } from "@/rules/owed";
 
 /** One person's action, saved once (double taps ignored); a problem shows on the card. */
@@ -244,6 +256,75 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
   );
 }
 
+/**
+ * The person's choices for a "different time" note: offer an open time that
+ * fits, in place of one of the child's classes, or, when none is open, put
+ * the child on the waitlist for any time that fits. Or just read it.
+ */
+function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Readonly<AppData>; note: FamilyNote; today: DateOnly; busy: boolean; act: ReturnType<typeof useAct>["act"]; markRead: (label: string) => ReactNode }) {
+  const [pick, setPick] = useState<string | null>(null);
+  const [replace, setReplace] = useState<string | null>(null);
+  const child = data.children.find((c) => c.id === note.childRecordId);
+  const family = data.families.find((f) => f.id === note.familyId);
+  const times = differentTimes(data, note.childRecordId, today);
+  const own = familyLessons(data, note.familyId).filter((l) => l.child.id === note.childRecordId && l.lessonKind !== "evaluation");
+  const chosen = times.find((t) => t.cls.id === pick);
+  // One class to replace: it's that one. Two or more: the person picks.
+  const inPlaceOf = own.length === 1 ? own[0] : own.find((l) => l.enrollment.id === replace);
+  if (!child || !family) return markRead("Mark as read");
+  if (times.length === 0 || own.length === 0) {
+    const pool = own[0]?.pool ?? data.pools.find((p) => p.id === family.homePoolId);
+    return (
+      <>
+        <p>No other time that fits {child.firstName} is open now.</p>
+        {pool ? (
+          <Button size="block" disabled={busy} onClick={() => void act((tx, _t, now) => waitForDifferentTime(tx, { noteId: note.id, poolId: pool.id, now, newId }))}>
+            {busy ? "Saving..." : `Put ${child.firstName} on the ${pool.name} waitlist for any time that fits`}
+          </Button>
+        ) : null}
+        {markRead("Mark as read, no waitlist")}
+      </>
+    );
+  }
+  return (
+    <>
+      <p className="font-strong text-heading">A different time: pick one to offer, or none.</p>
+      <div className="flex flex-col gap-2">
+        {times.map((t) => (
+          <ChoiceButton
+            outlined
+            key={t.cls.id}
+            title={`${weekdayName(t.cls.weekday)}s at ${clockTime(t.cls.startTime)}, ${t.pool.name}`}
+            line={`Coach ${t.cls.instructorFirstName}`}
+            selected={pick === t.cls.id}
+            testId={`different-time-${t.cls.id}`}
+            onClick={() => setPick(t.cls.id)}
+          />
+        ))}
+      </div>
+      {chosen && own.length > 1 ? (
+        <div className="flex flex-col gap-2">
+          <p className="font-strong text-heading">In place of</p>
+          {own.map((l) => (
+            <ChoiceButton outlined key={l.enrollment.id} title={`${classWords(l)}, ${l.pool.name}`} selected={replace === l.enrollment.id} onClick={() => setReplace(l.enrollment.id)} />
+          ))}
+        </div>
+      ) : null}
+      {chosen && inPlaceOf ? (
+        <Draft
+          words={waitlistOfferWords({ child, cls: chosen.cls, pool: chosen.pool, inPlaceOf, answerBy: addDays(today, ANSWER_DAYS), today })}
+          to={family.parentFullName}
+          busy={busy}
+          onSend={() =>
+            void act((tx, t, now) => offerDifferentTime(tx, { noteId: note.id, classId: chosen.cls.id, inPlaceOfEnrollmentId: inPlaceOf.enrollment.id, today: t, now, newId }))
+          }
+        />
+      ) : null}
+      {markRead("Mark as read, no offer")}
+    </>
+  );
+}
+
 /** A family's note. A "We'll miss" note can get one fill-in (same coach, the week after): a person picks the date, or none. */
 function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: FamilyNote; today: DateOnly }) {
   const { busy, problem, act } = useAct();
@@ -301,6 +382,8 @@ function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: Family
           <p>The week after that lesson has passed, so there&apos;s no fill-in to offer.</p>
           {markRead("Mark as read")}
         </>
+      ) : note.kind === "move" ? (
+        <MoveNoteTools data={data} note={note} today={today} busy={busy} act={act} markRead={markRead} />
       ) : (
         markRead("Mark as read")
       )}

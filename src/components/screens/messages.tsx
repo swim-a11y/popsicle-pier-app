@@ -13,8 +13,8 @@ import { newId } from "@/data/ids";
 import type { AppData, DateOnly, FillIn, OwedLesson, WaitlistOffer } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
-import { skippedDates } from "@/rules/closures";
-import { clockTime, firstOpenLessonDate, longDate, shownAtSchool, todayAtSchool } from "@/rules/dates";
+import { firstWeeklyDate } from "@/rules/closures";
+import { clockTime, longDate, shownAtSchool, todayAtSchool } from "@/rules/dates";
 import { currentFamily } from "@/rules/family";
 import { answerFillIn, fillInsForFamily } from "@/rules/fillins";
 import { offerOpen } from "@/rules/holds";
@@ -66,7 +66,7 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
   const stays = data.waitlistEntries.some((w) => w.id === offer.waitlistEntryId) ? ` ${child?.firstName} stays on the waitlist.` : "";
   const open = offerOpen(offer, today);
   if (!child || !cls || !pool) return null;
-  const starts = firstOpenLessonDate(cls.weekday, today, pool.opensOn, skippedDates(data, cls, today));
+  const starts = firstWeeklyDate(data, cls, pool, today);
   return (
     <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`offer-${offer.id}`} data-testid="school-offer">
       <div className="flex flex-wrap items-center justify-between gap-2">

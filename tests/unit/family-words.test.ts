@@ -35,6 +35,7 @@ export const FAMILY_FILES = [
   "src/rules/notes.ts",
   "src/rules/offers.ts",
   "src/rules/owed.ts",
+  "src/rules/fillins.ts",
   // The cancellation reason families read in Messages and Lesson dates.
   "src/sandbox/pretend-school.ts",
 ].filter((f) => /\.tsx?$/.test(f) && !STAFF_FACING.includes(f));

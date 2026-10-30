@@ -1313,5 +1313,40 @@
     "description": "On Lesson dates a missed day says where it stands (read with no fill-in, a fill-in to answer, said no, closed with no answer, or booked and shown under it); every status pill sits under its date; a weekly lesson on a day with a new date or fill-in says what the other one is.",
     "test": "tests/unit/rooms-render.test.tsx: messages and notes > sends a ready-made note picked from a lesson date; it waits for a person, then shows read / a lesson the school cancels: the notice, the date offered, and the family's answer",
     "passes": true
+  },
+  {
+    "id": "different-time-follow-up",
+    "area": "office",
+    "description": "A \"different time\" note can be followed up in the inbox: a person picks an open time that fits (either pool, never the child's own or a full one) and sends it in place of the child's class, through the waitlist offer (the child waits for any time that fits there; a no keeps them waiting); with nothing open, the person can put the child on the waitlist; either way the note is read.",
+    "test": "tests/unit/different-time.test.ts: a different time, after a family's note > lists open times that fit at either pool, never the child's own class or a full one / a person offers one in place of the child's class; the family's yes moves them; the note is read / a no keeps the child waiting for any time that fits there / with nothing open, a person puts the child on the waitlist instead, once / only for a different-time note; tests/unit/rooms-render.test.tsx: a different time, from the inbox > a person picks an open time, sees the words, and sends it in place of the child's class",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-13",
+    "area": "walkthrough",
+    "description": "Walk-through 13: walk-through 1's family asks for a different time for Jules; the owner offers an open time in place of his class; the family says yes and the old class ends.",
+    "test": "e2e/sign-up.spec.ts: walk-through 13",
+    "passes": true
+  },
+  {
+    "id": "held-days-not-coming",
+    "area": "schedule",
+    "description": "A lesson marked held is never listed as coming on Lesson dates or offered to miss, wherever it falls (after a missed or cancelled first day too); a free evaluation that has happened isn't the next lesson.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a lesson marked after a missed first day isn't listed as coming, or offered to miss / a free evaluation that has happened isn't the next lesson",
+    "passes": true
+  },
+  {
+    "id": "one-off-places-safe",
+    "area": "schedule",
+    "description": "A class slot can be a fill-in or a new date; a new weekly booking in that class starts after the last day one-off lessons fill, so it never runs through one; no slot is offered that runs into the child's own one-off that day.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a class slot can be a fill-in, and a new weekly booking there starts after the day it fills / never a slot that runs into the child's own one-off that day",
+    "passes": true
+  },
+  {
+    "id": "cancel-owes-booked",
+    "area": "schedule",
+    "description": "Cancelling a class date owes the lesson to everyone booked into it that day (one-offs too) but not to a family that already said they'll miss it; a one-off on a cancelled, closed or left class's day isn't shown as coming.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a cancelled day is owed to who was booked into it; a noted miss isn't owed twice / a booked fill-in goes once the family leaves the class it stood in for",
+    "passes": true
   }
 ]

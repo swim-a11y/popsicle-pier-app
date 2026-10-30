@@ -26,8 +26,18 @@ test("missing answers, a wrong code, nothing open and an unfinished release", as
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Please type a first name.")).toBeVisible();
   await expect(page.getByText("Please type the month, day and year.")).toBeVisible();
-  // Both messages show above the pinned Continue bar, without scrolling.
+  // Both messages show above the pinned Continue bar, without scrolling; the swimmer's box sits under the banner,
+  // its caption is for screen readers only with one swimmer, and the focused field is clear of both.
   const bar = await page.getByTestId("continue-bar").boundingBox();
+  const banner = await page.getByTestId("sample-banner").boundingBox();
+  const swimmer = await page.getByRole("group", { name: "Your swimmer", exact: true }).boundingBox();
+  expect(banner && swimmer && swimmer.y >= banner.y + banner.height - 1).toBe(true);
+  await expect(page.getByRole("heading", { name: "Your swimmer", exact: true })).toHaveClass(/sr-only/);
+  const focused = await page.evaluate(() => {
+    const r = document.activeElement?.getBoundingClientRect();
+    return r ? { top: r.top, bottom: r.bottom } : null;
+  });
+  expect(focused && banner && bar && focused.top >= banner.y + banner.height - 1 && focused.bottom <= bar.y).toBe(true);
   for (const text of ["Please type a first name.", "Please type the month, day and year."]) {
     const box = await page.getByText(text).boundingBox();
     expect(box && bar && box.y >= 0 && box.y + box.height <= bar.y).toBe(true);
@@ -48,6 +58,10 @@ test("missing answers, a wrong code, nothing open and an unfinished release", as
   await expect(page.getByRole("heading", { name: "Or start with a free evaluation" })).toBeVisible();
   await capture(page, "nothing-fits");
   await page.getByTestId("nothing-fits").getByRole("button", { name: "Join the waitlist" }).click();
+  // Its Continue is pinned on the first screen.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const waitBox = await page.getByRole("button", { name: "Continue with the waitlist only" }).boundingBox();
+  expect(waitBox && waitBox.y + waitBox.height).toBeLessThanOrEqual(667);
   await page.getByRole("button", { name: "Continue with the waitlist only" }).click();
 
   // Emails and phones must be made up.

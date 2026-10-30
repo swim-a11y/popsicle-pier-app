@@ -4,7 +4,7 @@
 */
 import { cardPricing as defaultMode, type CardPricing } from "@/config";
 import type { AppData, DateOnly, LessonType, Pool, StageId, SwimClass } from "@/data/types";
-import { closedDates, skippedDates } from "@/rules/closures";
+import { closedDates, firstWeeklyDate } from "@/rules/closures";
 import { addMonths, ageInMonths, compareDates, firstOpenLessonDate, minutesOfDay } from "@/rules/dates";
 import { datesFullOfOneOffs, heldByWaitlistOffers } from "@/rules/holds";
 import { cardPriceCents } from "@/rules/prices";
@@ -107,7 +107,7 @@ export function timesForChild(input: {
   const classes: TimeOption[] = [];
   if (stage !== "evaluation") {
     for (const c of poolClasses) {
-      const first = firstOpenLessonDate(c.weekday, today, pool.opensOn, skippedDates(data, c, today));
+      const first = firstWeeklyDate(data, c, pool, today);
       const age = ageInMonths(birthDate, first);
       const lt = data.lessonTypes.find((l) => l.id === c.lessonTypeId);
       if (!lt || !classFits(c, lt, age, stage, pool)) continue;

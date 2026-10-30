@@ -76,6 +76,14 @@ export function coachSlots(
     .filter((e) => e.childRecordId === child.id && e.kind === "class" && isActive(e))
     .map((e) => data.classes.find((c) => c.id === e.timeId))
     .filter((c): c is SwimClass => Boolean(c));
+  // The child's own one-off lessons (new dates and fill-ins, booked or offered): never a slot that runs into one.
+  const timeOf = (o: OwedOffer) => (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime;
+  const ownOneOffs = [
+    ...data.owedLessons.filter((o) => o.childRecordId === child.id && o.id !== input.exceptId).flatMap((o) => o.offers),
+    ...data.fillIns.filter((f) => f.childRecordId === child.id && f.id !== input.exceptId).map((f) => f.offer),
+  ]
+    .filter((o) => o.answer === "yes" || offerOpen(o, today))
+    .map((o) => ({ date: o.date, startTime: timeOf(o) }));
   const { offered } = input;
   const last = input.to;
   let from = input.from;
@@ -93,6 +101,7 @@ export function coachSlots(
     if (kind === "class" && !lt) continue;
     for (let d = addDays(from, (time.weekday - weekdayOf(from) + 7) % 7); d <= last; d = addDays(d, 7)) {
       if (closureOn(data, pool.id, d) || cancellationOn(data, time.id, d) || offered.has(`${time.id}|${d}`)) continue;
+      if (ownOneOffs.some((o) => o.date === d && o.startTime && Math.abs(minutesOfDay(o.startTime) - minutesOfDay(time.startTime)) < 30)) continue;
       const age = ageInMonths(child.birthDate, d);
       if (lt ? !classFits(time as SwimClass, lt, age, child.stageId, pool) : age < pool.youngestAgeMonths) continue;
       const held = kind === "class" ? heldByWaitlistOffers(data, time.id, today) : 0;
@@ -195,14 +204,26 @@ export function cancelClassDate(tx: Transaction, input: { classId: string; date:
   // A closed day has no lesson to cancel: closed days are never billed and never made up.
   if (!cls || weekdayOf(input.date) !== cls.weekday || closureOn(tx.data(), cls.poolId, input.date) || cancellationOn(tx.data(), cls.id, input.date)) return [];
   const cancellation = tx.add("cancellations", { id: input.newId(), classId: cls.id, poolId: cls.poolId, date: input.date, reason: input.reason, createdAt: input.now });
+  const data = tx.data();
+  // Owed to each child booked that day: the class's own children, and any with a new date or fill-in booked into it.
+  const booked = [
+    ...tx
+      .list("enrollments")
+      .filter((x) => x.kind === "class" && x.timeId === cls.id && x.firstLessonDate <= input.date && (!x.endedOn || x.endedOn > input.date))
+      .map((e) => ({ familyId: e.familyId, childRecordId: e.childRecordId, enrollmentId: e.id })),
+    ...data.owedLessons.filter((o) => o.offers.some((x) => x.answer === "yes" && x.timeId === cls.id && x.date === input.date)),
+    ...data.fillIns.filter((f) => f.offer.answer === "yes" && f.offer.timeId === cls.id && f.offer.date === input.date),
+  ];
   const owed: OwedLesson[] = [];
-  for (const e of tx.list("enrollments").filter((x) => x.kind === "class" && x.timeId === cls.id && x.firstLessonDate <= input.date && (!x.endedOn || x.endedOn > input.date))) {
+  for (const b of booked) {
+    // A family that already told us they'll miss that day keeps its own miss (and its fill-in): nothing is owed twice.
+    if (data.familyNotes.some((n) => n.kind === "miss" && n.enrollmentId === b.enrollmentId && n.lessonDate === input.date)) continue;
     owed.push(
       tx.add("owedLessons", {
         id: input.newId(),
-        familyId: e.familyId,
-        childRecordId: e.childRecordId,
-        enrollmentId: e.id,
+        familyId: b.familyId,
+        childRecordId: b.childRecordId,
+        enrollmentId: b.enrollmentId,
         cancellationId: cancellation.id,
         poolId: cls.poolId,
         cancelledDate: input.date,

@@ -33,7 +33,7 @@ These rulings build parts of the RULES FOR LATER ROOMS that the brief said not t
 - `npm run dev` for local work, `npm run build && npm run start` for the real build.
 - `npm test` runs Vitest (unit and render tests in `tests/`).
 - `npm run typecheck` runs `tsc --noEmit`. `npm run lint` runs ESLint.
-- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the twelve walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
+- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the thirteen walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
 - Deploy: any Node host that runs `next build` and `next start`. No vercel.json, no Vercel CLI. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ## Where things are
@@ -46,7 +46,7 @@ These rulings build parts of the RULES FOR LATER ROOMS that the brief said not t
 - `src/sandbox/`: everything sandbox-only behind the one `SANDBOX` switch: seeds, role switcher, erase, sample fill, the sample code, "Pretend the first lesson happened".
 - `src/config.ts`: payment settings (cardPricing, evaluationAsksForCard).
 - `src/rules/add.ts`: adding a brother or sister, or another class (times, checks, the one transaction). `src/rules/closures.ts`: closed days and cancelled class dates. Screens in `src/components/screens/add/` and `src/components/screens/lesson-dates.tsx`.
-- From the owner's rulings: `src/rules/bills.ts` (monthly bills, worked out, never stored), `src/rules/notes.ts` (the three ready-made notes), `src/rules/offers.ts` (waitlist offers, leaving a class), `src/rules/owed.ts` (lessons the school cancels, and the coach-slot search), `src/rules/fillins.ts` (fill-ins for a family's own miss), `src/rules/holds.ts` (places an open offer holds), `src/rules/inbox.ts` (the inbox's lists and the Done list). Screens: `bills.tsx`, `messages.tsx`, `send-note.tsx` and the owner's `inbox.tsx` in `src/components/screens/`. Sandbox: `src/sandbox/pretend-school.ts`.
+- From the owner's rulings: `src/rules/bills.ts` (monthly bills, worked out, never stored), `src/rules/notes.ts` (the three ready-made notes), `src/rules/offers.ts` (waitlist offers, leaving a class, a different time after a family's note), `src/rules/owed.ts` (lessons the school cancels, and the coach-slot search), `src/rules/fillins.ts` (fill-ins for a family's own miss), `src/rules/holds.ts` (places an open offer holds), `src/rules/inbox.ts` (the inbox's lists and the Done list). Screens: `bills.tsx`, `messages.tsx`, `send-note.tsx` and the owner's `inbox.tsx` in `src/components/screens/`. Sandbox: `src/sandbox/pretend-school.ts`.
 
 ## The app: six rooms plus two later wings
 
@@ -95,7 +95,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 159 unit tests and 49 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 179 unit tests and 50 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone the family release runs about twelve screens by design (every line visible, never folded).
