@@ -58,15 +58,23 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 ## Done
 
 - Setup: Next.js 16.4.3 (App Router, TypeScript, Tailwind 4, ESLint), the nine shadcn parts by hand, tokens, fonts from npm, Vitest, Playwright 1.63.0 with axe, the hooks, the two checker agents, the design skill.
+- Step 1: the sample banner, the Sandbox pill and sheet, parent and owner tab bars, the shared coming-next component, 26 static pages from src/screens.ts.
+- Step 2: the DataStore and localStorage store, seeds, and the rules for dates, ages, times, prices, child IDs, the release, sign and save, and the first Sunday.
+- Step 3: sign-up (start screen and nine steps) through You're in.
+- Step 4: Your first lesson, Progress with How it went, Parent Home.
+- Step 5: the family moving over, the owner's release versions, More, Bills and Messages (coming next), the staff page.
+- Step 6: all six walk-throughs pass at 375x667 in e2e/sign-up.spec.ts; counts in docs/check-report.md and WALKTHROUGH.md.
+- Every entry in feature_list.json passes.
 
 ## Next
 
-- Work down `feature_list.json` in the order of HOW TO WORK in the brief: (1) shell and screens config, (2) data layer, seeds and rules, (3) sign-up through You're in, (4) Your first lesson and How it went, (5) Home, moving over, owner release versions, staff page, (6) the six walk-throughs.
-- After this build, the next room to fill is Schedule.
+- The next room to fill is Schedule (closures, owed lessons, fill-ins, waitlist offers a person makes), using the records listed above.
+- Re-signing and adding a child exist in the data layer (src/rules/release.ts) with tests, but have no screens yet ("Add a child or a class" is a coming-next card on Home).
+- A second session runs /code-review and /security-review.
 
 ## Known issues
 
-- None yet.
+- None open. (Anything an agent round leaves unfixed is listed here.)
 
 ## Keep for later (from the owner's handoff notes)
 
