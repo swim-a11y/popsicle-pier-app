@@ -14,7 +14,7 @@ export function NoteCard({ data, note, today, headingLevel = 2 }: { data: Readon
   const info = enrollment ? lessonInfo(data, enrollment) : null;
   const stage = stageName(note.stageId);
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  if (!child) return null;
+  if (!child || note.status !== "approved") return null;
   return (
     <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" data-testid="how-it-went" aria-label={`How it went for ${child.firstName}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">

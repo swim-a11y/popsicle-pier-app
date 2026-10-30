@@ -48,7 +48,6 @@ export function WhoStaysStep() {
     <StepScreen step={step} stepKey="who-stays">
       <StepTitle>Who stays at the pool</StepTitle>
       <p className="rounded-card bg-surface px-4 py-3 shadow-card">{WHO_STAYS_INTRO}</p>
-      <p>You stay, or another adult you list here. Listed adults sign on paper at the check-in desk.</p>
 
       {listed.length > 0 ? (
         <section className="flex flex-col gap-3" aria-label="Adults you listed">
@@ -80,6 +79,21 @@ export function WhoStaysStep() {
         </section>
       ) : null}
 
+      {listed.length > 0 ? (
+        <Button size="block" onClick={() => void step.advance((d) => ({ ...d, justMe: false }))}>
+          Continue
+        </Button>
+      ) : (
+        <Button size="block" onClick={() => void step.advance((d) => ({ ...d, justMe: true }))}>
+          Just me for now
+        </Button>
+      )}
+
+      <div className="flex flex-col gap-1 border-t-2 border-line pt-5">
+        <h2 className="font-strong text-heading">Another adult staying too?</h2>
+        <p>Add them here. Listed adults sign on paper at the check-in desk.</p>
+      </div>
+
       {known.map((person) => (
         <section key={person} className="flex flex-col gap-2" aria-label={`Add ${person}`}>
           <p className="font-strong">Add {person} as:</p>
@@ -94,9 +108,9 @@ export function WhoStaysStep() {
       ))}
 
       <section className="flex flex-col gap-3 rounded-card border-2 border-dashed border-line p-5" aria-labelledby="someone-else">
-        <h2 id="someone-else" className="font-heading text-body text-heading">
-          {listed.length > 0 || known.length > 0 ? "Someone else" : "Another adult"}
-        </h2>
+        <h3 id="someone-else" className="font-strong text-heading">
+          {known.length > 0 ? "Someone else" : "Their first name and how they're related"}
+        </h3>
         <Field>
           <FieldLabel htmlFor="adult-first-name">First name</FieldLabel>
           <Input id="adult-first-name" name="listed-adult-first-name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -121,15 +135,6 @@ export function WhoStaysStep() {
         </Button>
       </section>
 
-      {listed.length > 0 ? (
-        <Button size="block" onClick={() => void step.advance((d) => ({ ...d, justMe: false }))}>
-          Continue
-        </Button>
-      ) : (
-        <Button size="block" onClick={() => void step.advance((d) => ({ ...d, justMe: true }))}>
-          Just me for now
-        </Button>
-      )}
     </StepScreen>
   );
 }

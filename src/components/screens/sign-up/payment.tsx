@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { evaluationAsksForCard } from "@/config";
-import { BANK_DRAFT_AUTHORIZATION, BANK_DRAFT_BOX, BANK_DRAFT_COPY_LINE } from "@/content/payment";
+import { BANK_DRAFT_BOX, BANK_DRAFT_COPY_LINE, bankDraftLines } from "@/content/payment";
 import { BACKUP_CARD_LINE, EVALUATION_NEVER_CHARGED, NOTHING_CHARGED_TODAY } from "@/content/sign-up";
 import type { AppData, SignUpDraft } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,9 @@ export function PaymentChoices({
   bankPrices,
   cardPrices,
   problem,
+  schoolEmail,
 }: {
+  schoolEmail: string;
   payment: Payment;
   setPayment: (p: Payment) => void;
   bankPrices: { name: string; amount: string }[];
@@ -81,13 +83,14 @@ export function PaymentChoices({
   return (
     <div className="flex flex-col gap-4">
       {option("bank", "Bank draft", <LandmarkIcon className="size-6" aria-hidden />, bankPrices, <Tag tone="highlight">Preferred</Tag>)}
+      {option("card", "Card", <CreditCardIcon className="size-6" aria-hidden />, cardPrices)}
       {payment.main === "bank" ? (
         <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby="authorization-title">
           <h2 id="authorization-title" className="font-heading text-body text-heading">
             Bank draft authorization
           </h2>
           <ul className="flex flex-col gap-1">
-            {BANK_DRAFT_AUTHORIZATION.map((line) => (
+            {bankDraftLines(schoolEmail).map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
@@ -114,7 +117,6 @@ export function PaymentChoices({
           </div>
         </section>
       ) : null}
-      {option("card", "Card", <CreditCardIcon className="size-6" aria-hidden />, cardPrices)}
     </div>
   );
 }
@@ -128,7 +130,7 @@ export function PaymentStep() {
 
   if (!draft || (!kinds.hasClass && !kinds.hasEval)) {
     return (
-      <StepScreen step={step} stepKey="payment">
+      <StepScreen step={step} stepKey="payment" showStep={false}>
         <StepTitle>How you&apos;ll pay</StepTitle>
         <NeedsEarlierStep step={step} message="Pick a time for your swimmer first. Then you'll see the price here." href="/sign-up/times?child=1" label="Pick a time" />
       </StepScreen>
@@ -152,6 +154,7 @@ export function PaymentStep() {
       {kinds.hasClass ? (
         <>
           <PaymentChoices
+            schoolEmail={step.loaded.data.pools.find((p) => p.id === draft.poolId)?.schoolEmail ?? ""}
             payment={draft.payment}
             setPayment={setPayment}
             bankPrices={childPrices(step.loaded.data, draft, "bank")}

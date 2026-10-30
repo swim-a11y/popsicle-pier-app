@@ -23,6 +23,12 @@ export const FAMILY_FILES = [
   ...walk("src/components/parts"),
   "src/sandbox/coach-lines.ts",
   "src/sandbox/sandbox-pill.tsx",
+  "src/screens.ts",
+  "src/app/not-found.tsx",
+  "src/rules/family.ts",
+  "src/rules/sign-up.ts",
+  "src/rules/booking.ts",
+  "src/rules/first-sunday.ts",
 ].filter((f) => /\.tsx?$/.test(f) && !STAFF_FACING.includes(f));
 
 function stripComments(code: string): string {

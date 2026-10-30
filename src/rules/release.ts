@@ -51,7 +51,9 @@ export function namesList(names: string[]): string {
 
 const fill = (text: string, name: string) => text.replaceAll("[name]", name);
 
-export function buildReleaseView(version: ReleaseVersion, children: ReleaseChildRef[], coversOverride?: string): ReleaseView {
+/** What the release shows: names filled in, and the pool's email where a line says to email us. */
+export function buildReleaseView(version: ReleaseVersion, children: ReleaseChildRef[], schoolEmail?: string, coversOverride?: string): ReleaseView {
+  const email = (text: string) => text.replaceAll("[email]", schoolEmail ?? "[email]");
   return {
     versionId: version.id,
     title: RELEASE_TITLE,
@@ -73,7 +75,7 @@ export function buildReleaseView(version: ReleaseVersion, children: ReleaseChild
     choices: children.map((c) => ({
       childKey: c.key,
       firstName: c.firstName,
-      items: version.choices.map((ch) => ({ ...ch, boxText: fill(ch.box, c.firstName) })),
+      items: version.choices.map((ch) => ({ ...ch, lines: ch.lines.map(email), boxText: fill(ch.box, c.firstName) })),
     })),
   };
 }
@@ -96,7 +98,7 @@ export function releaseViewText(view: ReleaseView): string {
 
 /** A version's own text, with placeholders where names go. */
 export function releaseTemplateText(version: ReleaseVersion): string {
-  return releaseViewText(buildReleaseView(version, [{ key: "child", firstName: "[name]" }], "Covers [names]"));
+  return releaseViewText(buildReleaseView(version, [{ key: "child", firstName: "[name]" }], undefined, "Covers [names]"));
 }
 
 export function releaseFingerprint(version: Pick<ReleaseVersion, "groups" | "choices" | "id">): string {
@@ -144,13 +146,14 @@ export class NeedsCurrentReleaseError extends Error {
  * A family on the current version adding a child signs nothing: the child
  * gets a coverage row under that signature, never an edit to it.
  */
-export function addChildCoverage(tx: Transaction, input: { familyId: string; childRecordId: string; at: string; id: string }): Coverage {
+export function addChildCoverage(tx: Transaction, input: { familyId: string; childRecordId: string; at: string; id: string }): Coverage | null {
   const data = tx.data();
   const latest = latestSignature(data, input.familyId);
   if (!latest || latest.versionId !== currentRelease(data).id) throw new NeedsCurrentReleaseError();
-  if (coveredChildIds(data, latest).includes(input.childRecordId)) {
-    return data.coverages.find((c) => c.signatureId === latest.id && c.childRecordId === input.childRecordId) as Coverage;
-  }
+  // Named in the signature itself: already covered, nothing to add.
+  if (latest.children.some((c) => c.childRecordId === input.childRecordId)) return null;
+  const existing = data.coverages.find((c) => c.signatureId === latest.id && c.childRecordId === input.childRecordId);
+  if (existing) return existing;
   return tx.add("coverages", {
     id: input.id,
     familyId: input.familyId,

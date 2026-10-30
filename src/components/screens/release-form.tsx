@@ -49,6 +49,8 @@ function YesNo({ id, question, value, onChange, invalid }: { id: string; questio
 export interface ReleaseFormProps {
   version: ReleaseVersion;
   kids: ReleaseChildRef[];
+  /** The pool's school email, shown where the release says to email us. */
+  schoolEmail: string;
   release: Release;
   /** Saves each answer as it's given, so nothing is lost. */
   onChange: (release: Release) => void;
@@ -58,8 +60,8 @@ export interface ReleaseFormProps {
 }
 
 /** The family release: every line visible, one required box per group, signed once for the whole family. */
-export function ReleaseForm({ version, kids, release, onChange, onSign, signLabel }: ReleaseFormProps) {
-  const view = buildReleaseView(version, kids);
+export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onSign, signLabel }: ReleaseFormProps) {
+  const view = buildReleaseView(version, kids, schoolEmail);
   const [typedName, setTypedName] = useState(release.typedName);
   const [tried, setTried] = useState(false);
   const [problem, setProblem] = useState<ReactNode | null>(null);

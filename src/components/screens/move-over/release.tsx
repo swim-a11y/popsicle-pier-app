@@ -7,6 +7,7 @@ import { browserName } from "@/lib/browser";
 import { finishMovingOver, MOVE_OVER_CHECKS, paymentProblem, releaseProblem, SignUpIncompleteError } from "@/rules/booking";
 import { familyChildren } from "@/rules/family";
 import { currentRelease } from "@/rules/release";
+import { SIGN_BUTTON } from "@/content/release";
 import { emptyDraft } from "@/rules/sign-up";
 
 import { MOVE_STEPS, MoveOverScreen, useMoveOver } from "./shared";
@@ -24,8 +25,9 @@ export function MoveOverRelease() {
       <ReleaseForm
         version={version}
         kids={kids}
+        schoolEmail={loaded.data.pools.find((p) => p.id === family.homePoolId)?.schoolEmail ?? ""}
         release={release}
-        signLabel="Sign and finish"
+        signLabel={SIGN_BUTTON}
         onChange={(r) => void step.save((d) => ({ ...d, release: r }))}
         onSign={async (r) => {
           const missingCheck = MOVE_OVER_CHECKS.find((c) => !family.movingOverChecks.includes(c));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -19,11 +19,18 @@ export function YouStep() {
   const step = useSignUpStep("you");
   const [f, setF] = useDraftFields(step, pick);
   const [problems, setProblems] = useState<Partial<Record<keyof Fields | "heard", string | null>>>({});
+  const confirmedNow = Boolean(step?.draft?.confirmedEmail && step.draft.confirmedEmail === f.email.trim());
+  // Once the email is confirmed, bring the one question left into view.
+  useEffect(() => {
+    if (!confirmedNow) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("heard-title")?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, [confirmedNow]);
   if (!step) return <StepScreen step={step} stepKey="you">{null}</StepScreen>;
 
   const draft = step.draft;
   const email = f.email.trim();
-  const confirmed = Boolean(draft?.confirmedEmail && draft.confirmedEmail === email);
+  const confirmed = confirmedNow;
   const codeSent = Boolean(draft?.codeSent && draft.email.trim() === email);
   // Keep a changed email from carrying an old confirmation.
   const withTyped = (d: SignUpDraft): SignUpDraft => ({
@@ -142,10 +149,13 @@ export function YouStep() {
       {confirmed ? (
         <>
           <Done>Email confirmed: {email}</Done>
-          <section className="flex flex-col gap-3" aria-labelledby="heard-title">
-            <h2 id="heard-title" className="font-heading text-big text-heading">
-              How did you hear about us?
-            </h2>
+          <section className="flex scroll-mt-28 flex-col gap-3" id="heard-section" aria-labelledby="heard-title">
+            <div className="flex scroll-mt-28 flex-col gap-1" id="heard-title-wrap">
+              <h2 id="heard-title" className="scroll-mt-28 font-strong text-heading">
+                How did you hear about us?
+              </h2>
+              <p>Tap one to continue.</p>
+            </div>
             {HEARD_FROM.map((h) => (
               <ChoiceButton key={h.id} title={h.label} selected={draft?.heardFrom === h.id} onClick={() => void step.advance((d) => ({ ...withTyped(d), heardFrom: h.id }))} />
             ))}

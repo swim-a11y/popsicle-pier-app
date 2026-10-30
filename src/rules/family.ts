@@ -100,6 +100,17 @@ export function lessonKindWords(info: Pick<LessonInfo, "lessonKind" | "parentInW
   return "Semi-private";
 }
 
+/**
+ * A semi-private enrollment shows "No partner yet" only while it's marked
+ * unpaired and the class holds no one else. Reading this never edits the
+ * enrollment: staff confirm partners.
+ */
+export function stillUnpaired(data: Readonly<AppData>, enrollment: Enrollment): boolean {
+  if (!enrollment.unpairedSince || enrollment.kind !== "class") return false;
+  const cls = data.classes.find((c) => c.id === enrollment.timeId);
+  return Boolean(cls && cls.capacity - cls.openSpots <= 1);
+}
+
 /** Families listed on this phone that a parent role can switch between (newest first). */
 export function familiesOnThisPhone(data: Readonly<AppData>): Family[] {
   return data.families.filter((f) => f.source === "sign-up").sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));

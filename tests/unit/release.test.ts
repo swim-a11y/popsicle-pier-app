@@ -73,16 +73,23 @@ describe("release", () => {
   });
 
   it("the text shown names every child and hashes with SHA-256", () => {
-    const view = buildReleaseView(currentRelease(data), [
-      { key: "a", firstName: "Mia" },
-      { key: "b", firstName: "Leo" },
-    ]);
+    const view = buildReleaseView(
+      currentRelease(data),
+      [
+        { key: "a", firstName: "Mia" },
+        { key: "b", firstName: "Leo" },
+      ],
+      "buckhead.sample@example.com",
+    );
     const text = releaseViewText(view);
     expect(view.covers).toBe("Covers Mia and Leo");
     expect(text).toContain("SAMPLE release");
     expect(text).toContain("Is there a court order, custody arrangement or foster placement that limits recording or who may bring Mia?");
     expect(text).toContain("Is there anything about Leo's health we should know before the first lesson?");
     expect(text).toContain("Yes, Leo can be part of the study.");
+    // Where it says to email us, the pool's email shows as plain text.
+    expect(text).toContain("You can withdraw anytime by emailing us at buckhead.sample@example.com.");
+    expect(text).not.toContain("[email]");
     expect(sha256Hex(text)).toMatch(/^[0-9a-f]{64}$/);
     // Every line of every group is in the text: nothing folded away.
     for (const g of view.groups) for (const line of g.lines) expect(text).toContain(line);
@@ -140,6 +147,7 @@ describe("release", () => {
         children: kids.map((c) => ({ key: c.id, child: c, answers: { custody: "no", health: "no", research: false, marketing: false, underwater: false } })),
         release: { ...draft.release, typedName: "Lee Marlow" },
         confirmedEmail: "lee.marlow@example.com",
+        schoolEmail: "madison.sample@example.com",
         browserName: "Chrome",
         now: NOW,
         newId: testId,
@@ -166,7 +174,13 @@ describe("release", () => {
       return addChildCoverage(tx, { familyId, childRecordId: child.id, at: NOW, id: "cov-1" });
     });
     const after = await store.snapshot();
-    expect(coverage.signatureId).toBe(signature.id);
+    expect(coverage!.signatureId).toBe(signature.id);
+    // Adding the same child again, or a child the signature already names, adds nothing.
+    const again = await store.transaction((tx) => addChildCoverage(tx, { familyId, childRecordId: "new-kid", at: NOW, id: "cov-2" }));
+    expect(again!.id).toBe("cov-1");
+    const named = await store.transaction((tx) => addChildCoverage(tx, { familyId, childRecordId: signature.children[0].childRecordId, at: NOW, id: "cov-3" }));
+    expect(named).toBeNull();
+    expect((await store.snapshot()).coverages).toHaveLength(1);
     expect(after.coverages).toHaveLength(1);
     expect(after.releaseSignatures.filter((s) => s.familyId === familyId)).toHaveLength(1);
     expect(after.releaseSignatures.find((s) => s.id === signature.id)).toEqual(signature);

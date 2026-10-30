@@ -19,12 +19,12 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.4";
+export const SEED_VERSION = "2026-10-30.5";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {
   v1: "d6c49c834fca155569a9cb391842f377bd7061e1b0d4060f8816a1814262f776",
-  v2: "95c5db1a0d2edb5155486bad535a31056442bc6e95dff0762b297902375a7c98",
+  v2: "2c6c419f9c6c72f08e15e0d49f6879ec8b9d90d01a512f8c285e1363f328a5ed",
 };
 
 const SEEDED_AT = "2026-10-01T12:00:00.000Z";
@@ -106,15 +106,15 @@ function enrollment(id: string, f: string, c: string, classId: string, lessonTyp
 }
 
 /** A signature for a seeded sample family: all boxes, no choices, signed online. */
-function sampleSignature(id: string, f: Family, version: ReleaseVersion, kids: Child[], signedAt: string): ReleaseSignature {
-  const view = buildReleaseView(version, kids.map((k) => ({ key: k.id, firstName: k.firstName })));
+function sampleSignature(id: string, f: Family, version: ReleaseVersion, kids: Child[], signedAt: string, schoolEmail: string): ReleaseSignature {
+  const view = buildReleaseView(version, kids.map((k) => ({ key: k.id, firstName: k.firstName })), schoolEmail);
   const consents: ConsentRecord[] = [
     ...kids.flatMap((k) =>
       version.choices.map((ch) => ({
         kind: ch.key,
         childRecordId: k.id,
         given: false,
-        words: consentWords(ch.key, version.choices, k.firstName),
+        words: consentWords(ch.key, version.choices, k.firstName, schoolEmail),
         wordingVersion: `release-${version.id}`,
       })),
     ),
@@ -203,10 +203,12 @@ export function buildSeed(): AppData {
   for (const c of classSeeds) data.classes.push({ ...c, slotMinutes: 30, lessonMinutes: 27 });
 
   data.evaluationTimes.push(
-    { id: "mad-eval-sun-1100", poolId: MADISON, weekday: 0, startTime: "11:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Dev", capacity: 2, openSpots: 2 },
-    { id: "mad-eval-thu-1600", poolId: MADISON, weekday: 4, startTime: "16:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Tamsin", capacity: 2, openSpots: 2 },
-    { id: "buc-eval-sun-1100", poolId: BUCKHEAD, weekday: 0, startTime: "11:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Ines", capacity: 2, openSpots: 2 },
-    { id: "buc-eval-sun-1130", poolId: BUCKHEAD, weekday: 0, startTime: "11:30", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Wren", capacity: 2, openSpots: 2 },
+    // One child per free evaluation: private, so an under-3 never shares one.
+    { id: "mad-eval-sun-1100", poolId: MADISON, weekday: 0, startTime: "11:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Dev", capacity: 1, openSpots: 1 },
+    { id: "mad-eval-sun-1130", poolId: MADISON, weekday: 0, startTime: "11:30", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Dev", capacity: 1, openSpots: 1 },
+    { id: "mad-eval-thu-1600", poolId: MADISON, weekday: 4, startTime: "16:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Tamsin", capacity: 1, openSpots: 1 },
+    { id: "buc-eval-sun-1100", poolId: BUCKHEAD, weekday: 0, startTime: "11:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Ines", capacity: 1, openSpots: 1 },
+    { id: "buc-eval-sun-1130", poolId: BUCKHEAD, weekday: 0, startTime: "11:30", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Wren", capacity: 1, openSpots: 1 },
   );
 
   data.releaseVersions.push(...versions);
@@ -259,10 +261,10 @@ export function buildSeed(): AppData {
     enrollment("enr-sol", ibarra.id, sol.id, "buc-sun-0900-cove", "lt-buc-semi", BUCKHEAD, "2026-11-08"),
   );
   const signatures = [
-    sampleSignature("signature-marlow-v1", marlow, v1, [ari], "2026-04-12T15:20:00.000Z"),
-    sampleSignature("signature-penhale-v1", penhale, v1, [kit], "2026-05-20T16:45:00.000Z"),
-    sampleSignature("signature-tolliver-v2", tolliver, v2, [rio], "2026-09-28T12:10:00.000Z"),
-    sampleSignature("signature-ibarra-v2", ibarra, v2, [noor, sol], "2026-10-02T13:05:00.000Z"),
+    sampleSignature("signature-marlow-v1", marlow, v1, [ari], "2026-04-12T15:20:00.000Z", "madison.sample@example.com"),
+    sampleSignature("signature-penhale-v1", penhale, v1, [kit], "2026-05-20T16:45:00.000Z", "madison.sample@example.com"),
+    sampleSignature("signature-tolliver-v2", tolliver, v2, [rio], "2026-09-28T12:10:00.000Z", "madison.sample@example.com"),
+    sampleSignature("signature-ibarra-v2", ibarra, v2, [noor, sol], "2026-10-02T13:05:00.000Z", "buckhead.sample@example.com"),
   ];
   data.releaseSignatures.push(...signatures);
   for (const s of signatures) {

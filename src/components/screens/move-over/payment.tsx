@@ -28,6 +28,7 @@ export function MoveOverPayment() {
       <Done>{NOTHING_CHARGED_TODAY}</Done>
       <p>Bank details don&apos;t move to the new app, so please link your bank again.</p>
       <PaymentChoices
+        schoolEmail={loaded.data.pools.find((p) => p.id === family.homePoolId)?.schoolEmail ?? ""}
         payment={payment}
         setPayment={(p) => {
           setProblem(null);

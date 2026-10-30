@@ -18,7 +18,7 @@ export function ReleaseStep() {
   const draft = step.draft;
   if (!draft || draft.children.length === 0) {
     return (
-      <StepScreen step={step} stepKey="release">
+      <StepScreen step={step} stepKey="release" showStep={false}>
         <NeedsEarlierStep step={step} title="Family release" message="Tell us about your swimmers first. The release names each one." href="/sign-up/swimmers" label="Add your swimmers" />
       </StepScreen>
     );
@@ -31,11 +31,12 @@ export function ReleaseStep() {
       <ReleaseForm
         version={version}
         kids={kids}
+        schoolEmail={step.loaded.data.pools.find((p) => p.id === draft.poolId)?.schoolEmail ?? ""}
         release={draft.release}
         signLabel={SIGN_BUTTON}
         onChange={(release) => void step.save((d) => ({ ...d, release }))}
         onSign={async (release) => {
-          const missing = firstMissingStep(step.loaded.data, { ...draft, release });
+          const missing = firstMissingStep(step.loaded.data, { ...draft, release }, step.loaded.today);
           if (missing && missing.step !== "release") {
             const href = stepHref(missing.step, missing.child);
             return (

@@ -41,7 +41,7 @@ describe("signature", () => {
     expect(s.childIds).toEqual(["PP26-0042", "PP26-0043"]);
     expect(s.children.map((c) => c.childId)).toEqual(["PP26-0042", "PP26-0043"]);
     expect(s.versionId).toBe("v2");
-    const shown = releaseViewText(buildReleaseView(currentRelease(data), draft.children.map((c) => ({ key: c.key, firstName: c.firstName }))));
+    const shown = releaseViewText(buildReleaseView(currentRelease(data), draft.children.map((c) => ({ key: c.key, firstName: c.firstName })), "madison.sample@example.com"));
     expect(s.textSha256).toBe(sha256Hex(shown));
     expect(s.signedAt).toBe(NOW);
     expect(s.signedHow).toBe("online");
@@ -90,7 +90,8 @@ describe("bank draft", () => {
     expect(rows).toHaveLength(1);
     const a = rows[0];
     expect(a.processorRef).toBe("SANDBOX-REF-0001");
-    expect(a.words).toBe(bankDraftWords());
+    expect(a.words).toBe(bankDraftWords("madison.sample@example.com"));
+    expect(a.words).toContain("You can cancel these drafts anytime by emailing us at madison.sample@example.com.");
     expect(a.words).toContain("SAMPLE authorization");
     expect(a.words).toContain("I authorize these bank drafts");
     expect(a.wordingVersion).toBe(BANK_DRAFT_WORDING_VERSION);

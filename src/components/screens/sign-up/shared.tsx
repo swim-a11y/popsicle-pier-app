@@ -120,7 +120,7 @@ export function useDraftFields<T>(step: SignUpStep | null, pick: (d: SignUpDraft
   return [fields, setFields];
 }
 
-export function StepScreen({ step, stepKey, children }: { step: SignUpStep | null; stepKey: StepKey; children: ReactNode }) {
+export function StepScreen({ step, stepKey, showStep = true, children }: { step: SignUpStep | null; stepKey: StepKey; showStep?: boolean; children: ReactNode }) {
   if (!step) {
     return (
       <ScreenShell id={STEP_SCREEN[stepKey]}>
@@ -129,7 +129,7 @@ export function StepScreen({ step, stepKey, children }: { step: SignUpStep | nul
     );
   }
   return (
-    <ScreenShell id={STEP_SCREEN[stepKey]} backHref={step.backHref} step={step.position}>
+    <ScreenShell id={STEP_SCREEN[stepKey]} backHref={step.backHref} step={showStep ? step.position : null}>
       {children}
     </ScreenShell>
   );

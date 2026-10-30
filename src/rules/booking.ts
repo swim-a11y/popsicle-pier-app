@@ -26,6 +26,7 @@ import { ensureChildId, nextProcessorRef } from "@/rules/child-id";
 import { firstLessonDate } from "@/rules/dates";
 import { buildReleaseView, currentRelease, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 import { draftBirthDate, emailProblem, nameProblem, needsPayment, phoneProblem, type StepKey } from "@/rules/sign-up";
+import { timesForChild } from "@/rules/times";
 
 export const DEVICE_ID = "this-phone";
 
@@ -97,7 +98,19 @@ export function releaseProblem(
   return null;
 }
 
-export function firstMissingStep(data: Readonly<AppData>, draft: SignUpDraft, evaluationAsksForCard = defaultEvalAsksForCard): Missing | null {
+/** A booked time must still fit the child: age on its first lesson date, stage, under 3 private only, the pool. */
+export function bookingStillFits(data: Readonly<AppData>, draft: SignUpDraft, childIndex: number, today: DateOnly): boolean {
+  const c = draft.children[childIndex];
+  const birth = draftBirthDate(c);
+  if (!c.booking) return true;
+  if (!birth || !c.stage || !draft.poolId) return false;
+  const siblings = draft.children.filter((_, i) => i !== childIndex).map((x) => ({ name: x.firstName, booking: x.booking }));
+  const t = timesForChild({ data, poolId: draft.poolId, birthDate: birth, stage: c.stage, today, siblings });
+  const list = c.booking.kind === "class" ? t.classes : t.evaluations;
+  return list.some((o) => o.id === c.booking!.timeId);
+}
+
+export function firstMissingStep(data: Readonly<AppData>, draft: SignUpDraft, today: DateOnly, evaluationAsksForCard = defaultEvalAsksForCard): Missing | null {
   if (!draft.poolId || !data.pools.some((p) => p.id === draft.poolId)) return { step: "pool", child: 0, message: "Pick a pool." };
   if (draft.children.length === 0) return { step: "swimmers", child: 0, message: "Add a swimmer." };
   for (const c of draft.children) {
@@ -106,6 +119,7 @@ export function firstMissingStep(data: Readonly<AppData>, draft: SignUpDraft, ev
   for (const [i, c] of draft.children.entries()) if (!c.stage) return { step: "stage", child: i + 1, message: "Pick what sounds most like your swimmer." };
   for (const [i, c] of draft.children.entries()) {
     if (!c.booking && c.waitlistClassIds.length === 0) return { step: "times", child: i + 1, message: "Pick a time, the waitlist or the free evaluation." };
+    if (!bookingStillFits(data, draft, i, today)) return { step: "times", child: i + 1, message: `The time picked for ${c.firstName} no longer fits. Please pick a time again.` };
   }
   if (nameProblem(draft.fullName, "your name") || emailProblem(draft.email) || phoneProblem(draft.phone)) {
     return { step: "you", child: 0, message: "Your name, email and phone are needed." };
@@ -137,6 +151,7 @@ export function recordPayment(
     payment: SignUpDraft["payment"];
     hasClass: boolean;
     confirmedEmail: string;
+    schoolEmail: string;
     now: IsoTime;
     newId: () => string;
   },
@@ -153,7 +168,7 @@ export function recordPayment(
         familyId,
         paymentMethodId: main.id,
         processorRef: main.processorRef,
-        words: bankDraftWords(),
+        words: bankDraftWords(input.schoolEmail),
         wordingVersion: BANK_DRAFT_WORDING_VERSION,
         confirmedEmail: input.confirmedEmail,
         authorizedAt: now,
@@ -174,13 +189,14 @@ export function recordSignature(
     children: { key: string; child: Child; answers: DraftChildRelease }[];
     release: SignUpDraft["release"];
     confirmedEmail: string;
+    schoolEmail: string;
     browserName: string;
     now: IsoTime;
     newId: () => string;
   },
 ): ReleaseSignature {
   const { familyId, version, children, release, now, newId } = input;
-  const view = buildReleaseView(version, children.map((c) => ({ key: c.key, firstName: c.child.firstName })));
+  const view = buildReleaseView(version, children.map((c) => ({ key: c.key, firstName: c.child.firstName })), input.schoolEmail);
   const choiceKeys = version.choices.map((c) => c.key);
   const consents: ConsentRecord[] = [];
   for (const c of children) {
@@ -189,7 +205,7 @@ export function recordSignature(
         kind: key,
         childRecordId: c.child.id,
         given: Boolean(c.answers[key]),
-        words: consentWords(key, version.choices, c.child.firstName),
+        words: consentWords(key, version.choices, c.child.firstName, input.schoolEmail),
         wordingVersion: `release-${version.id}`,
       });
     }
@@ -262,7 +278,7 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
   const evalAsks = input.evaluationAsksForCard ?? defaultEvalAsksForCard;
   const data = tx.data();
   if (!tx.get("signUpDrafts", draft.id)) throw new AlreadySavedError();
-  const missing = firstMissingStep(data, draft, evalAsks);
+  const missing = firstMissingStep(data, draft, today, evalAsks);
   if (missing) throw new SignUpIncompleteError(missing.step, missing.child, missing.message);
 
   const pool = data.pools.find((p) => p.id === draft.poolId)!;
@@ -372,6 +388,7 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
     payment: needsPayment(draft, evalAsks) ? draft.payment : { main: null, authorized: false, backupCard: false, holdCard: false },
     hasClass: bookingKinds(draft).hasClass,
     confirmedEmail: draft.confirmedEmail!,
+    schoolEmail: pool.schoolEmail,
     now,
     newId,
   });
@@ -381,6 +398,7 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
     children: signed,
     release: draft.release,
     confirmedEmail: draft.confirmedEmail!,
+    schoolEmail: pool.schoolEmail,
     browserName: input.browserName,
     now,
     newId,
@@ -418,13 +436,15 @@ export function finishMovingOver(
   const relProblem = releaseProblem(version, draft.release, children.map((c) => c.id));
   if (relProblem) throw new SignUpIncompleteError("release", 0, relProblem);
 
-  recordPayment(tx, { familyId, payment: draft.payment, hasClass: true, confirmedEmail: family.email, now, newId });
+  const schoolEmail = data.pools.find((p) => p.id === family.homePoolId)?.schoolEmail ?? "";
+  recordPayment(tx, { familyId, payment: draft.payment, hasClass: true, confirmedEmail: family.email, schoolEmail, now, newId });
   recordSignature(tx, {
     familyId,
     version,
     children: children.map((c) => ({ key: c.id, child: c, answers: draft.release.perChild[c.id] })),
     release: draft.release,
     confirmedEmail: family.email,
+    schoolEmail,
     browserName: input.browserName,
     now,
     newId,

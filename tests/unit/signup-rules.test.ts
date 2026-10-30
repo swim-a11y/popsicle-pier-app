@@ -70,8 +70,8 @@ describe("sign-up", () => {
     ]);
     const data = buildSeed();
     const draft = { ...completeDraft({}), heardFrom: null };
-    expect(firstMissingStep(data, draft)).toMatchObject({ step: "you" });
-    expect(firstMissingStep(data, completeDraft({}))).toBeNull();
+    expect(firstMissingStep(data, draft, TODAY)).toMatchObject({ step: "you" });
+    expect(firstMissingStep(data, completeDraft({}), TODAY)).toBeNull();
   });
 
   it("the draft keeps every answer and the last step", async () => {
@@ -99,6 +99,25 @@ describe("sign-up", () => {
     await expect(store.transaction((tx) => signAndSave(tx, { draft, today: TODAY, now: NOW, browserName: "Chrome", newId: testId }))).rejects.toThrow(AlreadySavedError);
     expect((await store.list("families")).length).toBe(families);
     expect((await store.get("classes", "mad-sun-1000-shallows"))!.openSpots).toBe(spots - 1);
+  });
+
+  it("a booking that no longer fits sends the parent back to times", async () => {
+    const data = buildSeed();
+    // Booked the Sunday Shallows class (ages 3 to 6), then the birth date changed to a 2-year-old's.
+    const draft = completeDraft({});
+    const younger = { ...draft, children: [{ ...draft.children[0], birthMonth: "3", birthDay: "1", birthYear: "2024" }] };
+    expect(firstMissingStep(data, younger, TODAY)).toMatchObject({ step: "times", child: 1 });
+    const store = new LocalStore({ seedVersion: "t", seed: buildSeed, storage: memoryStorage() });
+    await store.transaction((tx) => tx.add("signUpDrafts", younger));
+    await expect(store.transaction((tx) => signAndSave(tx, { draft: younger, today: TODAY, now: NOW, browserName: "Chrome", newId: testId }))).rejects.toThrow(
+      /no longer fits/,
+    );
+    // A class at the other pool, or for another stage, doesn't fit either.
+    const otherStage = { ...draft, children: [{ ...draft.children[0], stage: "cove" as const }] };
+    expect(firstMissingStep(data, otherStage, TODAY)).toMatchObject({ step: "times" });
+    // The Sandbox fill clears a time picked for a different birth date.
+    const filled = applySampleFill({ ...younger }, TODAY, NOW, () => "k", younger.id);
+    expect(filled.children[0].booking).toBeNull();
   });
 
   it("sample fill fills typed fields only", () => {

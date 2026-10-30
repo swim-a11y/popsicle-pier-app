@@ -74,8 +74,7 @@ async function check(name: string, opts: { family?: boolean } = { family: true }
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("skeleton")).toHaveCount(0);
   shotIndex += 1;
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: `screenshots/walkthrough-${run!.n}-${String(shotIndex).padStart(2, "0")}-${name}.png`, fullPage: true });
+  await shoot(`walkthrough-${run!.n}-${String(shotIndex).padStart(2, "0")}-${name}`);
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(serious.map((v) => `${name}: ${v.id}: ${v.help}`)).toEqual([]);
@@ -84,6 +83,20 @@ async function check(name: string, opts: { family?: boolean } = { family: true }
     for (const [re, why] of FAMILY_BANNED) expect(re.test(text), `${name} has ${why}: ${text.match(re)?.[0]}`).toBe(false);
     if (/drop-off/i.test(text)) expect(text).not.toMatch(/(?<!no )drop-off(?! )/i);
   }
+}
+
+/** A full-page shot, plus phone-screen slices of long pages so a reviewer can read them. */
+async function shoot(base: string) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: `screenshots/${base}.png`, fullPage: true });
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  if (height <= 1400) return;
+  let part = 1;
+  for (let top = 0; top < height - 200; top += 480, part += 1) {
+    await page.evaluate((y) => window.scrollTo(0, y), top);
+    await page.screenshot({ path: `screenshots/${base}-part${part}.png` });
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
 }
 
 async function stored() {
@@ -522,7 +535,7 @@ test("walk-through 4: the family moving over", async () => {
   await tap(page.getByLabel("I agree to this release and to signing it electronically"));
   await check("release");
   const before = await stored();
-  await tap(page.getByRole("button", { name: "Sign and finish" }));
+  await tap(page.getByRole("button", { name: "Sign and save my spot" }));
 
   screen("Home");
   await expect(page).toHaveURL(/\/$/);

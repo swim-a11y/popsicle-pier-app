@@ -4,7 +4,7 @@ import { Tag } from "@/components/parts/tag";
 import { stageName } from "@/content/path";
 import { EMAIL_US_FIRST, NO_PARTNER_YET, relationshipLabel, SIGNS_ON_PAPER } from "@/content/sign-up";
 import { clockTime, weekdayName } from "@/rules/dates";
-import { familyChildren, familyLessons, lessonKindWords } from "@/rules/family";
+import { familyChildren, familyLessons, lessonKindWords, stillUnpaired } from "@/rules/family";
 import { priceLines } from "@/rules/prices";
 
 import { ChangeLine, LooksRight, MoveOverScreen, useMoveOver } from "./shared";
@@ -70,7 +70,12 @@ export function MoveOverPeople() {
               <Tag tone={a.status === "signed" ? "mark" : "plain"}>{a.status === "signed" ? "Signed" : "Waiting"}</Tag>
             </div>
             {a.status === "waiting" ? <p>{SIGNS_ON_PAPER}</p> : null}
-            {!a.isParentOrGuardian ? <p className="rounded-control bg-page px-3 py-2">{EMAIL_US_FIRST}</p> : null}
+            {!a.isParentOrGuardian ? (
+              <div className="flex flex-col gap-1 rounded-control bg-page px-3 py-2">
+                <p>{EMAIL_US_FIRST}</p>
+                <p>Our email is {pool.schoolEmail}.</p>
+              </div>
+            ) : null}
           </Card>
         ))}
       </section>
@@ -112,7 +117,7 @@ export function MoveOverClasses() {
                     a lesson
                   </p>
                 ) : null}
-                {l.enrollment.unpairedSince ? <p className="rounded-control bg-page px-3 py-2">{NO_PARTNER_YET}</p> : null}
+                {stillUnpaired(loaded.data, l.enrollment) ? <p className="rounded-control bg-page px-3 py-2">{NO_PARTNER_YET}</p> : null}
               </div>
             ))}
         </Card>

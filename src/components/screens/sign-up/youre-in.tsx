@@ -87,13 +87,13 @@ export function YoureInScreen() {
           </section>
         );
       })}
+      <Button size="block" onClick={() => go("/first-lesson")}>
+        See your first lesson
+      </Button>
       <p className="rounded-card bg-success px-4 py-3">
         {anyClass ? "Nothing was charged today. Your first bill comes before your first lesson." : "Nothing was charged today. The free evaluation is never charged."}
       </p>
       <p>{SAMPLE_ONLY_BOOKED}</p>
-      <Button size="block" onClick={() => go("/first-lesson")}>
-        See your first lesson
-      </Button>
     </ScreenShell>
   );
 }

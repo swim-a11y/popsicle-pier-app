@@ -126,7 +126,7 @@ export const CUSTODY_QUESTION =
   "Is there a court order, custody arrangement or foster placement that limits recording or who may bring [name]?";
 export const HEALTH_QUESTION = "Is there anything about [name]'s health we should know before the first lesson?";
 
-const research: ReleaseChoiceText = {
+const researchV1: ReleaseChoiceText = {
   key: "research",
   title: "Research",
   lines: [
@@ -134,6 +134,15 @@ const research: ReleaseChoiceText = {
     "A review board approves it first. You can withdraw anytime by email.",
   ],
   box: "Yes, [name] can be part of the study.",
+};
+
+/** [email] is the pool's school email, filled in where the release is shown. */
+const researchV2: ReleaseChoiceText = {
+  ...researchV1,
+  lines: [
+    "An observational study of how children's courage grows in lessons.",
+    "A review board approves it first. You can withdraw anytime by emailing us at [email].",
+  ],
 };
 
 const marketing: ReleaseChoiceText = {
@@ -154,12 +163,12 @@ export const CHOICES_INTRO = "Three choices for each child. They start unchecked
 
 export const RELEASE_V1 = {
   groups: [staying, recordingV1, whoCanWatch, keepingV1, otherFamilies, signing, claims],
-  choices: [research, marketing],
+  choices: [researchV1, marketing],
 };
 
 export const RELEASE_V2 = {
   groups: [staying, recordingV2, aiReview, whoCanWatch, keepingV2, otherFamilies, signing, claims],
-  choices: [research, marketing, underwater],
+  choices: [researchV2, marketing, underwater],
 };
 
 /** Separate from the release, each unchecked, each with its exact words and wording version. */
@@ -173,11 +182,12 @@ export const MARKETING_EMAILS_CONSENT = "Send me marketing emails from Popsicle 
 export const AGREE_ELECTRONIC = "I agree to this release and to signing it electronically";
 export const SIGN_BUTTON = "Sign and save my spot";
 
-export function consentWords(kind: ConsentKind, choices: readonly ReleaseChoiceText[], childName?: string): string {
+export function consentWords(kind: ConsentKind, choices: readonly ReleaseChoiceText[], childName?: string, schoolEmail?: string): string {
   if (kind === "texts") return TEXTS_CONSENT;
   if (kind === "newsletter") return NEWSLETTER_CONSENT;
   if (kind === "marketing-emails") return MARKETING_EMAILS_CONSENT;
   const choice = choices.find((c) => c.key === kind);
   if (!choice) return "";
-  return [...choice.lines, choice.box.replaceAll("[name]", childName ?? "[name]")].join("\n");
+  const lines = choice.lines.map((l) => l.replaceAll("[email]", schoolEmail ?? "[email]"));
+  return [...lines, choice.box.replaceAll("[name]", childName ?? "[name]")].join("\n");
 }

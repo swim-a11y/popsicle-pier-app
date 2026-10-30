@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SWIM_DIAPER_LINE } from "@/content/sign-up";
 import { newId } from "@/data/ids";
@@ -25,7 +25,8 @@ function merge(d: SignUpDraft, kids: Kid[]): SignUpDraft {
     ...d,
     children: kids.map((k) => {
       const existing = d.children.find((c) => c.key === k.key) ?? emptyDraftChild(k.key);
-      return { ...existing, ...k };
+      const birthChanged = existing.birthMonth !== k.birthMonth || existing.birthDay !== k.birthDay || existing.birthYear !== k.birthYear;
+      return birthChanged ? { ...existing, ...k, booking: null, waitlistClassIds: [] } : { ...existing, ...k };
     }),
   };
 }
@@ -59,12 +60,13 @@ export function SwimmersStep() {
   return (
     <StepScreen step={step} stepKey="swimmers">
       <StepTitle>Your swimmers</StepTitle>
-      <p>First name and birth date for each child.</p>
       {kids.map((kid, i) => {
         const p = problems[kid.key] ?? {};
         return (
-          <FieldSet key={kid.key} className="rounded-card bg-surface p-5 shadow-card">
-            <FieldLegend className="font-heading text-body text-heading">{kids.length > 1 ? `Swimmer ${i + 1}` : "Your swimmer"}</FieldLegend>
+          <div key={kid.key} role="group" aria-labelledby={`${kid.key}-title`} className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card">
+            <h2 id={`${kid.key}-title`} className="font-heading text-body text-heading">
+              {kids.length > 1 ? `Swimmer ${i + 1}` : "Your swimmer"}
+            </h2>
             <Field>
               <FieldLabel htmlFor={`${kid.key}-name`}>First name</FieldLabel>
               <Input
@@ -121,10 +123,10 @@ export function SwimmersStep() {
                 Remove {kid.firstName.trim() || "this swimmer"}
               </Button>
             ) : null}
-          </FieldSet>
+          </div>
         );
       })}
-      <Button variant="secondary" size="block" onClick={() => setKids((list) => [...list, { key: newId(), firstName: "", birthMonth: "", birthDay: "", birthYear: "" }])}>
+      <Button variant="secondary" onClick={() => setKids((list) => [...list, { key: newId(), firstName: "", birthMonth: "", birthDay: "", birthYear: "" }])}>
         Add another swimmer
       </Button>
       <p className="rounded-card bg-surface px-4 py-3 shadow-card">{SWIM_DIAPER_LINE}</p>

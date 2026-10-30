@@ -28,7 +28,11 @@ export function applySampleFill(draft: SignUpDraft | null, today: DateOnly, now:
   const base = draft ?? emptyDraft(draftId, now);
   const birth = parseDate(sampleBirthDate(today));
   const children = base.children.length > 0 ? [...base.children] : [emptyDraftChild(newKey())];
-  children[0] = { ...children[0], firstName: SAMPLE_FAMILY.childFirstName, birthMonth: String(birth.m), birthDay: String(birth.d), birthYear: String(birth.y) };
+  const first = children[0];
+  const filled = { firstName: SAMPLE_FAMILY.childFirstName, birthMonth: String(birth.m), birthDay: String(birth.d), birthYear: String(birth.y) };
+  const birthChanged = first.birthMonth !== filled.birthMonth || first.birthDay !== filled.birthDay || first.birthYear !== filled.birthYear;
+  // A new birth date means the time is picked again, so a booking never outlives the age it was picked for.
+  children[0] = birthChanged ? { ...first, ...filled, booking: null, waitlistClassIds: [] } : { ...first, ...filled };
   return {
     ...base,
     updatedAt: now,

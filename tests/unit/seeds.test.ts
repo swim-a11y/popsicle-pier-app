@@ -74,6 +74,8 @@ describe("seeds", () => {
 
   it("free evaluation times at each pool", () => {
     for (const pool of data.pools) expect(data.evaluationTimes.filter((e) => e.poolId === pool.id).length).toBeGreaterThanOrEqual(2);
+    // One child per evaluation, so an under-3 is never in a shared one.
+    for (const e of data.evaluationTimes) expect(e.capacity).toBe(1);
   });
 
   it("moving-over family: one parent, two contacts, two Madison children, one Waiting adult, nothing signed, no bank", () => {
