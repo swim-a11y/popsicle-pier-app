@@ -4,13 +4,13 @@ import { SkeletonRows } from "@/components/parts/skeleton";
 import { Tag } from "@/components/parts/tag";
 import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
-import { emailUsLine } from "@/content/first-lesson";
+import { emailUsLine, emailUsLineFor } from "@/content/first-lesson";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { clockTime, longDate, weekdayName } from "@/rules/dates";
 import { currentFamily, familyLessons, lessonDaysAhead, lessonKindWords } from "@/rules/family";
 
-const WEEKS = 8;
+const WEEKS = 6;
 
 /** The parent's side of the Schedule room: each swimmer's weeks ahead, closed days marked. */
 export function LessonDatesScreen() {
@@ -37,7 +37,7 @@ export function LessonDatesScreen() {
       </ScreenShell>
     );
   }
-  const pool = data.pools.find((p) => p.id === family.homePoolId) ?? lessons[0].pool;
+  const pools = [...new Map(lessons.map((l) => [l.pool.id, l.pool])).values()];
 
   return (
     <ScreenShell id="lesson-dates">
@@ -56,25 +56,31 @@ export function LessonDatesScreen() {
               </p>
               <p>{lessonKindWords(l)}</p>
             </div>
-            <ul className="flex flex-col">
-              {days.map((d) => (
-                <li key={d.date} className="flex flex-col gap-1 border-t-2 border-line py-2" data-testid={d.closedReason ? "closed-day" : "lesson-day"}>
-                  <span className="flex items-center justify-between gap-2">
-                    <span className={d.closedReason ? "" : "font-strong"}>{longDate(d.date, today)}</span>
-                    {d.closedReason ? <Tag>Closed</Tag> : <span>{clockTime(l.startTime)}</span>}
-                  </span>
-                  {d.closedReason ? (
-                    <span>
-                      {d.closedReason}. No lesson, and it isn&apos;t billed.
+            <ul className="flex flex-col gap-2">
+              {days.map((d) =>
+                d.closedReason ? (
+                  <li key={d.date} className="flex flex-col gap-1" data-testid="closed-day">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span>{longDate(d.date, today)}</span>
+                      <Tag>Closed</Tag>
                     </span>
-                  ) : null}
-                </li>
-              ))}
+                    <span>{d.closedReason}</span>
+                  </li>
+                ) : (
+                  <li key={d.date} className="font-strong" data-testid="lesson-day">
+                    {longDate(d.date, today)}
+                  </li>
+                ),
+              )}
             </ul>
           </section>
         );
       })}
-      <p className="rounded-card bg-surface px-4 py-3 shadow-card">{emailUsLine(pool.schoolEmail)}</p>
+      {pools.map((pool) => (
+        <p key={pool.id} className="rounded-card bg-surface px-4 py-3 shadow-card" data-testid="email-us">
+          {pools.length > 1 ? emailUsLineFor(pool.name, pool.schoolEmail) : emailUsLine(pool.schoolEmail)}
+        </p>
+      ))}
     </ScreenShell>
   );
 }

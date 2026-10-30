@@ -17,6 +17,7 @@ import { OwnerReleasesScreen } from "@/components/screens/owner-releases";
 import { ProgressScreen } from "@/components/screens/progress";
 import { StaffScreen } from "@/components/screens/staff";
 import { LocalStore } from "@/data/store";
+import { commitAdd, newAddDraft } from "@/rules/add";
 import { signAndSave, setCurrentFamily } from "@/rules/booking";
 import { LATER_ROOM_RULES, LATER_ROOMS } from "@/rules/later-rooms";
 import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
@@ -173,9 +174,44 @@ describe("lesson dates", () => {
     expect(section).toHaveTextContent("Sundays at 10:00 am, Madison, Coach Dev");
     const closed = within(section).getAllByTestId("closed-day");
     expect(closed[0]).toHaveTextContent("Sunday, November 29");
-    expect(closed[0]).toHaveTextContent("Closed for the holiday weekend (sample). No lesson, and it isn't billed.");
+    expect(closed[0]).toHaveTextContent("Closed");
+    expect(closed[0]).toHaveTextContent("Closed for the holiday weekend (sample)");
+    // What a closed day means is said once, above the dates.
+    expect(screen.getByText("The next few weeks for each swimmer. On a closed day there's no lesson, and it isn't billed.")).toBeInTheDocument();
     expect(within(section).getAllByTestId("lesson-day")[0]).toHaveTextContent("Sunday, November 1");
     expect(screen.getByText("Need to miss, move or stop? Email us at madison.sample@example.com.")).toBeInTheDocument();
+  });
+});
+
+describe("a family at both pools", () => {
+  it("gets each pool's own directions and email line", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    // A brother added at Buckhead: the family now has lessons at both pools.
+    const draft = newAddDraft({ familyId, mode: "child", childRecordId: null, poolId: "pool-buckhead", kidKey: "leo", now: NOW });
+    await act(() =>
+      store.transaction((tx) => {
+        tx.add("addDrafts", {
+          ...draft,
+          kid: { ...draft.kid, firstName: "Leo", birthMonth: "5", birthDay: "1", birthYear: "2023", stage: "pier", booking: { kind: "class", timeId: "buc-sun-0930-pier" } },
+          answers: { custody: "no", health: "no", research: false, marketing: false, underwater: false },
+        });
+        return commitAdd(tx, { draftId: draft.id, today: TODAY, now: "2026-10-30T16:00:00.000Z", newId: testId, browserName: "Chrome" });
+      }),
+    );
+    render(<FirstLessonScreen />);
+    expect(await screen.findByRole("heading", { name: "Getting there: Madison" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Getting there: Buckhead" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("at-a-glance")).toHaveLength(2);
+    const lines = screen.getAllByTestId("email-us").map((p) => p.textContent);
+    expect(lines).toEqual([
+      "Need to miss, move or stop a Madison lesson? Email us at madison.sample@example.com.",
+      "Need to miss, move or stop a Buckhead lesson? Email us at buckhead.sample@example.com.",
+    ]);
+    cleanup();
+    render(<LessonDatesScreen />);
+    await screen.findAllByTestId("lesson-dates");
+    expect(screen.getAllByTestId("email-us").map((p) => p.textContent)).toEqual(lines);
   });
 });
 

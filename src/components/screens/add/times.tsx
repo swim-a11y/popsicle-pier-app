@@ -62,6 +62,7 @@ export function AddTimesStep() {
         <span className={big ? "font-heading text-big text-heading" : "font-strong text-heading"}>{timeTitle(o, today)}</span>
         {kid.booking?.timeId === o.id ? <CheckIcon className="size-6 text-primary" aria-hidden /> : null}
       </span>
+      {o.full ? <Tag tone="plain">Full</Tag> : null}
       <TimeDetails o={o} today={today} />
     </button>
   );

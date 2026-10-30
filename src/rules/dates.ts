@@ -103,7 +103,7 @@ export function weekdayName(weekday: number): string {
 /** "Sunday, November 8" (adds the year when it isn't this year's). */
 export function longDate(d: DateOnly, today?: DateOnly): string {
   const p = parseDate(d);
-  const base = `${WEEKDAYS[weekdayOf(d)]}, ${MONTHS[p.m - 1]} ${p.d}`;
+  const base = `${WEEKDAYS[weekdayOf(d)]}, ${MONTHS[p.m - 1]}\u00a0${p.d}`;
   if (today && parseDate(today).y !== p.y) return `${base}, ${p.y}`;
   return base;
 }

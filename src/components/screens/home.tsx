@@ -163,11 +163,8 @@ export function HomeScreen() {
         {main?.kind === "bank" ? <p>A copy of your bank draft authorization is saved to your family&apos;s account.</p> : null}
       </section>
 
-      <section className="flex flex-col gap-2 rounded-card bg-surface p-5 shadow-card" aria-labelledby="add-child" data-testid="add-child-card">
-        <h2 id="add-child" className="font-heading text-big text-heading">
-          Add a child or a class
-        </h2>
-        <p>Add a brother or sister, or another class time at either pool.</p>
+      <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-label="Add a child or a class" data-testid="add-child-card">
+        <p>A brother or sister, or another class time at either pool.</p>
         <Button variant="secondary" size="block" onClick={() => go("/family/add")}>
           Add a child or a class
         </Button>

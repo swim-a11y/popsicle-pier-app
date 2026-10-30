@@ -18,3 +18,5 @@ Next phase: lesson dates with closed days done (Closure record and sample closed
 Next: Add a child or a class, the parent flow behind the Home card (coverage row, two yes or no questions, one ID across pools), then walk-through 7.
 Next phase: Add a child or a class built (Home card opens /family/add; a brother or sister gets a coverage row with their own answers and nothing new to sign; another class at either pool keeps one ID; done screen safe to refresh); walk-through 7 passes; 107 unit, 42 e2e; 138 of 138 entries pass.
 Next: a design-critic and rules-checker round on the new screens, fix what they rank highest, then docs.
+Design round on the new phase: fixed the three blockers (an email line per pool on Lesson dates and Your first lesson, the add-class done screen says what was added, full evaluation times say Full) plus dates kept whole and plainer Lesson dates; 108 unit, 42 e2e.
+Next: the rules-checker results for this phase, then the check report.

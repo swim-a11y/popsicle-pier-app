@@ -18,4 +18,9 @@ export function emailUsLine(email: string): string {
   return `Need to miss, move or stop? Email us at ${email}.`;
 }
 
+/** When a family's lessons are at both pools, each line names its pool. */
+export function emailUsLineFor(poolName: string, email: string): string {
+  return `Need to miss, move or stop a ${poolName} lesson? Email us at ${email}.`;
+}
+
 export const CLIPS_LATER_LINE = "Lesson clips come in a later version.";

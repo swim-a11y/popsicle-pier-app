@@ -250,7 +250,7 @@ test("walk-through 1: new parent, one child (age 4) at Madison, with the sample 
   await expect(page.getByRole("heading", { name: "You're in" })).toBeVisible();
   const booked = page.getByTestId("booked-child");
   await expect(booked).toHaveCount(1);
-  await expect(booked.getByTestId("first-lesson-when")).toContainText(/Sunday, \w+ \d+, 10:00\sam/);
+  await expect(booked.getByTestId("first-lesson-when")).toContainText(/Sunday, \w+\s\d+, 10:00\sam/);
   await expect(booked.getByTestId("first-lesson-where")).toHaveText("Madison with Coach Dev");
   await expect(booked.getByTestId("price-they-pay")).toHaveText("$34.00 a lesson by bank draft");
   await expect(page.getByText("Nothing was charged today. Your first bill comes before your first lesson.")).toBeVisible();
@@ -314,7 +314,7 @@ test("walk-through 2: two children at Buckhead (3 and 6) with a grandmother list
   screen("4 Times for Leo");
   await expect(page.getByRole("heading", { name: "Pick a time for Leo" })).toBeVisible();
   const leoTime = page.getByTestId("time-buc-sun-0930-pier");
-  await expect(leoTime).toContainText(/First lesson Sunday, November (8|1[5-9]|2\d|30)/);
+  await expect(leoTime).toContainText(/First lesson Sunday, November\s(8|1[5-9]|2\d|30)/);
   await tap(leoTime);
 
   screen("4 Times for Ada");
@@ -328,7 +328,7 @@ test("walk-through 2: two children at Buckhead (3 and 6) with a grandmother list
   const next = page.getByTestId("time-buc-sun-1000-cove");
   await expect(next).toContainText("Next to Leo's lesson");
   for (const text of await page.locator('[data-testid^="time-"]').allInnerTexts()) {
-    for (const m of text.matchAll(/(?:First lesson|) ?\w+day, (\w+) (\d+)/g)) {
+    for (const m of text.matchAll(/(?:First lesson|) ?\w+day, (\w+)\s(\d+)/g)) {
       const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
       const monthIndex = months.indexOf(m[1]);
       if (monthIndex >= 0) expect(monthIndex > 10 || (monthIndex === 10 && Number(m[2]) >= 8) || monthIndex < 9).toBe(true);
@@ -400,7 +400,7 @@ test("walk-through 2: two children at Buckhead (3 and 6) with a grandmother list
   await expect(page).toHaveURL(/\/sign-up\/youre-in$/);
   const booked = page.getByTestId("booked-child");
   await expect(booked).toHaveCount(2);
-  for (const card of await booked.all()) await expect(card.getByTestId("first-lesson-when")).toContainText(/Sunday, November (8|1[5-9]|2\d|30)/);
+  for (const card of await booked.all()) await expect(card.getByTestId("first-lesson-when")).toContainText(/Sunday, November\s(8|1[5-9]|2\d|30)/);
   await expect(booked.nth(1)).toContainText("On the waitlist for Sundays at 9:00 am");
   await expect(booked.nth(1)).toContainText("Thanks. Someone from the school will talk with you before the first lesson.");
   await expect(booked.nth(0)).not.toContainText("Someone from the school");
@@ -435,7 +435,7 @@ test("walk-through 3: two-year-olds at Buckhead and Madison", async () => {
 
   screen("4 Times at Buckhead");
   const tooYoung = page.getByTestId("too-young");
-  await expect(tooYoung).toContainText(/Ivy can start at Buckhead from \w+day, \w+ \d+/);
+  await expect(tooYoung).toContainText(/Ivy can start at Buckhead from \w+day, \w+\s\d+/);
   await check("too-young-buckhead");
   await tap(page.getByRole("button", { name: "See Madison times" }));
 
@@ -810,7 +810,7 @@ test("walk-through 7: add a brother or sister, then another class at the other p
   await tap(page.getByRole("button", { name: "Add this class" }));
 
   screen("Added");
-  await expect(page.getByRole("heading", { name: "Another class for Mia" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mia's Wednesday class is added" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "First time at Buckhead?" })).toBeVisible();
   await check("add-class-done");
   const final = await stored();

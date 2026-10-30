@@ -7,6 +7,7 @@ import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import {
   emailUsLine,
+  emailUsLineFor,
   LESSON_LENGTH_LINE,
   RECORDED_LINE,
   SIBLINGS_LINE,
@@ -79,11 +80,12 @@ export function FirstLessonScreen() {
     );
   }
 
-  const pool = data.pools.find((p) => p.id === lessons[0].pool.id)!;
   const shown = lessons.map((l) => ({
     ...l,
     date: upcomingLessonDate(data, l, today),
   }));
+  const pools = [...new Map(shown.map((l) => [l.pool.id, l.pool])).values()];
+  const multi = pools.length > 1;
   const anyHeld = data.attendanceMarks.some((m) => m.familyId === family.id);
   const title =
     family.source === "moving-over" || anyHeld
@@ -95,7 +97,13 @@ export function FirstLessonScreen() {
     inWater: l.parentInWater,
   }));
   const inWater = ages.filter((a) => a.inWater && a.months < UNDER_3_MONTHS);
-  const threeAndUnder = ages.some((a) => isThreeAndUnder(a.months));
+  const atPool = (poolId: string) =>
+    shown
+      .filter((l) => l.pool.id === poolId)
+      .map((l) => ({
+        months: ageInMonths(l.child.birthDate, l.date),
+        inWater: l.parentInWater,
+      }));
   const adults = data.listedAdults.filter((a) => a.familyId === family.id);
   const coaches = [...new Set(shown.map((l) => l.instructorFirstName))];
   const stays =
@@ -140,57 +148,93 @@ export function FirstLessonScreen() {
           </section>
         ))}
 
-        <div
-          className="flex flex-col gap-2 rounded-card bg-surface px-5 pt-3 pb-4 shadow-card"
-          data-testid="at-a-glance"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-strong text-heading">At a glance</h2>
-            <Tag>SAMPLE</Tag>
-          </div>
-          <dl className="flex flex-col gap-2">
-            <Row label="Park">{pool.firstLesson.atAGlance.park}</Row>
-            <Row label="Bring">
-              {inWater.length > 0
-                ? `${pool.firstLesson.atAGlance.bring}, and your own suit`
-                : pool.firstLesson.atAGlance.bring}
-            </Row>
-            <Row label="Stays">{stays}</Row>
-          </dl>
-        </div>
+        {pools.map((pool) => {
+          const here = atPool(pool.id);
+          const waterHere = here.some(
+            (a) => a.inWater && a.months < UNDER_3_MONTHS,
+          );
+          return (
+            <div
+              key={pool.id}
+              className="flex flex-col gap-2 rounded-card bg-surface px-5 pt-3 pb-4 shadow-card"
+              data-testid="at-a-glance"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-strong text-heading">
+                  {multi ? `At a glance: ${pool.name}` : "At a glance"}
+                </h2>
+                <Tag>SAMPLE</Tag>
+              </div>
+              <dl className="flex flex-col gap-2">
+                <Row label="Park">{pool.firstLesson.atAGlance.park}</Row>
+                <Row label="Bring">
+                  {waterHere
+                    ? `${pool.firstLesson.atAGlance.bring}, and your own suit`
+                    : pool.firstLesson.atAGlance.bring}
+                </Row>
+                <Row label="Stays">{stays}</Row>
+              </dl>
+            </div>
+          );
+        })}
       </div>
 
-      <section className="flex flex-col gap-2" aria-labelledby="getting-there">
-        <div className="flex items-center gap-2">
-          <h2 id="getting-there" className="font-heading text-big text-heading">
-            Getting there
-          </h2>
-          <Tag>SAMPLE</Tag>
-        </div>
-        <p data-testid="address">{pool.firstLesson.address}</p>
-        <p data-testid="parking">{pool.firstLesson.parking}</p>
-        <p data-testid="door">{pool.firstLesson.door}</p>
-        <p data-testid="arrive">{pool.firstLesson.arrive}</p>
-        <p>{pool.firstLesson.waitOnDeck}</p>
-      </section>
+      {pools.map((pool) => {
+        const here = atPool(pool.id);
+        const name = multi ? `: ${pool.name}` : "";
+        return (
+          <div key={pool.id} className="flex flex-col gap-6">
+            <section
+              className="flex flex-col gap-2"
+              aria-labelledby={`getting-there-${pool.id}`}
+            >
+              <div className="flex items-center gap-2">
+                <h2
+                  id={`getting-there-${pool.id}`}
+                  className="font-heading text-big text-heading"
+                >
+                  Getting there{name}
+                </h2>
+                <Tag>SAMPLE</Tag>
+              </div>
+              <p data-testid="address">{pool.firstLesson.address}</p>
+              <p data-testid="parking">{pool.firstLesson.parking}</p>
+              <p data-testid="door">{pool.firstLesson.door}</p>
+              <p data-testid="arrive">{pool.firstLesson.arrive}</p>
+              <p>{pool.firstLesson.waitOnDeck}</p>
+            </section>
 
-      <section className="flex flex-col gap-2" aria-labelledby="what-to-bring">
-        <div className="flex items-center gap-2">
-          <h2 id="what-to-bring" className="font-heading text-big text-heading">
-            What to bring
-          </h2>
-          <Tag>SAMPLE</Tag>
-        </div>
-        <ul className="flex list-disc flex-col gap-1 pl-5" data-testid="bring">
-          {pool.firstLesson.bring.map((b) => (
-            <li key={b}>{b}</li>
-          ))}
-        </ul>
-        {threeAndUnder ? <p>{SWIM_DIAPER_LINE}</p> : null}
-        {inWater.length > 0 ? (
-          <p className="font-strong">{UNDER_3_BRING_LINE}</p>
-        ) : null}
-      </section>
+            <section
+              className="flex flex-col gap-2"
+              aria-labelledby={`what-to-bring-${pool.id}`}
+            >
+              <div className="flex items-center gap-2">
+                <h2
+                  id={`what-to-bring-${pool.id}`}
+                  className="font-heading text-big text-heading"
+                >
+                  What to bring{name}
+                </h2>
+                <Tag>SAMPLE</Tag>
+              </div>
+              <ul
+                className="flex list-disc flex-col gap-1 pl-5"
+                data-testid="bring"
+              >
+                {pool.firstLesson.bring.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+              {here.some((a) => isThreeAndUnder(a.months)) ? (
+                <p>{SWIM_DIAPER_LINE}</p>
+              ) : null}
+              {here.some((a) => a.inWater && a.months < UNDER_3_MONTHS) ? (
+                <p className="font-strong">{UNDER_3_BRING_LINE}</p>
+              ) : null}
+            </section>
+          </div>
+        );
+      })}
 
       <section
         className="flex flex-col gap-2"
@@ -238,12 +282,17 @@ export function FirstLessonScreen() {
         </ul>
       </section>
 
-      <p
-        className="rounded-card bg-surface px-4 py-3 shadow-card"
-        data-testid="email-us"
-      >
-        {emailUsLine(pool.schoolEmail)}
-      </p>
+      {pools.map((pool) => (
+        <p
+          key={pool.id}
+          className="rounded-card bg-surface px-4 py-3 shadow-card"
+          data-testid="email-us"
+        >
+          {multi
+            ? emailUsLineFor(pool.name, pool.schoolEmail)
+            : emailUsLine(pool.schoolEmail)}
+        </p>
+      ))}
     </ScreenShell>
   );
 }

@@ -51,7 +51,13 @@ export function AddDoneScreen() {
     <ScreenShell id="add-done">
       <div className="flex flex-col gap-3">
         <LaneLine />
-        <PageTitle>{anotherClass ? `Another class for ${child.firstName}` : `${child.firstName} is signed up`}</PageTitle>
+        <PageTitle>
+          {anotherClass && info
+            ? info.lessonKind === "evaluation"
+              ? `${child.firstName}'s free evaluation is added`
+              : `${child.firstName}'s ${weekdayName(info.weekday)} class is added`
+            : `${child.firstName} is signed up`}
+        </PageTitle>
       </div>
       {info ? (
         <section className="flex flex-col gap-1 rounded-card bg-surface p-5 shadow-card" aria-label={`${child.firstName}'s new lesson`} data-testid="added-lesson">
