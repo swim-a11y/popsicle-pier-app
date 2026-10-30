@@ -65,6 +65,7 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 - Step 5: the family moving over, the owner's release versions, More, Bills and Messages (coming next), the staff page.
 - Step 6: all six walk-throughs pass at 375x667 in e2e/sign-up.spec.ts; counts in docs/check-report.md and WALKTHROUGH.md.
 - Every entry in feature_list.json passes.
+- Two agent rounds (after step 4 and at the end) are logged in docs/check-report.md with what was fixed.
 
 ## Next
 
@@ -74,7 +75,13 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 
 ## Known issues
 
-- None open. (Anything an agent round leaves unfixed is listed here.)
+Nothing is failing: every entry in feature_list.json passes, with 96 unit tests and 33 e2e tests. Still open, none of them blockers:
+
+- The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
+- On a 375x667 phone, Your swimmers' Continue button sits just below the first screen, and the family release runs about twelve screens by design (every line visible, never folded).
+- The sample banner wraps to four lines at 375px, not the three planned (DECISIONS.md 32).
+- Times stay in time order, so a Full time can come first in the list (DECISIONS.md 47).
+- Screenshots are made by `npm run e2e` into `screenshots/` and aren't committed.
 
 ## Keep for later (from the owner's handoff notes)
 

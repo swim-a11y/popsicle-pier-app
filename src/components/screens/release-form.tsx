@@ -96,7 +96,12 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
     busy.current = true;
     setSaving(true);
     setTried(true);
-    const found = await onSign({ ...release, typedName });
+    let found: ReactNode | null;
+    try {
+      found = await onSign({ ...release, typedName });
+    } catch {
+      found = "That didn't save. Your answers are still here, so please try again.";
+    }
     if (found) {
       setProblem(found);
       busy.current = false;
@@ -150,7 +155,7 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
           <p className="font-strong text-heading">{view.choicesIntro}</p>
           {view.choices.map((c) => (
             <div key={c.childKey} className="flex flex-col gap-3">
-              {view.choices.length > 1 ? <h2 className="font-heading text-body text-heading">{c.firstName}</h2> : null}
+              <h2 className="font-heading text-body text-heading">{c.firstName}</h2>
               {c.items.map((item) => (
                 <div key={item.key} className="flex flex-col gap-1">
                   <p className="font-strong">{item.title}</p>

@@ -6,7 +6,7 @@
 <!-- wt-1 -->
 ### Walk-through 1: New parent, one child (age 4) at Madison, with Fill in a sample family
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
 
 - One spot gone from Sundays at 10:00 am; one release signature and one bank-draft authorization saved.
 - Refreshing You're in booked nothing.
@@ -32,7 +32,7 @@ Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 13 screens,
 <!-- wt-2 -->
 ### Walk-through 2: Two children at Buckhead (ages 3 and 6) with a grandmother listed
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
 
 - Closed the tab at Your people; Pick up where you left off came back to Your people.
 - One release covers Leo and Ada; Ada is flagged for a person; no Buckhead date before Sunday, November 8, 2026.
@@ -59,7 +59,7 @@ Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 14 screens,
 <!-- wt-3 -->
 ### Walk-through 3: A 2-year-old at Buckhead (told when they can start), then at Madison (private, parent in the water, free evaluation only)
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -81,7 +81,7 @@ Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 12 screens,
 <!-- wt-4 -->
 ### Walk-through 4: The family moving over (two children at Madison)
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -100,7 +100,7 @@ Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 
 <!-- wt-5 -->
 ### Walk-through 5: Cold run: one child at Madison, every field typed (no fill button), paying by card
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -121,7 +121,7 @@ Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 11 screens,
 <!-- wt-6 -->
 ### Walk-through 6: The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)
 
-Run 2026-10-30 17:23 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
+Run 2026-10-30 17:32 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
 
 - Pressing Pretend the first lesson happened again added nothing.
 - Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.
@@ -173,3 +173,21 @@ Smaller notes: the swimmer card's label sat on its border (fixed: a heading insi
 | Family words coverage | The scan skipped rules, screens.ts and not-found | Added |
 
 Everything else passed: sandbox and nothing leaving the device, clean room and people choose, family words, release, signature rows and append-only, child IDs, listed adults, payment, ages and stages, no live view, first Sunday.
+
+### Final round (after step 6)
+
+**Design critic.** One blocker, fixed: Home's next-lesson card showed one time and coach for every child on that day, so the moving-over family read 5:00 pm for Juniper, whose class is at 4:30. Home now gives each child their own line ("Juniper, 4:30 pm with Coach Tamsin", "Theo, 5:00 pm with Coach Tamsin"), soonest first, with a render test. Polish, also done: a release sent with something missing now scrolls to and focuses the first missing answer, marks each unchecked group "Please check this box." and counts what's left ("8 boxes still need a check.", checked in `e2e/states.spec.ts`); You're in with two children puts its button under the summary; prices read as two rows everywhere; "9:00 am" stays on one line; the Full tag sits under the time; "Pool times that fit" only shows when there are times. Kept: times stay in time order (DECISIONS.md 47). Its "good" list: the first-round fixes held, and walk-throughs 3, 4 and 6, the states, More, Bills and the owner's release versions read as finished.
+
+**Rules checker.** No blocker. Three minor fails and four notes; what was done:
+
+| Finding | Done |
+|---|---|
+| The hashed release text named a single child that the screen didn't show | The child's name heading always shows, so the text shown is the text hashed |
+| Append-only rows could be changed in place through a returned row | Those rows are frozen; test added (DECISIONS.md 50) |
+| The Messages line reads like the unruled message box | Kept: it's the brief's own wording for Messages (DECISIONS.md 49) |
+| A waitlist-only child has no ID on the signature | Logged: IDs come with the first booking (DECISIONS.md 48) |
+| "Saving..." could stick after an unexpected error | The release form catches it and asks to try again |
+| No banner on a crash screen | `error.tsx` and `global-error.tsx` added with the banner (DECISIONS.md 51) |
+| Moving over could sign twice by revisiting its steps | Refused; test added (DECISIONS.md 52) |
+
+Everything else passed: sandbox and nothing leaving the device, clean room, people choose and prices, family words, SAMPLE marks, the release, signature and authorization rows, child IDs, listed adults, payment, ages and stages, no live view, first Sunday, the 26 later-room rules matching CLAUDE.md, and the keeping notes. It could not run tests itself; the fingerprint, unit and e2e results are from this session's runs: 96 unit tests and 33 e2e tests pass.

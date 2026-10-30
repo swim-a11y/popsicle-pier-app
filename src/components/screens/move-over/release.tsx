@@ -4,7 +4,7 @@ import { ReleaseForm } from "@/components/screens/release-form";
 import { getStore } from "@/data/app-store";
 import { newId } from "@/data/ids";
 import { browserName } from "@/lib/browser";
-import { finishMovingOver, MOVE_OVER_CHECKS, paymentProblem, releaseProblem, SignUpIncompleteError } from "@/rules/booking";
+import { AlreadySavedError, finishMovingOver, MOVE_OVER_CHECKS, paymentProblem, releaseProblem, SignUpIncompleteError } from "@/rules/booking";
 import { familyChildren } from "@/rules/family";
 import { currentRelease } from "@/rules/release";
 import { SIGN_BUTTON } from "@/content/release";
@@ -45,6 +45,10 @@ export function MoveOverRelease() {
             step.go("/", { replace: true });
             return null;
           } catch (e) {
+            if (e instanceof AlreadySavedError) {
+              step.go("/", { replace: true });
+              return null;
+            }
             if (e instanceof SignUpIncompleteError) return e.message;
             throw e;
           }

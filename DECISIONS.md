@@ -79,3 +79,8 @@ Where the brief left room, or a step needed a fix, the choice is written here: t
 45. **A release sent with something missing** scrolls to and focuses the first missing answer, marks each unchecked group with "Please check this box.", and counts what's left with a button to go there.
 46. **You're in with two or more children** puts "See your first lesson" right under the summary line, above the children's cards.
 47. **Times stay in time order.** The critic suggested listing open times before full ones; they stay in order so a family sees its first choice where it expects it (walk-through 2's first choice is the Full 9:00 class). The Full tag now sits under the time instead of beside it.
+48. **A child only on a waitlist has no child ID at signing.** IDs come with the first booking (the brief), so the signature lists the IDs of booked children; a waitlisted child gets one when a person books them, and the signature, being add-only, isn't changed.
+49. **Messages keeps the brief's own line**, "Tell us in a sentence, like 'We'll miss Sunday,' and we'll take it from there. A person checks every reply.", as part of the coming-next screen; nothing behind it is built.
+50. **Append-only rows are frozen in memory** as well as guarded: signatures, coverage, consents and bank-draft authorizations can't be changed in place through a returned row, inside or outside a transaction.
+51. **Error screens keep the sample banner.** `src/app/error.tsx` renders inside the root layout; `src/app/global-error.tsx`, which replaces the layout, brings its own banner and noindex.
+52. **Moving over signs once.** Finishing again (say, by revisiting the steps) is refused, so there's never a second signature or authorization for the same move.

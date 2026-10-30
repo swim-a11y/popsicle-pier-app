@@ -427,6 +427,8 @@ export function finishMovingOver(
   const data = tx.data();
   const family = tx.get("families", familyId);
   if (!family) throw new Error("No such family.");
+  // Signed once for everyone: revisiting the steps can't add a second signature or authorization.
+  if (family.movedOverAt) throw new AlreadySavedError();
   for (const check of MOVE_OVER_CHECKS) if (!family.movingOverChecks.includes(check)) throw new SignUpIncompleteError("you", 0, `Please check your ${check}.`);
   if (draft.confirmedEmail !== family.email) throw new SignUpIncompleteError("you", 0, "Please confirm your email with the code.");
   const children = data.children.filter((c) => c.familyId === familyId);

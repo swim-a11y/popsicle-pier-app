@@ -104,6 +104,20 @@ function makeTransaction(working: AppData): Transaction {
   };
 }
 
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const inner of Object.values(value)) deepFreeze(inner);
+  }
+  return value;
+}
+
+/** Signatures, coverage, consents and bank-draft authorizations can't be changed in place either. */
+function sealAppendOnly(data: AppData): AppData {
+  for (const name of APPEND_ONLY) for (const row of data[name]) deepFreeze(row);
+  return data;
+}
+
 function normalize(data: Partial<AppData>): AppData {
   const out = {} as AppData;
   for (const c of COLLECTIONS) (out as Record<string, unknown[]>)[c] = Array.isArray(data[c]) ? [...(data[c] as unknown[])] : [];
@@ -133,7 +147,7 @@ export class LocalStore implements DataStore {
         if (raw) {
           const blob = JSON.parse(raw) as StoredBlob;
           if (blob && blob.seedVersion === seedVersion && blob.data) {
-            this.data = normalize(blob.data);
+            this.data = sealAppendOnly(normalize(blob.data));
             return this.data;
           }
         }
@@ -144,7 +158,7 @@ export class LocalStore implements DataStore {
       this.memoryOnly = true;
     }
     // Nothing stored, a different seedVersion, or unreadable: wipe and reseed.
-    this.data = normalize(this.options.seed());
+    this.data = sealAppendOnly(normalize(this.options.seed()));
     this.persist();
     return this.data;
   }
@@ -180,10 +194,10 @@ export class LocalStore implements DataStore {
   }
 
   async transaction<T>(work: (tx: Transaction) => T): Promise<T> {
-    const working = structuredClone(this.load());
+    const working = sealAppendOnly(structuredClone(this.load()));
     const result = work(makeTransaction(working));
     if (result instanceof Promise) throw new Error("Transactions run synchronously so they land all at once.");
-    this.data = working;
+    this.data = sealAppendOnly(working);
     this.persist();
     this.emit();
     return result;
@@ -202,7 +216,7 @@ export class LocalStore implements DataStore {
     } catch {
       this.memoryOnly = true;
     }
-    this.data = normalize(this.options.seed());
+    this.data = sealAppendOnly(normalize(this.options.seed()));
     this.persist();
     this.emit();
   }

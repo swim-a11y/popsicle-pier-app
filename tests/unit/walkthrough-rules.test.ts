@@ -139,6 +139,12 @@ describe("walk-through rules", () => {
     expect(howTheyPay(after, MOVING_FAMILY_ID)).toBe("Bank draft, with a backup card");
     expect(familyLessons(after, MOVING_FAMILY_ID).map((l) => l.child.firstName).sort()).toEqual(["Juniper", "Theo"]);
     expect(after.families.find((f) => f.id === MOVING_FAMILY_ID)!.movedOverAt).toBe(NOW);
+    // Going through the steps again can't sign twice.
+    await store.transaction((tx) => tx.add("signUpDrafts", { ...draft, id: `${draftId}-again` }));
+    await expect(
+      store.transaction((tx) => finishMovingOver(tx, { familyId: MOVING_FAMILY_ID, draft: { ...draft, id: `${draftId}-again` }, browserName: "Safari", now: NOW, newId: testId })),
+    ).rejects.toThrow(AlreadySavedError);
+    expect((await store.snapshot()).releaseSignatures.filter((x) => x.familyId === MOVING_FAMILY_ID)).toHaveLength(1);
     // Nothing the school already had was retyped: same children, contacts and classes.
     expect(familyChildren(after, MOVING_FAMILY_ID)).toEqual(kids);
     expect(after.emergencyContacts.filter((c) => c.familyId === MOVING_FAMILY_ID)).toEqual(before.emergencyContacts.filter((c) => c.familyId === MOVING_FAMILY_ID));

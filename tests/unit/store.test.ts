@@ -75,6 +75,30 @@ describe("store", () => {
     expect((await store.list("releaseSignatures")).length).toBe(before.releaseSignatures.length);
   });
 
+  it("append-only rows can't be changed in place either", async () => {
+    const store = makeStore(memoryStorage());
+    const data = await store.snapshot();
+    const signature = data.releaseSignatures[0];
+    expect(() => {
+      (signature as { typedName: string }).typedName = "Someone else";
+    }).toThrow(TypeError);
+    expect(() => {
+      (signature.children[0] as { custodyYes: boolean }).custodyYes = true;
+    }).toThrow(TypeError);
+    await expect(
+      store.transaction((tx) => {
+        (tx.get("releaseSignatures", signature.id) as { typedName: string }).typedName = "Someone else";
+      }),
+    ).rejects.toThrow(TypeError);
+    // A row added in a transaction is sealed once it lands.
+    await store.transaction((tx) =>
+      tx.add("coverages", { id: "cov-x", familyId: "f", signatureId: signature.id, versionId: "v2", childRecordId: "c", addedAt: "2026-10-30T00:00:00.000Z" }),
+    );
+    const added = (await store.get("coverages", "cov-x"))!;
+    expect(Object.isFrozen(added)).toBe(true);
+    expect((await store.snapshot()).releaseSignatures[0].typedName).toBe(signature.typedName);
+  });
+
   it("a failed transaction changes nothing", async () => {
     const store = makeStore(memoryStorage());
     const before = JSON.stringify(await store.snapshot());
