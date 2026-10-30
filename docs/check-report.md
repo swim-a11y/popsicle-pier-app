@@ -141,3 +141,35 @@ Run 2026-10-30 17:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 | **Total** | **13** | **0** |
 <!-- /wt-6 -->
 <!-- walkthroughs:end -->
+
+## Agent rounds
+
+The design-critic and rules-checker agents in `.claude/agents/` weren't loaded in this session, so each ran as a general-purpose subagent with its file's text as its instructions (DECISIONS.md 34).
+
+### Round 1 (after step 4)
+
+**Design critic** (walk-through screenshots 1, 5 and 6, coming-next screens, cold first visits). Its five fixes, worst first, and what was done:
+
+1. Who stays: "Just me for now" sat under ten relationship buttons and a form. Fixed: it's the primary button right under the no-drop-off words; "Another adult staying too?" follows below.
+2. You're in: "See your first lesson" was below the first screen. Fixed: it sits right under the lesson card.
+3. You: the required how-heard list read like an optional survey. Fixed: a plain label, "Tap one to continue.", and it scrolls into view once the email is confirmed.
+4. Payment: choosing bank draft pushed the Card option 800px down. Fixed: both choices show first; the authorization and backup card follow below both.
+5. A step opened too early showed a step count and no heading. Fixed: a heading and no step count.
+
+Smaller notes: the swimmer card's label sat on its border (fixed: a heading inside the card); "Skip and continue" kept for the brief's "or Skip"; the release's typed name stays typed, not filled in from step 5, because typing it is signing (DECISIONS.md 41). The release and staff pages were too tall to read as one image, so long pages are now also saved as phone-sized slices (`*-partN.png`), and `e2e/states.spec.ts` captures the error, wrong-code, nothing-fits and unfinished-release looks.
+
+**Rules checker** (code, seeds and screen text against CLAUDE.md). Fails and what was done:
+
+| Rule | Was | Fix |
+|---|---|---|
+| Under 3 private only; age on the first lesson date | A booking could outlive a changed birth date | Sign and save re-checks every booked time; a changed birth date clears that child's time (`bookingStillFits`, test added) |
+| Pool email wherever a screen says to email us | Authorization and research lines said "email us" with no address | Both now name the pool's email in plain text; v2's fingerprint re-pasted |
+| SAMPLE marks | At a glance repeated pool notes unmarked | SAMPLE tag added |
+| Step 9 button | Moving over said "Sign and finish" | "Sign and save my spot" |
+| "No partner yet" only when true | Read a stored date only | Also needs a class holding no one else (`stillUnpaired`) |
+| Under 3 never shares | Free evaluations held two | One child per evaluation |
+| Approved notes only | The note card had no guard of its own | It returns nothing for a draft note |
+| Coverage | Returned undefined for a child already named | Returns null; test added |
+| Family words coverage | The scan skipped rules, screens.ts and not-found | Added |
+
+Everything else passed: sandbox and nothing leaving the device, clean room and people choose, family words, release, signature rows and append-only, child IDs, listed adults, payment, ages and stages, no live view, first Sunday.
