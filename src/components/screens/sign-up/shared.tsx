@@ -46,23 +46,23 @@ export interface SignUpStep {
   /** Saves what's typed, then goes one step back. */
   back: (update?: (d: SignUpDraft) => SignUpDraft) => Promise<void>;
   go: (href: string, options?: { replace?: boolean }) => void;
-  /** Changes when the draft changes from outside this step (the Sandbox fill). */
-  outsideVersion: string;
 }
+
+/** Stamps of the drafts the sign-up steps saved themselves; anything else came from outside (the Sandbox fill). */
+const OUR_WRITES = new Set<string>();
 
 /** Everything a sign-up step needs, or null until mounted and loaded. */
 export function useSignUpStep(key: StepKey): SignUpStep | null {
   const loaded = useAppData();
   const go = useGo();
   const childParam = useQueryValue("child");
-  const written = useRef<Set<string>>(new Set());
   const perChild = PER_CHILD.includes(key);
   const child = perChild ? Math.max(1, Number(childParam) || 1) : 0;
   const draft = loaded?.data.signUpDrafts.find((d) => d.id === SIGN_UP_DRAFT_ID) ?? null;
 
   const write = useCallback(async (update: (d: SignUpDraft) => SignUpDraft, lastPath?: (d: SignUpDraft) => string) => {
     const now = new Date().toISOString();
-    written.current.add(now);
+    OUR_WRITES.add(now);
     return getStore().transaction((tx) => {
       const existing = tx.get("signUpDrafts", SIGN_UP_DRAFT_ID);
       const updated = update(existing ?? emptyDraft(SIGN_UP_DRAFT_ID, now));
@@ -77,7 +77,6 @@ export function useSignUpStep(key: StepKey): SignUpStep | null {
   const steps = signUpSteps(draft, evaluationAsksForCard);
   const index = Math.max(0, findStep(steps, key, child));
   const backHref = index > 0 ? steps[index - 1].href : "/sign-up";
-  const updatedAt = draft?.updatedAt ?? "";
 
   return {
     loaded,
@@ -95,7 +94,6 @@ export function useSignUpStep(key: StepKey): SignUpStep | null {
       go(backHref);
     },
     go,
-    outsideVersion: written.current.has(updatedAt) ? "mine" : updatedAt,
   };
 }
 
@@ -107,14 +105,18 @@ export function useSignUpStep(key: StepKey): SignUpStep | null {
 export function useDraftFields<T>(step: SignUpStep | null, pick: (d: SignUpDraft | null) => T): [T, (next: T | ((t: T) => T)) => void] {
   const [fields, setFields] = useState<T>(() => pick(null));
   const lastSync = useRef<string | null>(null);
-  const version = step ? step.outsideVersion : null;
+  const draft = step?.draft ?? null;
+  const updatedAt = step ? (draft?.updatedAt ?? "") : null;
   useEffect(() => {
-    if (!step || version === "mine" || version === lastSync.current) return;
-    lastSync.current = version;
-    setFields(pick(step.draft));
-    // pick is stable per step; the draft changes with version.
+    if (updatedAt === null) return;
+    const first = lastSync.current === null;
+    const ours = updatedAt === lastSync.current || OUR_WRITES.has(updatedAt);
+    lastSync.current = updatedAt;
+    // Start from the draft once, then again only when it changed from outside.
+    if (first || !ours) setFields(pick(draft));
+    // pick is stable per step; the draft changes with updatedAt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [version, step === null]);
+  }, [updatedAt]);
   return [fields, setFields];
 }
 
