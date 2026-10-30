@@ -18,7 +18,7 @@ export function StageStep() {
   return (
     <StepScreen step={step} stepKey="stage">
       {step && !kid ? (
-        <NeedsEarlierStep step={step} message="Tell us about your swimmers first." href="/sign-up/swimmers" label="Add your swimmers" />
+        <NeedsEarlierStep step={step} title="Where your swimmer is today" message="Tell us about your swimmers first." href="/sign-up/swimmers" label="Add your swimmers" />
       ) : null}
       {step && kid ? (
         <>

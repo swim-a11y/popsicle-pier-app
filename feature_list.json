@@ -74,189 +74,189 @@
     "area": "shell",
     "description": "Every data screen shows a fixed placeholder (skeleton rows) until mounted; the clock, ids, storage and the URL are read only in effects or event handlers.",
     "test": "tests/unit/screens-render.test.tsx: parent screens > skeleton rows until stored data loads",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-parent-home",
     "area": "screen",
     "description": "Parent Home (filled) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: parent-home renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-start",
     "area": "screen",
     "description": "Sign-up start screen renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-start renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-pool",
     "area": "screen",
     "description": "Sign-up step 1, pool renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-pool renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-swimmers",
     "area": "screen",
     "description": "Sign-up step 2, your swimmers renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-swimmers renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-stage",
     "area": "screen",
     "description": "Sign-up step 3, stage renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-stage renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-times",
     "area": "screen",
     "description": "Sign-up step 4, times renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-times renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-you",
     "area": "screen",
     "description": "Sign-up step 5, you renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-you renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-people",
     "area": "screen",
     "description": "Sign-up step 6, your people renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-people renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-who-stays",
     "area": "screen",
     "description": "Sign-up step 7, who stays renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-who-stays renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-payment",
     "area": "screen",
     "description": "Sign-up step 8, payment renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-payment renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-sign-up-release",
     "area": "screen",
     "description": "Sign-up step 9, family release renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: sign-up-release renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-youre-in",
     "area": "screen",
     "description": "You're in renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: youre-in renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-first-lesson",
     "area": "screen",
     "description": "Your first lesson (filled) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: first-lesson renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-progress",
     "area": "screen",
     "description": "Progress with How it went (filled) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: progress renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-more",
     "area": "screen",
     "description": "More (Bills and Messages) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: more renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-bills",
     "area": "screen",
     "description": "Bills (coming next) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: bills renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-messages",
     "area": "screen",
     "description": "Messages (coming next) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: messages renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-welcome",
     "area": "screen",
     "description": "Moving over: welcome renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-welcome renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-details",
     "area": "screen",
     "description": "Moving over: details renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-details renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-people",
     "area": "screen",
     "description": "Moving over: people renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-people renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-classes",
     "area": "screen",
     "description": "Moving over: classes renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-classes renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-email",
     "area": "screen",
     "description": "Moving over: confirm email renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-email renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-payment",
     "area": "screen",
     "description": "Moving over: payment renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-payment renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-move-over-release",
     "area": "screen",
     "description": "Moving over: release renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: move-over-release renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-owner-releases",
     "area": "screen",
     "description": "Owner Release versions (filled, read-only) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: owner-releases renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "screen-staff",
     "area": "screen",
     "description": "Staff side, coming later (one page for every staff role) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: staff renders, passes accessibility, and is captured",
-    "passes": false
+    "passes": true
   },
   {
     "id": "data-store",
@@ -494,7 +494,7 @@
     "area": "child-id",
     "description": "Child IDs show on staff screens only; families never see one.",
     "test": "tests/unit/child-id.test.ts: child IDs > never shown on a parent screen",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-fingerprint",
@@ -557,7 +557,7 @@
     "area": "signature",
     "description": "A yes on custody or health shows \"Thanks. Someone from the school will talk with you before the first lesson.\" and flags that child for a person.",
     "test": "tests/unit/signature.test.ts: signature > a yes on custody or health flags that child for a person",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-authorization-row",
@@ -578,14 +578,14 @@
     "area": "payment",
     "description": "Only the free evaluation booked: \"The free evaluation is never charged.\" and, with evaluationAsksForCard on, a card to hold the spot.",
     "test": "tests/unit/signature.test.ts: payment > free evaluation only is never charged and asks for a card to hold the spot",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-start",
     "area": "sign-up",
     "description": "Start screen offers \"Pick up where you left off\" when a draft exists and says \"Already with us? Moving your family over is coming next.\"",
     "test": "e2e/sign-up.spec.ts: walk-through 2; tests/unit/signup-rules.test.ts: sign-up > the draft keeps every answer and the last step",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-1-pool",
@@ -613,7 +613,7 @@
     "area": "sign-up",
     "description": "Step 4, per child: times that fit at that pool with both prices (bank draft first), Full, waitlist, sibling marks, too young with a start date, under 3 private only, the free evaluation, the no-partner words.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, 2, 3",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-5-you",
@@ -634,7 +634,7 @@
     "area": "sign-up",
     "description": "Step 7, who stays: the no drop-off words, listed adults by first name and relationship or \"Just me for now\", step 6 people one tap, Waiting or Signed, sign on paper at the check-in desk, the email-us-first line for anyone not a parent or guardian.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-8-payment",
@@ -662,7 +662,7 @@
     "area": "sign-up",
     "description": "Each step has its own URL; Back goes one step and keeps answers; the draft saves after every step; closing the tab and coming back offers \"Pick up where you left off\" and restores the step.",
     "test": "tests/unit/signup-rules.test.ts: sign-up > the draft keeps every answer and the last step; e2e/sign-up.spec.ts: walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-sample-fill",
@@ -690,7 +690,7 @@
     "area": "first-sunday",
     "description": "Your first lesson: large child name, day, date, time, pool and coach; \"The lesson runs 27 minutes.\"; getting there; what to bring (diaper line for 3 and under, in-the-water line for under 3); who stays with Waiting or Signed adults; what happens; the email-us line in plain text; one section per child and shared notes once.",
     "test": "tests/unit/screens-render.test.tsx: parent screens > Your first lesson shows where, what and who; e2e/sign-up.spec.ts: walk-through 6",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-attendance-adult",
@@ -725,56 +725,56 @@
     "area": "first-sunday",
     "description": "Before the first lesson, Progress says \"Your first 'How it went' note comes after [name]'s first lesson on [day].\"",
     "test": "tests/unit/screens-render.test.tsx: parent screens > Progress shows the not-yet line before the first lesson",
-    "passes": false
+    "passes": true
   },
   {
     "id": "home-next-thing",
     "area": "home",
     "description": "Parent Home leads with the next thing that matters: Your first lesson with day and time before it; the newest How it went note after it.",
     "test": "tests/unit/screens-render.test.tsx: parent screens > Home before and after the first lesson",
-    "passes": false
+    "passes": true
   },
   {
     "id": "home-details",
     "area": "home",
     "description": "Home then shows children and their stages, classes and prices, the release version signed, how they pay, and \"Add a child or a class\" as a coming-next card.",
     "test": "tests/unit/screens-render.test.tsx: parent screens > Home before and after the first lesson",
-    "passes": false
+    "passes": true
   },
   {
     "id": "move-over-flow",
     "area": "move-over",
     "description": "Family moving over: \"Welcome to the new Popsicle Pier app.\", details, people and classes each checked with one tap (\"Looks right\"), a change says to email us, the email confirmed with the sample code, step 8 and step 9 for every child, then Home; nothing the school already has is retyped.",
     "test": "tests/unit/screens-render.test.tsx: moving over > shows what the school already has, never retyped; e2e/sign-up.spec.ts: walk-through 4",
-    "passes": false
+    "passes": true
   },
   {
     "id": "owner-release-versions",
     "area": "owner",
     "description": "Owner Release versions, read-only: each version's date, What changed lines, fingerprint and how many sample families signed it.",
     "test": "tests/unit/screens-render.test.tsx: owner > release versions show date, What changed, fingerprint and count",
-    "passes": false
+    "passes": true
   },
   {
     "id": "staff-page",
     "area": "staff",
     "description": "Staff side, coming later: one page for every staff role listing the rooms still to come with one line each, then \"Rules this room will follow\" read from the rules file; no per-role screens, tabs or sample cards; no live view anywhere.",
     "test": "tests/unit/screens-render.test.tsx: staff > one page lists the later rooms and their rules from the rules file",
-    "passes": false
+    "passes": true
   },
   {
     "id": "coming-next-parent",
     "area": "home",
     "description": "Bills and Messages keep the real header and tabs with a purpose sentence, up to three lines, one Preview card (a bill line, a message) and a Coming next tag; Messages includes the tell-us-in-a-sentence line.",
     "test": "tests/unit/shell.test.tsx: shell > coming next component shows purpose, here you'll be able to lines, preview card and tag; e2e/screens.spec.ts",
-    "passes": false
+    "passes": true
   },
   {
     "id": "family-words",
     "area": "words",
     "description": "Every parent screen uses the FAMILY WORDS: no banned words, labels on a child, em or en dashes or arrows; research named only in the release's research choice; never \"PP\" or another company name.",
     "test": "tests/unit/family-words.test.ts: family words > (both tests); e2e/sign-up.spec.ts (word check on every parent screen)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-1",
@@ -788,21 +788,21 @@
     "area": "walkthrough",
     "description": "Two children at Buckhead (3 and 6) with a grandmother listed: Full first choice offers the waitlist; a time next to the sibling works; no date before Nov 8, 2026; grandmother Waiting with the email-us-first line; a custody yes flags that child; one release covers both; Pick up where you left off restores the step.",
     "test": "e2e/sign-up.spec.ts: walk-through 2; tests/unit/walkthrough-rules.test.ts: walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-3",
     "area": "walkthrough",
     "description": "A 2-year-old at Buckhead is told when they can start; a 2-year-old at Madison sees private times only with a parent in the water and the free evaluation; booking only the evaluation says it's never charged and asks for a card.",
     "test": "e2e/sign-up.spec.ts: walk-through 3; tests/unit/walkthrough-rules.test.ts: walk-through 3",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-4",
     "area": "walkthrough",
     "description": "The family moving over checks details and classes, confirms its email, links the bank with its authorization box, adds the backup card and signs the current release once for both children; Home shows both children and how they pay; taps and typed fields counted.",
     "test": "e2e/sign-up.spec.ts: walk-through 4; tests/unit/walkthrough-rules.test.ts: walk-through 4",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-5",
@@ -816,13 +816,13 @@
     "area": "walkthrough",
     "description": "The first Sunday after walk-through 1: Your first lesson shows parking, door, arrival time, what to bring, No drop-off and you alone on deck; Pretend the first lesson happened puts the How it went note first on Home; Progress shows stage, two lines, On deck: you, Approved by Coach; pressing again adds nothing; walk-through 2's Waiting grandmother is never the adult on deck.",
     "test": "e2e/sign-up.spec.ts: walk-through 6; tests/unit/walkthrough-rules.test.ts: walk-through 6",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-counts",
     "area": "walkthrough",
     "description": "Each walk-through's taps and typed fields per step are written to docs/check-report.md, with a line in WALKTHROUGH.md for the owner's stopwatch time.",
     "test": "e2e/sign-up.spec.ts (writes docs/check-report.md)",
-    "passes": false
+    "passes": true
   }
 ]

@@ -267,6 +267,276 @@ test("walk-through 1: new parent, one child (age 4) at Madison, with the sample 
   run!.passed = true;
 });
 
+test("walk-through 2: two children at Buckhead (3 and 6) with a grandmother listed", async () => {
+  begin(2, "Two children at Buckhead (ages 3 and 6) with a grandmother listed");
+  const leo = datePartsYearsAgo(3, 2);
+  const ada = datePartsYearsAgo(6, 5);
+  screen("Start");
+  await page.goto("/sign-up");
+  await tap(page.getByRole("button", { name: "Start" }));
+
+  screen("1 Pool");
+  await tap(page.getByRole("button", { name: /^Buckhead/ }));
+
+  screen("2 Your swimmers");
+  await type(page.getByLabel("First name"), "Leo");
+  await type(page.getByLabel("Month"), leo.m);
+  await type(page.getByLabel("Day"), leo.d);
+  await type(page.getByLabel("Year"), leo.y);
+  await tap(page.getByRole("button", { name: "Add another swimmer" }));
+  await type(page.getByLabel("First name").nth(1), "Ada");
+  await type(page.getByLabel("Month").nth(1), ada.m);
+  await type(page.getByLabel("Day").nth(1), ada.d);
+  await type(page.getByLabel("Year").nth(1), ada.y);
+  await check("swimmers");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("3 Stage for Leo");
+  await expect(page.getByTestId("step-count")).toHaveText("Step 3 of 11");
+  await tap(page.getByRole("button", { name: /^The Pier/ }));
+  screen("3 Stage for Ada");
+  await expect(page.getByRole("heading", { name: "Which sounds most like Ada today?" })).toBeVisible();
+  await tap(page.getByRole("button", { name: /^The Cove/ }));
+
+  screen("4 Times for Leo");
+  await expect(page.getByRole("heading", { name: "Pick a time for Leo" })).toBeVisible();
+  const leoTime = page.getByTestId("time-buc-sun-0930-pier");
+  await expect(leoTime).toContainText(/First lesson Sunday, November (8|1[5-9]|2\d|30)/);
+  await tap(leoTime);
+
+  screen("4 Times for Ada");
+  await expect(page.getByRole("heading", { name: "Pick a time for Ada" })).toBeVisible();
+  const first = page.locator('[data-testid^="time-"]').first();
+  await expect(first).toHaveAttribute("data-testid", "time-buc-sun-0900-cove");
+  await expect(first).toContainText("Full");
+  await expect(first.getByRole("button")).toHaveText("Join the waitlist");
+  await tap(first.getByRole("button", { name: "Join the waitlist" }));
+  await expect(first.getByRole("button")).toContainText("On the waitlist");
+  const next = page.getByTestId("time-buc-sun-1000-cove");
+  await expect(next).toContainText("Next to Leo's lesson");
+  for (const text of await page.locator('[data-testid^="time-"]').allInnerTexts()) {
+    for (const m of text.matchAll(/(?:First lesson|) ?\w+day, (\w+) (\d+)/g)) {
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const monthIndex = months.indexOf(m[1]);
+      if (monthIndex >= 0) expect(monthIndex > 10 || (monthIndex === 10 && Number(m[2]) >= 8) || monthIndex < 9).toBe(true);
+    }
+  }
+  await check("times-ada");
+  await tap(next);
+
+  screen("5 You and the code");
+  await type(page.getByLabel("Your name"), "Robin Example");
+  await type(page.getByLabel("Email"), "robin.example@example.com");
+  await type(page.getByLabel("Phone"), "404-555-0165");
+  await tap(page.getByRole("button", { name: "Send my code" }));
+  await type(page.getByLabel("6-digit code"), "246810");
+  await tap(page.getByRole("button", { name: "My child's school or preschool" }));
+
+  screen("Close the tab and come back");
+  await expect(page).toHaveURL(/\/sign-up\/people$/);
+  const context = page.context();
+  await page.close();
+  page = await context.newPage();
+  await page.goto("/sign-up");
+  await check("pick-up");
+  await tap(page.getByRole("button", { name: "Pick up where you left off" }));
+  await expect(page).toHaveURL(/\/sign-up\/people$/);
+  run!.notes.push("Closed the tab at Your people; Pick up where you left off came back to Your people.");
+
+  screen("6 Your people");
+  await type(page.getByLabel("Contact 1 name"), "Morgan Example");
+  await type(page.getByLabel("Contact 1 phone"), "404-555-0166");
+  await type(page.getByLabel("Contact 2 name"), "Avery Example");
+  await type(page.getByLabel("Contact 2 phone"), "404-555-0167");
+  await tap(page.getByRole("button", { name: "Skip and continue" }));
+
+  screen("7 Who stays");
+  await type(page.getByLabel("First name"), "Rose");
+  await tap(page.getByRole("radio", { name: "Grandparent" }));
+  await tap(page.getByRole("button", { name: "Add this adult" }));
+  const rose = page.getByTestId("listed-adult");
+  await expect(rose).toContainText("Rose, grandparent");
+  await expect(rose).toContainText("Waiting");
+  await expect(rose.getByTestId("email-us-first")).toContainText(
+    "For now, if the only adult staying would be someone other than a parent or guardian, email us before the lesson so we can confirm it.",
+  );
+  await check("who-stays");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("8 Payment");
+  await tap(page.getByRole("button", { name: /^Bank draft/ }));
+  await tap(page.getByLabel("I authorize these bank drafts"));
+  await tap(page.getByRole("button", { name: "Add a backup card (sample)" }));
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("9 Family release");
+  await expect(page.getByTestId("covers")).toHaveText("Covers Leo and Ada");
+  await checkReleaseBoxes();
+  await tap(page.getByRole("radio", { name: "No" }).nth(0));
+  await tap(page.getByRole("radio", { name: "No" }).nth(1));
+  await tap(page.getByRole("radio", { name: "Yes" }).nth(2));
+  await expect(page.getByText("Thanks. Someone from the school will talk with you before the first lesson.")).toBeVisible();
+  await tap(page.getByRole("radio", { name: "No" }).nth(3));
+  await type(page.getByLabel("Your full name"), "Robin Example");
+  await tap(page.getByLabel("I agree to this release and to signing it electronically"));
+  await check("release");
+  const before = await stored();
+  await tap(page.getByRole("button", { name: "Sign and save my spot" }));
+
+  screen("You're in");
+  await expect(page).toHaveURL(/\/sign-up\/youre-in$/);
+  const booked = page.getByTestId("booked-child");
+  await expect(booked).toHaveCount(2);
+  for (const card of await booked.all()) await expect(card.getByTestId("first-lesson-when")).toContainText(/Sunday, November (8|1[5-9]|2\d|30)/);
+  await expect(booked.nth(1)).toContainText("On the waitlist for Sundays at 9:00 am");
+  await expect(booked.nth(1)).toContainText("Thanks. Someone from the school will talk with you before the first lesson.");
+  await expect(booked.nth(0)).not.toContainText("Someone from the school");
+  await check("youre-in");
+  const after = await stored();
+  const family = after.families[after.families.length - 1];
+  const kids = after.children.filter((c: { familyId: string }) => c.familyId === family.id);
+  expect(kids.find((k: { firstName: string }) => k.firstName === "Ada").flaggedForPerson).toBe(true);
+  expect(kids.find((k: { firstName: string }) => k.firstName === "Leo").flaggedForPerson).toBe(false);
+  expect(after.releaseSignatures.length).toBe(before.releaseSignatures.length + 1);
+  expect(after.releaseSignatures[after.releaseSignatures.length - 1].children.map((c: { firstName: string }) => c.firstName)).toEqual(["Leo", "Ada"]);
+  run!.notes.push("One release covers Leo and Ada; Ada is flagged for a person; no Buckhead date before Sunday, November 8, 2026.");
+  run!.passed = true;
+});
+
+test("walk-through 3: two-year-olds at Buckhead and Madison", async () => {
+  begin(3, "A 2-year-old at Buckhead (told when they can start), then at Madison (private, parent in the water, free evaluation only)");
+  const ivy = datePartsYearsAgo(2, 5);
+  screen("Start");
+  await page.goto("/sign-up");
+  await tap(page.getByRole("button", { name: "Start" }));
+  screen("1 Pool");
+  await tap(page.getByRole("button", { name: /^Buckhead/ }));
+  screen("2 Your swimmers");
+  await type(page.getByLabel("First name"), "Ivy");
+  await type(page.getByLabel("Month"), ivy.m);
+  await type(page.getByLabel("Day"), ivy.d);
+  await type(page.getByLabel("Year"), ivy.y);
+  await tap(page.getByRole("button", { name: "Continue" }));
+  screen("3 Stage");
+  await tap(page.getByRole("button", { name: /^The Pier/ }));
+
+  screen("4 Times at Buckhead");
+  const tooYoung = page.getByTestId("too-young");
+  await expect(tooYoung).toContainText(/Ivy can start at Buckhead from \w+day, \w+ \d+/);
+  await check("too-young-buckhead");
+  await tap(page.getByRole("button", { name: "See Madison times" }));
+
+  screen("4 Times at Madison");
+  await expect(page.getByText("Ivy is under 3, so lessons are private, with you in the water.", { exact: false })).toBeVisible();
+  const classTimes = page.getByRole("region", { name: "Times for Ivy" }).locator('[data-testid^="time-"]');
+  await expect(classTimes).toHaveCount(1);
+  await expect(classTimes.first()).toContainText("Private with Coach Marisol");
+  await expect(classTimes.first()).toContainText("You're in the water too.");
+  await expect(page.getByRole("heading", { name: "Or start with a free evaluation" })).toBeVisible();
+  await check("under-3-madison");
+  await tap(page.getByTestId("time-mad-eval-sun-1100"));
+
+  screen("5 You and the code");
+  await type(page.getByLabel("Your name"), "Casey Example");
+  await type(page.getByLabel("Email"), "casey.example@example.com");
+  await type(page.getByLabel("Phone"), "404-555-0170");
+  await tap(page.getByRole("button", { name: "Send my code" }));
+  await type(page.getByLabel("6-digit code"), "246810");
+  await tap(page.getByRole("button", { name: "An online parent group" }));
+  screen("6 Your people");
+  await type(page.getByLabel("Contact 1 name"), "Jesse Example");
+  await type(page.getByLabel("Contact 1 phone"), "404-555-0171");
+  await type(page.getByLabel("Contact 2 name"), "Drew Example");
+  await type(page.getByLabel("Contact 2 phone"), "404-555-0172");
+  await tap(page.getByRole("button", { name: "Skip and continue" }));
+  screen("7 Who stays");
+  await tap(page.getByRole("button", { name: "Just me for now" }));
+
+  screen("8 Payment: evaluation only");
+  await expect(page.getByText("The free evaluation is never charged.")).toBeVisible();
+  await tap(page.getByRole("button", { name: "Add a card to hold the spot (sample)" }));
+  await check("payment-evaluation");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("9 Family release");
+  await checkReleaseBoxes();
+  await tap(page.getByRole("radio", { name: "No" }).nth(0));
+  await tap(page.getByRole("radio", { name: "No" }).nth(1));
+  await type(page.getByLabel("Your full name"), "Casey Example");
+  await tap(page.getByLabel("I agree to this release and to signing it electronically"));
+  await tap(page.getByRole("button", { name: "Sign and save my spot" }));
+
+  screen("You're in");
+  await expect(page.getByTestId("price-they-pay")).toHaveText("The free evaluation is never charged.");
+  await expect(page.getByText("Nothing was charged today. The free evaluation is never charged.")).toBeVisible();
+  await check("youre-in");
+  run!.passed = true;
+});
+
+test("walk-through 4: the family moving over", async () => {
+  begin(4, "The family moving over (two children at Madison)");
+  screen("Sandbox: Family moving over");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Family moving over/ }));
+  await expect(page).toHaveURL(/\/move-over$/);
+
+  screen("Welcome");
+  await expect(page.getByRole("heading", { name: "Welcome to the new Popsicle Pier app." })).toBeVisible();
+  await check("welcome");
+  await tap(page.getByRole("button", { name: "Let's start" }));
+
+  screen("1 Your details");
+  await expect(page.getByTestId("move-details")).toContainText("dana.whitcombe@example.com");
+  await expect(page.locator("main input")).toHaveCount(0);
+  await check("details");
+  await tap(page.getByRole("button", { name: "Looks right" }));
+  screen("2 Your people");
+  await expect(page.getByTestId("listed-adult")).toContainText("Waiting");
+  await check("people");
+  await tap(page.getByRole("button", { name: "Looks right" }));
+  screen("3 Your classes");
+  await expect(page.getByTestId("move-class")).toHaveCount(2);
+  await check("classes");
+  await tap(page.getByRole("button", { name: "Looks right" }));
+
+  screen("4 Confirm your email");
+  await tap(page.getByRole("button", { name: "Send my code" }));
+  await type(page.getByLabel("6-digit code"), "246810");
+  await expect(page.getByText("Email confirmed")).toBeVisible();
+  await check("email");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("5 Payment");
+  await tap(page.getByRole("button", { name: /^Bank draft/ }));
+  await tap(page.getByLabel("I authorize these bank drafts"));
+  await tap(page.getByRole("button", { name: "Add a backup card (sample)" }));
+  await check("payment");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("6 Family release");
+  await expect(page.getByTestId("covers")).toHaveText("Covers Juniper and Theo");
+  await checkReleaseBoxes();
+  for (let i = 0; i < 4; i++) await tap(page.getByRole("radio", { name: "No" }).nth(i));
+  await type(page.getByLabel("Your full name"), "Dana Whitcombe");
+  await tap(page.getByLabel("I agree to this release and to signing it electronically"));
+  await check("release");
+  const before = await stored();
+  await tap(page.getByRole("button", { name: "Sign and finish" }));
+
+  screen("Home");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("home-child")).toHaveCount(2);
+  await expect(page.getByTestId("home-pay")).toHaveText("Bank draft, with a backup card");
+  await expect(page.getByTestId("home-release")).toContainText("You signed version 2");
+  await check("home");
+  const after = await stored();
+  expect(after.releaseSignatures.length).toBe(before.releaseSignatures.length + 1);
+  expect(after.releaseSignatures[after.releaseSignatures.length - 1].children.map((c: { firstName: string }) => c.firstName)).toEqual(["Juniper", "Theo"]);
+  expect(after.bankDraftAuthorizations.length).toBe(before.bankDraftAuthorizations.length + 1);
+  run!.passed = true;
+});
+
 test("walk-through 5: cold run, one child at Madison, every field typed, paying by card", async () => {
   begin(5, "Cold run: one child at Madison, every field typed (no fill button), paying by card");
   const birth = datePartsYearsAgo(5, 2);
@@ -279,7 +549,7 @@ test("walk-through 5: cold run, one child at Madison, every field typed, paying 
   await tap(page.getByRole("button", { name: /^Madison/ }));
 
   screen("2 Your swimmers");
-  await type(page.getByLabel("First name"), "Ada");
+  await type(page.getByLabel("First name"), "Noa");
   await type(page.getByLabel("Month"), birth.m);
   await type(page.getByLabel("Day"), birth.d);
   await type(page.getByLabel("Year"), birth.y);
@@ -410,5 +680,25 @@ test("walk-through 6: the first Sunday, continuing walk-through 1", async () => 
   expect((await stored()).attendanceMarks.length).toBe(marks);
   await expect(page.getByTestId("how-it-went")).toHaveCount(1);
   run!.notes.push("Pressing Pretend the first lesson happened again added nothing.");
+
+  screen("Sandbox: play as Leo and Ada's family");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Leo and Ada's family/ }));
+  screen("Sandbox: Pretend for walk-through 2's family");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: "Pretend the first lesson happened" }));
+  await expect(page).toHaveURL(/\/$/);
+  screen("Progress for walk-through 2's family");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "Progress" }));
+  const deck = page.getByTestId("on-deck");
+  await expect(deck).toHaveCount(2);
+  for (const line of await deck.allInnerTexts()) {
+    expect(line).toBe("On deck: you");
+    expect(line).not.toContain("Rose");
+  }
+  const marksNow = (await stored()).attendanceMarks.filter((m: { adult: { kind: string } }) => m.adult.kind !== "parent");
+  expect(marksNow).toHaveLength(0);
+  await check("progress-family-2");
+  run!.notes.push("Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.");
   run!.passed = true;
 });

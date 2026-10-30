@@ -19,7 +19,7 @@ export function ReleaseStep() {
   if (!draft || draft.children.length === 0) {
     return (
       <StepScreen step={step} stepKey="release">
-        <NeedsEarlierStep step={step} message="Tell us about your swimmers first. The release names each one." href="/sign-up/swimmers" label="Add your swimmers" />
+        <NeedsEarlierStep step={step} title="Family release" message="Tell us about your swimmers first. The release names each one." href="/sign-up/swimmers" label="Add your swimmers" />
       </StepScreen>
     );
   }

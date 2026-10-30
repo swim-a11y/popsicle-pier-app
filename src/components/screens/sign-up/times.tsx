@@ -68,21 +68,21 @@ export function TimesStep() {
   if (!draft || !pool) {
     return (
       <StepScreen step={step} stepKey="times">
-        <NeedsEarlierStep step={step} message="Pick a pool first." href="/sign-up/pool" label="Pick a pool" />
+        <NeedsEarlierStep step={step} title="Pick a time" message="Pick a pool first." href="/sign-up/pool" label="Pick a pool" />
       </StepScreen>
     );
   }
   if (!kid || !birth) {
     return (
       <StepScreen step={step} stepKey="times">
-        <NeedsEarlierStep step={step} message="Tell us about your swimmers first." href="/sign-up/swimmers" label="Add your swimmers" />
+        <NeedsEarlierStep step={step} title="Pick a time" message="Tell us about your swimmers first." href="/sign-up/swimmers" label="Add your swimmers" />
       </StepScreen>
     );
   }
   if (!kid.stage) {
     return (
       <StepScreen step={step} stepKey="times">
-        <NeedsEarlierStep step={step} message={`Tell us where ${kid.firstName} is today first.`} href={stepHref("stage", child)} label="Pick a stage" />
+        <NeedsEarlierStep step={step} title={`Pick a time for ${kid.firstName}`} message={`Tell us where ${kid.firstName} is today first.`} href={stepHref("stage", child)} label="Pick a stage" />
       </StepScreen>
     );
   }

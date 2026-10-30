@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", async () => (await import("./helpers")).navigationMock());
+vi.mock("next/link", async () => (await import("./helpers")).linkMock());
 
 import { LocalStore } from "@/data/store";
 import { signAndSave } from "@/rules/booking";
@@ -75,5 +78,34 @@ describe("child IDs", () => {
     const data = await store.snapshot();
     expect(data.counters.find((c) => c.id === "child-serial")!.next).toBe(43);
     expect(data.children.find((c) => c.id === child.id)!.childId).toBe("PP26-0042");
+  });
+});
+
+describe("child IDs on screens", () => {
+  it("never shown on a parent screen", async () => {
+    const { render, cleanup, screen } = await import("@testing-library/react");
+    const React = await import("react");
+    const { freshStore: makeStore } = await import("./helpers");
+    const { HomeScreen } = await import("@/components/screens/home");
+    const { FirstLessonScreen } = await import("@/components/screens/first-lesson");
+    const { ProgressScreen } = await import("@/components/screens/progress");
+    const { YoureInScreen } = await import("@/components/screens/sign-up/youre-in");
+    const { MoveOverClasses, MoveOverDetails, MoveOverPeople } = await import("@/components/screens/move-over/checks");
+    const { ReleaseStep } = await import("@/components/screens/sign-up/release");
+    const { pretendFirstLesson } = await import("@/sandbox/pretend-first-lesson");
+    const store = makeStore();
+    const { familyId } = await signUp(store, completeDraft({}));
+    await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }));
+    const ids = (await store.snapshot()).children.map((c) => c.childId).filter(Boolean) as string[];
+    expect(ids).toContain("PP26-0042");
+    for (const Screen of [HomeScreen, FirstLessonScreen, ProgressScreen, YoureInScreen, MoveOverDetails, MoveOverPeople, MoveOverClasses, ReleaseStep]) {
+      render(React.createElement(Screen));
+      await screen.findAllByRole("heading", { level: 1 });
+      const text = document.body.textContent ?? "";
+      expect(text, Screen.name).not.toMatch(/PP\d{2}-\d{4}/);
+      expect(text, Screen.name).not.toMatch(/\bPP\b/);
+      for (const id of ids) expect(text).not.toContain(id);
+      cleanup();
+    }
   });
 });

@@ -200,9 +200,10 @@ export function Done({ children }: { children: ReactNode }) {
 }
 
 /** Shown when a step is opened before the steps it needs. */
-export function NeedsEarlierStep({ step, message, href, label }: { step: SignUpStep; message: string; href: string; label: string }) {
+export function NeedsEarlierStep({ step, title, message, href, label }: { step: SignUpStep; title?: string; message: string; href: string; label: string }) {
   return (
     <div className="flex flex-col gap-4">
+      {title ? <StepTitle>{title}</StepTitle> : null}
       <p>{message}</p>
       <button type="button" onClick={() => step.go(href)} className="min-h-tap-big rounded-control bg-primary px-6 font-strong text-primary-foreground">
         {label}
