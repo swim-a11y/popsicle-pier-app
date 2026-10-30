@@ -4,6 +4,8 @@ import "@fontsource/work-sans/400.css";
 import "@fontsource/work-sans/600.css";
 import "./globals.css";
 
+import { SampleBanner } from "@/components/shell/sample-banner";
+
 export const metadata: Metadata = {
   title: { default: "Popsicle Pier sample app", template: "%s, Popsicle Pier sample app" },
   description: "Popsicle Pier sample app. Made-up families, classes and prices.",
@@ -20,7 +22,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SampleBanner />
+        {children}
+      </body>
     </html>
   );
 }

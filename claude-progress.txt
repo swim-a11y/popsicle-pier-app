@@ -1,2 +1,4 @@
 Setup done: Next 16.4.3, nine shadcn parts to write by hand (registry blocked), tokens, fonts, Vitest, Playwright 1.63.0 with axe, hooks, agents, design skill, CLAUDE.md, DECISIONS.md, feature_list.json (118 entries).
 Next: step 1, the shell (banner, Sandbox pill, tab bars), the ui parts and every screen as a thin page from src/screens.ts.
+Step 1 done: tokens and contrast test, sample banner, Sandbox pill and sheet, parent and owner tab bars, shared coming-next component, 26 thin pages from src/screens.ts (static), Bills, Messages and the staff page.
+Next: step 2, tests for the data layer (store, append-only), seeds and rules (ages, dates, times, prices, child IDs, release, signature).

@@ -1,3 +1,8 @@
+import { HomeScreen } from "@/components/screens/home";
+import { screenMetadata } from "@/screens";
+
+export const metadata = screenMetadata("parent-home");
+
 export default function Page() {
-  return <main className="p-4">Popsicle Pier sample app</main>;
+  return <HomeScreen />;
 }

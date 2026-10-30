@@ -4,70 +4,70 @@
     "area": "look",
     "description": "Every color, font, size and shadow lives in src/styles/tokens.css as a variable named by its job; no raw color or font anywhere else; shadcn's variables point at the tokens; no default palette and no dark theme.",
     "test": "tests/unit/tokens.test.ts: tokens > every value is a named token / no raw color or font outside tokens.css / shadcn variables point at tokens",
-    "passes": false
+    "passes": true
   },
   {
     "id": "look-contrast",
     "area": "look",
     "description": "Token contrast: text 4.5:1, lines and focus 3:1.",
     "test": "tests/unit/tokens.test.ts: tokens > contrast: text 4.5:1, lines and focus 3:1",
-    "passes": false
+    "passes": true
   },
   {
     "id": "look-fonts",
     "area": "look",
     "description": "Questrial for headings and Work Sans for text come from @fontsource on npm; no Geist and no next/font/google.",
     "test": "tests/unit/no-outside.test.ts: nothing leaves the device > no outside hosts, CDNs, analytics or next/font/google",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-banner",
     "area": "shell",
     "description": "A fixed banner on every screen, every role, with exactly: \"Sample app. Made-up families, classes and prices. Please don't use real names, birthdays or health details. What you type stays on this phone.\"",
     "test": "tests/unit/shell.test.tsx: shell > sample banner shows the exact words; e2e/screens.spec.ts",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-sandbox-pill",
     "area": "shell",
     "description": "A dashed Sandbox pill on every screen opens a bottom sheet with the roles (New parent, Family moving over, Owner), Fill in a sample family, Pretend the first lesson happened, Erase all sample data on this phone (asks first, wipes, reseeds), a link to the staff page and every screen grouped by role.",
     "test": "tests/unit/shell.test.tsx: shell > Sandbox pill opens the sheet with roles, fill, pretend, erase, staff link and every screen",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-tabs",
     "area": "shell",
     "description": "Parents get a bottom tab bar of 4 tabs (Home, First lesson, Progress, More; Bills and Messages under More). Sign-up is a focused flow with a Back arrow and no tabs. The Owner gets two tabs: Release versions and Staff side.",
     "test": "tests/unit/shell.test.tsx: shell > tab bars for parents, the sign-up flow and the owner",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-coming-next",
     "area": "shell",
     "description": "One shared coming-next component: one purpose sentence, up to three \"Here you'll be able to...\" lines, one sample card labeled Preview and a Coming next tag, inside the real header and tabs.",
     "test": "tests/unit/shell.test.tsx: shell > coming next component shows purpose, here you'll be able to lines, preview card and tag",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-screens-config",
     "area": "shell",
     "description": "Every screen is a thin page generated from one screens config (src/screens.ts); every path is static (no dynamic segments).",
     "test": "tests/unit/screens.test.ts: screens > every screen in the config has a static page file / no dynamic route segments",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-noindex",
     "area": "shell",
     "description": "Page titles say \"Popsicle Pier sample app\"; every page is noindex; robots.txt disallows all.",
     "test": "tests/unit/screens.test.ts: screens > layout sets noindex and the sample app title / robots.txt disallows all",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-nothing-leaves",
     "area": "shell",
     "description": "Nothing leaves the device: no API routes, server actions, middleware, analytics, trackers, third-party scripts or CDNs; no mailto, sms, tel or share links; no camera, microphone, uploads or contact picker; Next.js telemetry off.",
     "test": "tests/unit/no-outside.test.ts: nothing leaves the device > (all four tests)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "shell-mount-placeholder",
@@ -284,7 +284,7 @@
     "area": "data",
     "description": "Seeds, role switcher, erase, sample fill, the sample code and Pretend the first lesson live in src/sandbox/ behind one SANDBOX switch.",
     "test": "tests/unit/no-outside.test.ts: nothing leaves the device > sandbox pieces live in src/sandbox behind one switch",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-pools",
