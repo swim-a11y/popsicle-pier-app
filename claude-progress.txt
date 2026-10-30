@@ -28,3 +28,5 @@ Agent round on the owner's rulings: design critic (5 fixes: answers first on Hom
 Next: nothing open in this round; the owner may confirm the late-bill reading (DECISIONS 82) and the two extra notes (a different time, stopping lessons). A second session runs /code-review and /security-review.
 Owner said yes to both readings; recorded. Then: a replacement date counts as the next lesson on Home and Your first lesson; a family can leave a waitlist from Home (not while an offer waits); Your swimmers keeps Continue on the first screen; 147 unit, 47 e2e; 171 of 171 entries pass.
 Next: a design-critic and rules-checker round on these changes, then docs and push.
+Found and fixed while scripting walk-through 11: another class that only joins a waitlist showed an earlier class on the done screen; it now says "Mia is on the waitlist". Walk-through 11 (join, then leave a waitlist) and Noa's owed lesson in walk-through 10 pass; 148 unit, 48 e2e; 173 of 173 entries pass.
+Next: fix what the design-critic and rules-checker round on these changes finds, then the check report and push.
