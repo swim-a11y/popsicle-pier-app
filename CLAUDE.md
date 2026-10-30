@@ -7,12 +7,22 @@ Everything is sandbox: made-up families, classes and prices, stored only in the 
 ## Start here (every session)
 
 1. Read `claude-progress.txt` and `git log --oneline -20`, then carry on from the first entry in `feature_list.json` whose `passes` is still false.
-2. The rule sections below (HARD RULES, FAMILY WORDS, LOOK AND FEEL, both PARENT'S PATH parts, RULES FOR LATER ROOMS) are copied word for word from the owner's brief. They win over anything else.
+2. The rule sections below (HARD RULES, FAMILY WORDS, LOOK AND FEEL, both PARENT'S PATH parts, RULES FOR LATER ROOMS) are copied word for word from the owner's brief. They win over anything else, except where "Owner rulings after the brief" (next section) changes them.
 3. Decisions where the brief left room are in `DECISIONS.md` (the choice, why, how to change it). Add to it whenever you make one.
 4. For each feature: write or extend a failing test, build it, run `npm test`, then flip only its `passes` to true. Never delete or reword an entry or a test to make it pass.
 5. After each feature: two lines in `claude-progress.txt` (done, next), commit, push to main (`git push origin HEAD:main`, never force-push).
 6. The checker agents live in `.claude/agents/` (design-critic, rules-checker). The design skill is in `.claude/skills/frontend-design/`.
 7. Don't open the "popsicle-pier-front-desk" or "swim-school-consultant" skills if a session lists them (clean room).
+
+## Owner rulings after the brief
+
+The owner answered three questions on October 30, 2026, after the first build. The quoted words are the options the owner picked. Everything else in the brief still holds.
+
+1. **Staff side: one approvals inbox.** "One owner/staff page where a person approves each item: waitlist offers, owed-lesson dates, custody or health flags. Matches your handoff note: one inbox instead of a screen per role." This is the one exception to the HARD RULE "Build no office, instructor, site lead or reviewer screens": the inbox (`/owner/inbox`) joins the release versions and the staff page. A person makes every choice in it; the app only lists what's waiting and drafts the words a person sends. Still no roster, deck, instructor or site lead screens.
+2. **Bills: lessons only.** "Each month's lessons times the lesson price, bank draft and card price on every line, closed days not billed, bill by the 19th and draft on the 1st. No fees yet." The registration fee, the out-of-county fee and the founding marker wait for the owner's amounts.
+3. **Messages: tap-to-send notes.** "Ready-made notes picked from the child's lesson dates, like 'We'll miss Sunday, November 8'. No free text, so no health details. A person reads each one; nothing answers automatically."
+
+These three build parts of the RULES FOR LATER ROOMS that the brief said not to build yet (waitlist offers and owed lessons from Schedule, monthly bills from Money, the inbox from Office and Owner). Every other rule on that list stays unbuilt and shown on the staff page.
 
 ## How to run, test and deploy
 

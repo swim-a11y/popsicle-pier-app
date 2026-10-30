@@ -104,3 +104,9 @@ The owner asked to keep building with best judgement. The HARD RULES still hold 
 65. **A sibling's saved booking holds its own spot.** Lessons already booked count once (their spot is already taken), and "Next to [name]'s lesson" only marks times at the same pool. *Change:* `holdsSpot` on `SiblingPick` in src/rules/times.ts.
 66. **Each child's next lesson comes from all their classes**, on Home, Your first lesson and Progress; Your first lesson shows directions for every pool where a first visit is still to come, and works out "Stays" for the children at each pool.
 67. **The add flow's questions are marked SAMPLE**, like the release they come from.
+
+## Owner rulings (October 30, 2026)
+
+The owner answered three questions after the first build. The rulings and the options' exact words are in CLAUDE.md under "Owner rulings after the brief"; they change the brief only where they say so.
+
+68. **One approvals inbox, bills for lessons only, tap-to-send notes.** The inbox at `/owner/inbox` is the one exception to "Build no office, instructor, site lead or reviewer screens"; a person makes every choice in it. Bills charge each month's lessons at the lesson price with no fees until the owner sets the amounts. Messages has ready-made notes only, with no free text. The staff page now marks which of its later-room rules these three follow. *Change:* ask the owner; the rulings section in CLAUDE.md is the source.
