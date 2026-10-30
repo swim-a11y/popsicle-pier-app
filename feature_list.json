@@ -1319,14 +1319,16 @@
     "area": "office",
     "description": "A \"different time\" note can be followed up in the inbox: a person picks an open time that fits (either pool, never the child's own or a full one) and sends it in place of the child's class, through the waitlist offer (the child waits for any time that fits there; a no keeps them waiting); with nothing open, the person can put the child on the waitlist; either way the note is read.",
     "test": "tests/unit/different-time.test.ts: a different time, after a family's note > lists open times that fit at either pool, never the child's own class or a full one / a person offers one in place of the child's class; the family's yes moves them; the note is read / a no keeps the child waiting for any time that fits there / with nothing open, a person puts the child on the waitlist instead, once / only for a different-time note; tests/unit/rooms-render.test.tsx: a different time, from the inbox > a person picks an open time, sees the words, and sends it in place of the child's class",
-    "passes": true
+    "passes": true,
+    "supersededBy": "different-time-own-pool (rules round, DECISIONS.md 124): a different time is offered only at a pool where the child already has a class, never on the same day and time as theirs; other-pool times are no longer listed."
   },
   {
     "id": "walkthrough-13",
     "area": "walkthrough",
     "description": "Walk-through 13: walk-through 1's family asks for a different time for Jules; the owner offers an open time in place of his class; the family says yes and the old class ends.",
     "test": "e2e/sign-up.spec.ts: walk-through 13",
-    "passes": true
+    "passes": true,
+    "supersededBy": "walkthrough-13-waitlist (rules round, DECISIONS.md 129): nothing else fits Jules at Madison, so walk-through 13 now follows Mia through the Madison waitlist."
   },
   {
     "id": "held-days-not-coming",
@@ -1375,6 +1377,83 @@
     "area": "family",
     "description": "On Home each class on a child's card is its own block, its day, time, pool and coach in semibold, with a hairline between classes; on Lesson dates a day the family said they'll miss reads \"Not coming\".",
     "test": "tests/unit/rooms-render.test.tsx: Home's swimmer cards > each class is its own block, a hairline between, its when, where and who in semibold; messages and notes > sends a ready-made note picked from a lesson date; it waits for a person, then shows read",
+    "passes": true
+  },
+  {
+    "id": "different-time-own-pool",
+    "area": "office",
+    "description": "A \"different time\" note can be followed up in the inbox: a person picks an open time that fits at a pool where the child already has a class (never their own class, a full one, or one on the same day and time) and sends it in place of the class they pick, through the waitlist offer; the child is on that pool's waitlist for any time that fits (one per child and pool, marked with the note), and a no keeps them waiting; with nothing open, the person can put the child on that waitlist; either way the note is read; a later offer from that waitlist answers the same note.",
+    "test": "tests/unit/different-time.test.ts: a different time, after a family's note > lists open times that fit at the child's own pool, never their own class, a full one, another pool, or the same day and time / a person offers one in place of the child's class; the family's yes moves them; the note is read / a no keeps the child waiting for any time that fits there / with nothing open, a person puts the child on the waitlist instead, once / once a full class that fits opens, the offer from that waitlist answers the family's note / only for a different-time note; tests/unit/rooms-render.test.tsx: a different time, from the inbox > a person picks an open time, sees the words, and sends it in place of the child's class",
+    "passes": true
+  },
+  {
+    "id": "one-offer-per-child",
+    "area": "schedule",
+    "description": "A child has one open waitlist offer at a time, from any of their waitlists: a second is refused, and a second \"different time\" note keeps the same waitlist.",
+    "test": "tests/unit/different-time.test.ts: a different time, after a family's note > one open offer per child: a second note can't send a second offer, and the child keeps one waitlist there",
+    "passes": true
+  },
+  {
+    "id": "different-time-card-truth",
+    "area": "office",
+    "description": "The inbox's different-time card says what's true before any tap: an offer already waiting, no weekly class to replace, no way to pay for lessons yet (the waitlist still offered), or nothing open now; with two classes, the person picks which one it replaces.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > with two classes, the person picks which one it replaces / an offer already waiting, or a family with no way to pay yet, is said before any time is offered",
+    "passes": true
+  },
+  {
+    "id": "one-offs-agree",
+    "area": "schedule",
+    "description": "Home, Your first lesson, Lesson dates, Messages and Bills agree about each new date and fill-in: it shows as coming only while its day isn't cancelled or closed, it isn't marked held, and (a fill-in) its class hasn't ended; otherwise each screen says what happened; a fill-in whose missed day has passed still shows on Lesson dates, in date order.",
+    "test": "tests/unit/rooms-render.test.tsx: every screen agrees about new dates and fill-ins > a new date whose day the school then cancels shows as coming nowhere, and each screen says so / a fill-in marked held has happened: Lesson dates say so and Your first lesson moves on / once the missed day has passed, its fill-in still shows on Lesson dates, in date order",
+    "passes": true
+  },
+  {
+    "id": "stale-offers-close",
+    "area": "schedule",
+    "description": "A fill-in or new date still waiting for an answer closes if the school cancels or closes its day (a fill-in also when its class ends): it leaves the answers Home and Messages ask for, a yes is refused, and a new date that closed this way isn't one of the two.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > an offer still waiting closes when the school cancels its day: a fill-in has closed; a new date isn't one of the two",
+    "passes": true
+  },
+  {
+    "id": "new-date-stays-on-switch",
+    "area": "schedule",
+    "description": "A booked new date for a lesson the school cancelled stays when the family moves to another class, since the lesson it replaces is on their bill; a fill-in goes with its class.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a booked new date stays when the family moves to another class: the lesson it replaces is on their bill / a booked fill-in goes once the family leaves the class it stood in for",
+    "passes": true
+  },
+  {
+    "id": "one-offs-proven",
+    "area": "schedule",
+    "description": "Held days, one-off places and cancelled days hold for new dates and cancelled first days too: a lesson marked held after a cancelled first day isn't listed or offered to miss; a new date in a class slot holds its place; a booked new date whose day is cancelled is owed again, and one on a closed day isn't coming.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a lesson marked held after a cancelled first day isn't listed as coming, or offered to miss / a new date in a class slot holds its place: a new weekly booking there starts after that day / a booked new date whose day is cancelled is owed again; one whose day is closed isn't coming",
+    "passes": true
+  },
+  {
+    "id": "nothing-ahead",
+    "area": "family",
+    "description": "A signed-up family with nothing coming up (a free evaluation that has happened, or a waitlist only) sees \"No lesson is coming up yet.\" on Your first lesson with \"Add a child or a class\", never the sign-up prompt; Lesson dates say when the free evaluation was.",
+    "test": "tests/unit/rooms-render.test.tsx: a family with nothing ahead > after the free evaluation, Your first lesson says nothing is coming up yet and points to adding a class; Lesson dates say when it was",
+    "passes": true
+  },
+  {
+    "id": "switch-ends-words",
+    "area": "family",
+    "description": "A switch's words say the old class ends the day the family says yes, and Messages' Now block says \"Ends the day you say yes.\"",
+    "test": "tests/unit/different-time.test.ts: a different time, after a family's note > a person offers one in place of the child's class; the family's yes moves them; the note is read; tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson",
+    "passes": true
+  },
+  {
+    "id": "sandbox-any-time-left",
+    "area": "sandbox",
+    "description": "\"Pretend a family left a full class\" also frees a full class that fits a child waiting for any time at that pool.",
+    "test": "tests/unit/different-time.test.ts: a different time, after a family's note > once a full class that fits opens, the offer from that waitlist answers the family's note; e2e/sign-up.spec.ts: walk-through 13",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-13-waitlist",
+    "area": "walkthrough",
+    "description": "Walk-through 13: walk-through 1's family asks for a different time for Mia; nothing else fits at Madison yet, so the owner puts her on the Madison waitlist; a family leaves the full Wednesday class; the owner offers it in place of her Sunday class; the family says yes and the Sunday class ends.",
+    "test": "e2e/sign-up.spec.ts: walk-through 13",
     "passes": true
   }
 ]

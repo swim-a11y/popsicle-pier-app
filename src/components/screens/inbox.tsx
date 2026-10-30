@@ -29,7 +29,8 @@ import {
   waitlistOfferWords,
   type WaitlistItem,
 } from "@/rules/offers";
-import { familyLessons } from "@/rules/family";
+import { familyLessons, hasLessonPayment } from "@/rules/family";
+import { offerOpen } from "@/rules/holds";
 import { approveOwedCredit, owedOfferWords, sendOwedOffer, type OwedSlot, type OwedState } from "@/rules/owed";
 
 /** One person's action, saved once (double taps ignored); a problem shows on the card. */
@@ -200,11 +201,15 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
   const ready = Boolean(spot && mode);
   return (
     <Card title={childTitle(data, item.child.id)} sub={familyLine(data, item.family.id, item.pool.id)} testId="inbox-waitlist">
-      <p>Waiting for {item.wanted ? classWords(item.wanted) : "any time that fits"} since {longDate(todayAtSchool(new Date(item.entry.createdAt)), today)}.</p>
+      <p>
+        Waiting for {item.wanted ? classWords(item.wanted) : "any time that fits"} since {longDate(todayAtSchool(new Date(item.entry.createdAt)), today)}
+        {item.entry.fromNoteId ? ", after the family asked for a different time" : ""}.
+      </p>
       {item.ownClasses.length > 0 ? <p>Has {item.ownClasses.map((l) => classWords(l)).join(" and ")}.</p> : null}
       {item.pending ? (
         <p data-testid="inbox-waiting">
-          Offer sent. Waiting for the family&apos;s answer by {longDate(item.pending.answerBy, today)}.
+          {item.pending.waitlistEntryId === item.entry.id ? "Offer sent. Waiting" : `An offer for ${item.child.firstName} from another waitlist is waiting`} for the family&apos;s answer by{" "}
+          {longDate(item.pending.answerBy, today)}.
         </p>
       ) : !item.canPay ? (
         <p>This family hasn&apos;t set up how they&apos;ll pay for lessons. Talk with them before offering a spot.</p>
@@ -242,7 +247,7 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
           ) : null}
           {ready && spot ? (
             <Draft
-              words={waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy: addDays(today, ANSWER_DAYS), today })}
+              words={waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy: addDays(today, ANSWER_DAYS), today, asked: Boolean(item.entry.fromNoteId) })}
               to={item.family.parentFullName}
               busy={busy}
               onSend={() =>
@@ -272,17 +277,38 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
   const chosen = times.find((t) => t.cls.id === pick);
   // One class to replace: it's that one. Two or more: the person picks.
   const inPlaceOf = own.length === 1 ? own[0] : own.find((l) => l.enrollment.id === replace);
+  // One open offer per child at a time.
+  const pending = data.waitlistOffers.find((o) => o.childRecordId === note.childRecordId && offerOpen(o, today));
   if (!child || !family) return markRead("Mark as read");
-  if (times.length === 0 || own.length === 0) {
-    const pool = own[0]?.pool ?? data.pools.find((p) => p.id === family.homePoolId);
+  if (pending) {
     return (
       <>
-        <p>No other time that fits {child.firstName} is open now.</p>
-        {pool ? (
-          <Button size="block" disabled={busy} onClick={() => void act((tx, _t, now) => waitForDifferentTime(tx, { noteId: note.id, poolId: pool.id, now, newId }))}>
-            {busy ? "Saving..." : `Put ${child.firstName} on the ${pool.name} waitlist for any time that fits`}
-          </Button>
-        ) : null}
+        <p>An offer for {child.firstName} is already waiting for the family&apos;s answer, by {longDate(pending.answerBy, today)}.</p>
+        {markRead("Mark as read")}
+      </>
+    );
+  }
+  if (own.length === 0) {
+    return (
+      <>
+        <p>{child.firstName} has no weekly class to replace.</p>
+        {markRead("Mark as read")}
+      </>
+    );
+  }
+  const canPay = hasLessonPayment(data, family.id);
+  if (times.length === 0 || !canPay) {
+    const pool = own[0].pool;
+    return (
+      <>
+        <p>
+          {times.length === 0
+            ? `No other time that fits ${child.firstName} is open now.`
+            : "This family hasn't set up how they'll pay for lessons. Talk with them before offering a time."}
+        </p>
+        <Button size="block" disabled={busy} onClick={() => void act((tx, _t, now) => waitForDifferentTime(tx, { noteId: note.id, poolId: pool.id, now, newId }))}>
+          {busy ? "Saving..." : `Put ${child.firstName} on the ${pool.name} waitlist for any time that fits`}
+        </Button>
         {markRead("Mark as read, no waitlist")}
       </>
     );
@@ -310,7 +336,6 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
               onClick={() => setPick(t.cls.id)}
             >
               {lt ? <PriceRows bankCents={lt.bankDraftCents} /> : null}
-              {own.every((l) => l.pool.id !== t.pool.id) ? <Tag>Different pool</Tag> : null}
             </ChoiceButton>
           );
         })}

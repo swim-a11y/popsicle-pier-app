@@ -15,7 +15,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
 import { firstWeeklyDate } from "@/rules/closures";
 import { clockTime, longDate, shownAtSchool, todayAtSchool, weekdayName } from "@/rules/dates";
-import { currentFamily, lessonInfo } from "@/rules/family";
+import { currentFamily, fillInOpen, lessonInfo, oneOffGone, type OneOffGone } from "@/rules/family";
 import { answerFillIn, fillInsForFamily } from "@/rules/fillins";
 import { offerOpen } from "@/rules/holds";
 import { notesForFamily } from "@/rules/notes";
@@ -55,6 +55,11 @@ function useAnswer() {
   return { busy, problem, answer };
 }
 
+/** Why an earlier date offered closed before the family answered, if the school cancelled or closed its day. */
+function goneShort(gone: OneOffGone | null): string {
+  return gone?.kind === "cancelled" ? "we cancelled that day, so it closed." : gone?.kind === "closed" ? "the pool is closed that day, so it closed." : "";
+}
+
 /** "on Friday, October 30": when a family answered. */
 function answeredOn(at: string | null, today: DateOnly): string {
   return at ? ` on ${longDate(todayAtSchool(new Date(at)), today)}` : "";
@@ -80,7 +85,7 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
     <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`offer-${offer.id}`} data-testid="school-offer">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id={`offer-${offer.id}`} className="font-heading text-big text-heading">
-          {offer.fromNoteId ? `A different time for ${name}` : `A spot for ${name}`}
+          {offer.fromNoteId && offer.inPlaceOfEnrollmentId ? `A different time for ${name}` : `A spot for ${name}`}
         </h3>
         {open ? <Tag tone={first ? "highlight" : "plain"}>Needs your answer</Tag> : null}
       </div>
@@ -96,6 +101,7 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
                     {weekdayName(wasInfo.weekday)}s at {clockTime(wasInfo.startTime)}, {wasInfo.pool.name}, Coach {wasInfo.instructorFirstName}
                   </span>
                   {wasInfo.bankCents !== null ? <PriceRows bankCents={wasInfo.bankCents} /> : null}
+                  <span>Ends the day you say yes.</span>
                 </dd>
               </div>
               <div className="flex flex-col gap-1">
@@ -150,6 +156,7 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
   const cls = cancellation ? data.classes.find((c) => c.id === cancellation.classId) : undefined;
   if (!child || !pool) return null;
   const state = owedState(data, owed, today);
+  const bookedGone = state.kind === "booked" ? oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: state.offer }) : null;
   const timeOf = (o: OwedLesson["offers"][number]) =>
     (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime ?? "";
   return (
@@ -168,7 +175,7 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
         .filter((o) => o !== (state.kind === "waiting" || state.kind === "booked" ? state.offer : null))
         .map((o) => (
           <p key={`${o.timeId}-${o.date}`}>
-            {longDate(o.date, today)} at {clockTime(timeOf(o))}: {o.answer === "no" ? "you said no, thanks." : "no answer in time."}
+            {longDate(o.date, today)} at {clockTime(timeOf(o))}: {o.answer === "no" ? "you said no, thanks." : goneShort(oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: o })) || "no answer in time."}
           </p>
         ))}
       {state.kind === "waiting" ? (
@@ -176,6 +183,11 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
           <p data-testid="offer-words">{state.offer.words}</p>
           <AnswerButtons yes="Yes, that works" busy={busy} onAnswer={(a) => void answer((t, now) => (tx) => answerOwedOffer(tx, { owedId: owed.id, familyId: owed.familyId, answer: a, today: t, now }))} />
         </>
+      ) : state.kind === "booked" && bookedGone ? (
+        <p data-testid="offer-status">
+          You said yes{answeredOn(state.offer.answeredAt, today)} to {longDate(state.offer.date, today)} at {clockTime(timeOf(state.offer))}.{" "}
+          {bookedGone.kind === "cancelled" ? `We cancelled that day too. ${bookedGone.reason}.` : bookedGone.kind === "closed" ? `The pool is closed that day. ${bookedGone.reason}.` : ""}
+        </p>
       ) : state.kind === "booked" ? (
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
           You said yes{answeredOn(state.offer.answeredAt, today)}. {child.firstName}&apos;s lesson is on {longDate(state.offer.date, today)} at {clockTime(timeOf(state.offer))} with Coach{" "}
@@ -202,8 +214,20 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
   const child = data.children.find((c) => c.id === fillIn.childRecordId);
   const o = fillIn.offer;
   const time = (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime ?? "";
-  const open = o.answer === null && offerOpen(o, today);
+  const open = fillInOpen(data, fillIn, today);
+  // Its day cancelled or closed, or its class ended, after it was offered.
+  const gone = oneOffGone(data, { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: o });
+  const stoodFor = data.enrollments.find((e) => e.id === fillIn.enrollmentId);
+  const wasClass = stoodFor ? lessonInfo(data, stoodFor) : null;
   if (!child) return null;
+  const goneWhy =
+    gone?.kind === "cancelled"
+      ? `We cancelled that day. ${gone.reason}.`
+      : gone?.kind === "closed"
+        ? `The pool is closed that day. ${gone.reason}.`
+        : gone?.kind === "class-ended" && wasClass
+          ? `It ended with ${child.firstName}'s ${weekdayName(wasClass.weekday)} ${clockTime(wasClass.startTime)} class.`
+          : "";
   return (
     <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`fill-in-${fillIn.id}`} data-testid="school-fill-in">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -217,6 +241,10 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
           <p data-testid="offer-words">{o.words}</p>
           <AnswerButtons yes="Yes, that works" busy={busy} onAnswer={(a) => void answer((t, now) => (tx) => answerFillIn(tx, { fillInId: fillIn.id, familyId: fillIn.familyId, answer: a, today: t, now }))} />
         </>
+      ) : o.answer === "yes" && gone ? (
+        <p data-testid="offer-status">
+          You said yes{answeredOn(o.answeredAt, today)} to a fill-in on {longDate(o.date, today)} at {clockTime(time)}. {goneWhy}
+        </p>
       ) : o.answer === "yes" ? (
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
           You said yes{answeredOn(o.answeredAt, today)}. {child.firstName}&apos;s fill-in is on {longDate(o.date, today)} at {clockTime(time)} with Coach {fillIn.instructorFirstName}, for
@@ -228,7 +256,8 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
         </p>
       ) : (
         <p data-testid="offer-status">
-          We offered a fill-in on {longDate(o.date, today)} for the lesson on {longDate(fillIn.missedDate, today)}. No answer by {longDate(o.answerBy, today)}, so it closed.
+          We offered a fill-in on {longDate(o.date, today)} for the lesson on {longDate(fillIn.missedDate, today)}.{" "}
+          {gone ? `It closed before you answered. ${goneWhy}` : `No answer by ${longDate(o.answerBy, today)}, so it closed.`}
         </p>
       )}
       {problem ? <p className="rounded-control bg-notice px-3 py-2">{problem}</p> : null}

@@ -3,9 +3,10 @@
   "today" comes in as an argument.
 */
 import { cardPricing, type CardPricing } from "@/config";
-import type { AppData, Child, DateOnly, Enrollment, Family, PaymentMethod, Pool } from "@/data/types";
+import type { AppData, Child, DateOnly, Enrollment, Family, FillIn, OwedOffer, PaymentMethod, Pool } from "@/data/types";
 import { cancellationOn, cancelledDates, closedDates, closureOn } from "@/rules/closures";
 import { addDays, ageInMonths } from "@/rules/dates";
+import { offerOpen } from "@/rules/holds";
 import { cardPriceCents, money } from "@/rules/prices";
 import { DEVICE_ID } from "@/rules/booking";
 
@@ -197,10 +198,39 @@ export interface NextLesson extends LessonInfo {
   fillIn: boolean;
 }
 
+/** Why a date offered or booked in place of a lesson no longer stands. */
+export type OneOffGone = { kind: "cancelled"; reason: string } | { kind: "closed"; reason: string } | { kind: "class-ended" };
+
 /**
- * Dates booked in place of a lesson the school cancelled, still to come, as
- * lessons in their own slot: its time, coach and pool. The price is the
- * cancelled class's, already on the bill.
+ * Whether a new date (for a lesson the school cancelled) or a fill-in (for
+ * the family's own miss) still stands: null while it does. Its day can be
+ * cancelled or closed after it was offered. A fill-in also goes with the
+ * class it stood in for; a new date stays when the family moves to another
+ * class, since the lesson it replaces is on their bill.
+ */
+export function oneOffGone(data: Readonly<AppData>, input: { enrollmentId: string; fillIn: boolean; offer: Pick<OwedOffer, "timeKind" | "timeId" | "date"> }): OneOffGone | null {
+  const { offer } = input;
+  const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
+  const closed = time ? closureOn(data, time.poolId, offer.date) : undefined;
+  if (closed) return { kind: "closed", reason: closed.reason };
+  const cancelled = offer.timeKind === "class" ? cancellationOn(data, offer.timeId, offer.date) : undefined;
+  if (cancelled) return { kind: "cancelled", reason: cancelled.reason };
+  if (input.fillIn) {
+    const enrollment = data.enrollments.find((e) => e.id === input.enrollmentId);
+    if (!enrollment || !isActive(enrollment)) return { kind: "class-ended" };
+  }
+  return null;
+}
+
+/** A fill-in the family can still answer: not answered, not past its answer-by day, and still standing. */
+export function fillInOpen(data: Readonly<AppData>, fillIn: FillIn, today: DateOnly): boolean {
+  return fillIn.offer.answer === null && offerOpen(fillIn.offer, today) && !oneOffGone(data, { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: fillIn.offer });
+}
+
+/**
+ * Dates booked in place of a lesson the school cancelled, and fill-ins, still
+ * to come, as lessons in their own slot: its time, coach and pool. The price
+ * is the class's, already on the bill.
  */
 export function replacementLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
   const out: NextLesson[] = [];
@@ -214,9 +244,9 @@ export function replacementLessons(data: Readonly<AppData>, familyId: string, to
     const info = enrollment ? lessonInfo(data, enrollment) : null;
     const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
     const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
-    // Not once the family has left the class it stood in for, or if that day is cancelled or closed.
-    if (!info || !time || !pool || !isActive(enrollment!)) continue;
-    if (cancellationOn(data, time.id, offer.date) || closureOn(data, pool.id, offer.date)) continue;
+    if (!info || !time || !pool) continue;
+    // Not if that day is cancelled or closed, or (a fill-in) once the family has left the class it stood in for.
+    if (oneOffGone(data, { enrollmentId, fillIn, offer })) continue;
     // Already marked held: it's happened.
     if (data.attendanceMarks.some((m) => m.childRecordId === info.child.id && m.lessonDate === offer.date && m.slot === time.startTime)) continue;
     out.push({

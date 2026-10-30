@@ -9,12 +9,28 @@ import type { DateOnly, IsoTime } from "@/data/types";
 import { upcomingLessons } from "@/rules/family";
 import { leaveClass } from "@/rules/offers";
 import { cancelClassDate } from "@/rules/owed";
+import { timesForChild } from "@/rules/times";
 
-/** For each full class a family on this phone waits for, one sample family leaves. Returns the classes with a spot open now. */
+/**
+ * For each full class a family on this phone waits for, one sample family
+ * leaves: the class they named, or, waiting for any time that fits at a
+ * pool, each full class there that fits the child. Returns the classes with
+ * a spot open now.
+ */
 export function pretendFamilyLeft(tx: Transaction, input: { today: DateOnly }): string[] {
   const freed: string[] = [];
   const sample = new Set(tx.list("families").filter((f) => f.source === "sample").map((f) => f.id));
-  const wanted = new Set(tx.list("waitlistEntries").map((w) => w.classId).filter((id): id is string => Boolean(id)));
+  const data = tx.data();
+  const wanted = new Set<string>();
+  for (const w of tx.list("waitlistEntries")) {
+    if (w.classId) {
+      wanted.add(w.classId);
+      continue;
+    }
+    const child = data.children.find((c) => c.id === w.childRecordId);
+    if (!child) continue;
+    for (const o of timesForChild({ data, poolId: w.poolId, birthDate: child.birthDate, stage: child.stageId ?? "evaluation", today: input.today }).classes) if (o.full) wanted.add(o.id);
+  }
   for (const classId of wanted) {
     const cls = tx.get("classes", classId);
     if (!cls || cls.openSpots > 0) continue;

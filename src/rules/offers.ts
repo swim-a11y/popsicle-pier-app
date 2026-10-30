@@ -7,7 +7,7 @@
   moves anyone on its own.
 */
 import type { Transaction } from "@/data/store";
-import type { AppData, Child, DateOnly, Family, IsoTime, Pool, SwimClass, WaitlistEntry, WaitlistOffer } from "@/data/types";
+import type { AppData, Child, DateOnly, Family, FamilyNote, IsoTime, Pool, SwimClass, WaitlistEntry, WaitlistOffer } from "@/data/types";
 import { lessonPaymentNote } from "@/rules/add";
 import { bookTime } from "@/rules/booking";
 import { addDays, clockTime, longDate, weekdayName } from "@/rules/dates";
@@ -43,7 +43,7 @@ export interface WaitlistItem {
   open: { cls: SwimClass; spotsFree: number }[];
   /** The child's own classes, which a person may offer the spot in place of. */
   ownClasses: LessonInfo[];
-  /** An offer still waiting for the family's answer. */
+  /** An offer still waiting for the family's answer: this child gets one at a time, from any waitlist. */
   pending: WaitlistOffer | null;
   /** A family with no way to pay for lessons sets that up with a person before an offer. */
   canPay: boolean;
@@ -63,7 +63,8 @@ export function waitlistItems(data: Readonly<AppData>, today: DateOnly): Waitlis
     const open = fits
       .filter((o) => !o.full && (!wanted || o.id === wanted.id) && !ownClasses.some((l) => l.enrollment.timeId === o.id))
       .map((o) => ({ cls: data.classes.find((c) => c.id === o.id)!, spotsFree: o.spotsLeft }));
-    const pending = data.waitlistOffers.find((o) => o.waitlistEntryId === entry.id && offerOpen(o, today)) ?? null;
+    // One open offer per child at a time, from any of their waitlists.
+    const pending = data.waitlistOffers.find((o) => o.childRecordId === child.id && offerOpen(o, today)) ?? null;
     items.push({ entry, family, child, pool, wanted, open, ownClasses, pending, canPay: hasLessonPayment(data, family.id) });
   }
   return items;
@@ -95,9 +96,9 @@ export function waitlistOfferWords(input: {
   if (!inPlaceOf) return `A spot opened for ${name} in ${there}. Would you like it? ${by}`;
   const from = classFullWords(inPlaceOf, inPlaceOf.pool.name);
   if (asked) {
-    return `You asked about a different time for ${name}. There's a place in ${there}. If you say yes, ${name} moves there from ${from}, and that class ends for ${name}. If you say no, or don't answer, ${name} keeps that class and stays on the ${pool.name} waitlist for a time that fits. ${by}`;
+    return `You asked about a different time for ${name}. There's a place in ${there}. If you say yes, ${name} moves there from ${from}, and that class ends for ${name} the day you say yes. If you say no, or don't answer, ${name} keeps that class and stays on the ${pool.name} waitlist for another time that fits. ${by}`;
   }
-  return `A spot opened for ${name} in ${there}. Would you like ${name} to move there from ${from}? If you say yes, that class ends for ${name}; if you say no, nothing changes. ${by}`;
+  return `A spot opened for ${name} in ${there}. Would you like ${name} to move there from ${from}? If you say yes, that class ends for ${name} the day you say yes; if you say no, nothing changes. ${by}`;
 }
 
 /** A person sends the drafted offer. The spot is held for the family until they answer or the week is up. */
@@ -114,6 +115,8 @@ export function sendWaitlistOffer(
   const inPlaceOf = input.inPlaceOfEnrollmentId ? item.ownClasses.find((l) => l.enrollment.id === input.inPlaceOfEnrollmentId) : null;
   if (input.inPlaceOfEnrollmentId && !inPlaceOf) throw new OfferProblemError("That class isn't this child's.");
   const answerBy = addDays(input.today, ANSWER_DAYS);
+  // An offer from a waitlist the child joined after the family's "different time" note answers that note.
+  const fromNoteId = input.fromNoteId ?? item.entry.fromNoteId ?? null;
   return tx.add("waitlistOffers", {
     id: input.newId(),
     waitlistEntryId: item.entry.id,
@@ -122,8 +125,8 @@ export function sendWaitlistOffer(
     poolId: item.pool.id,
     classId: spot.cls.id,
     inPlaceOfEnrollmentId: inPlaceOf?.enrollment.id ?? null,
-    fromNoteId: input.fromNoteId ?? null,
-    words: waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy, today: input.today, asked: Boolean(input.fromNoteId) }),
+    fromNoteId,
+    words: waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy, today: input.today, asked: Boolean(fromNoteId) }),
     offeredAt: input.now,
     offeredBy: input.by ?? BY_THE_SCHOOL,
     answerBy,
@@ -206,22 +209,29 @@ export function offersForFamily(data: Readonly<AppData>, familyId: string): Wait
   return data.waitlistOffers.filter((o) => o.familyId === familyId).sort((a, b) => (a.offeredAt < b.offeredAt ? 1 : -1));
 }
 
-/** An open time that fits a child, at either pool, for a "different time" note. */
+/** An open time that fits a child, at a pool they swim at, for a "different time" note. */
 export interface DifferentTime {
   cls: SwimClass;
   pool: Pool;
 }
 
-/** Open classes at either pool that fit the child now, other than their own: what a person can offer for a "different time" note. */
+/**
+ * Open classes that fit the child now, at a pool where they already have a
+ * class: what a person can offer for a "different time" note. Never their
+ * own class, a full one, or one on the same day and time as theirs (that's
+ * another coach, not another time). Another pool is the family's own choice,
+ * through Add a child or a class.
+ */
 export function differentTimes(data: Readonly<AppData>, childRecordId: string, today: DateOnly): DifferentTime[] {
   const child = data.children.find((c) => c.id === childRecordId);
   if (!child) return [];
-  const own = familyLessons(data, child.familyId).filter((l) => l.child.id === child.id);
+  const own = familyLessons(data, child.familyId).filter((l) => l.child.id === child.id && l.lessonKind !== "evaluation");
   const out: DifferentTime[] = [];
-  for (const pool of data.pools) {
+  for (const pool of data.pools.filter((p) => own.some((l) => l.pool.id === p.id))) {
     for (const o of timesForChild({ data, poolId: pool.id, birthDate: child.birthDate, stage: child.stageId ?? "evaluation", today }).classes) {
-      if (o.full || own.some((l) => l.enrollment.timeId === o.id)) continue;
-      out.push({ cls: data.classes.find((c) => c.id === o.id)!, pool });
+      const cls = data.classes.find((c) => c.id === o.id)!;
+      if (o.full || own.some((l) => l.enrollment.timeId === cls.id || (l.weekday === cls.weekday && l.startTime === cls.startTime))) continue;
+      out.push({ cls, pool });
     }
   }
   return out;
@@ -234,21 +244,29 @@ function moveNote(tx: Transaction, noteId: string) {
   return note;
 }
 
+/** The child's waitlist for any time that fits at a pool, joined (or kept) for the family's "different time" note: one per child and pool. */
+function anyTimeEntry(tx: Transaction, note: FamilyNote, poolId: string, now: IsoTime, newId: () => string): WaitlistEntry {
+  const already = tx.list("waitlistEntries").find((w) => w.childRecordId === note.childRecordId && w.poolId === poolId && w.classId === null);
+  if (already) return already.fromNoteId === note.id ? already : tx.update("waitlistEntries", already.id, { fromNoteId: note.id });
+  return tx.add("waitlistEntries", { id: newId(), familyId: note.familyId, childRecordId: note.childRecordId, poolId, classId: null, fromNoteId: note.id, createdAt: now });
+}
+
 /**
  * A person offers a different time in reply to the family's note. The child
- * joins the waitlist for any time that fits at that pool (what the family
+ * is on the waitlist for any time that fits at that pool (what the family
  * asked for), and the offer goes out in place of the class the person picks;
  * the note is read. A no keeps the child on that waitlist, which the family
- * can leave from Home.
+ * can leave from Home. One open offer per child at a time.
  */
 export function offerDifferentTime(
   tx: Transaction,
   input: { noteId: string; classId: string; inPlaceOfEnrollmentId: string; today: DateOnly; now: IsoTime; newId: () => string; by?: string },
 ): WaitlistOffer {
   const note = moveNote(tx, input.noteId);
+  if (tx.list("waitlistOffers").some((o) => o.childRecordId === note.childRecordId && offerOpen(o, input.today))) throw new OfferProblemError("An offer is already waiting for this family's answer.");
   const cls = tx.get("classes", input.classId);
   if (!cls || !differentTimes(tx.data(), note.childRecordId, input.today).some((t) => t.cls.id === cls.id)) throw new OfferProblemError("That time isn't open anymore.");
-  const entry = tx.add("waitlistEntries", { id: input.newId(), familyId: note.familyId, childRecordId: note.childRecordId, poolId: cls.poolId, classId: null, createdAt: input.now });
+  const entry = anyTimeEntry(tx, note, cls.poolId, input.now, input.newId);
   const offer = sendWaitlistOffer(tx, { entryId: entry.id, classId: cls.id, inPlaceOfEnrollmentId: input.inPlaceOfEnrollmentId, today: input.today, now: input.now, newId: input.newId, by: input.by, fromNoteId: note.id });
   if (!note.readAt) tx.update("familyNotes", note.id, { readAt: input.now, readBy: input.by ?? BY_THE_SCHOOL });
   return offer;
@@ -257,8 +275,7 @@ export function offerDifferentTime(
 /** Nothing that fits is open: a person puts the child on the waitlist for any time that fits at a pool, and the note is read. */
 export function waitForDifferentTime(tx: Transaction, input: { noteId: string; poolId: string; now: IsoTime; newId: () => string; by?: string }): WaitlistEntry {
   const note = moveNote(tx, input.noteId);
-  const already = tx.list("waitlistEntries").find((w) => w.childRecordId === note.childRecordId && w.poolId === input.poolId && w.classId === null);
-  const entry = already ?? tx.add("waitlistEntries", { id: input.newId(), familyId: note.familyId, childRecordId: note.childRecordId, poolId: input.poolId, classId: null, createdAt: input.now });
+  const entry = anyTimeEntry(tx, note, input.poolId, input.now, input.newId);
   if (!note.readAt) tx.update("familyNotes", note.id, { readAt: input.now, readBy: input.by ?? BY_THE_SCHOOL });
   return entry;
 }

@@ -193,6 +193,8 @@ export interface WaitlistEntry {
   childRecordId: string;
   poolId: string;
   classId: string | null;
+  /** Set when a person put the child on it after the family's "different time" note. */
+  fromNoteId: string | null;
   createdAt: IsoTime;
 }
 

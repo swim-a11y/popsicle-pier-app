@@ -11,7 +11,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { upcomingBills, type BillLine, type MonthBill } from "@/rules/bills";
 import { clockTime, longDate, parseDate, weekdayName } from "@/rules/dates";
-import { currentFamily } from "@/rules/family";
+import { currentFamily, oneOffGone } from "@/rules/family";
 import { owedState } from "@/rules/owed";
 import { cardAmountWords, money } from "@/rules/prices";
 
@@ -38,7 +38,12 @@ function cancelledWords(data: Readonly<AppData>, line: BillLine, date: DateOnly,
   if (credited) return `${dayWords(date)}: we cancelled this lesson and credited it, so it isn't billed.`;
   const owed = data.owedLessons.find((o) => o.enrollmentId === line.lesson.enrollment.id && o.cancelledDate === date);
   const state = owed ? owedState(data, owed, today) : null;
-  if (state?.kind === "booked") return `${dayWords(date)}: we cancelled this lesson. Its new date is ${longDate(state.offer.date, today)}.`;
+  if (state?.kind === "booked") {
+    const gone = oneOffGone(data, { enrollmentId: line.lesson.enrollment.id, fillIn: false, offer: state.offer });
+    if (gone?.kind === "cancelled") return `${dayWords(date)}: we cancelled this lesson, and then its new date, ${longDate(state.offer.date, today)}, too. It stays on the bill for now.`;
+    if (gone?.kind === "closed") return `${dayWords(date)}: we cancelled this lesson. The pool is closed on its new date, ${longDate(state.offer.date, today)}. It stays on the bill for now.`;
+    return `${dayWords(date)}: we cancelled this lesson. Its new date is ${longDate(state.offer.date, today)}.`;
+  }
   if (state?.kind === "closed") return `${dayWords(date)}: we cancelled this lesson. Neither date we offered worked, so it stays on the bill.`;
   if (state?.kind === "waiting") return `${dayWords(date)}: we cancelled this lesson. It stays on the bill for now; Messages has a new date for you to answer.`;
   return `${dayWords(date)}: we cancelled this lesson. It stays on the bill for now.`;

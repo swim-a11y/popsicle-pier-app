@@ -84,6 +84,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 - Two agent rounds (after step 4 and at the end) are logged in docs/check-report.md with what was fixed.
 - Next phase (the owner said to keep building with best judgement, inside the HARD RULES): Lesson dates with closed days, the parent's side of the Schedule room (a Closure record, sample closed days, first and next lessons skip them, Lesson dates under More); and Add a child or a class behind Home's card (a brother or sister gets a coverage row with their own answers, nothing new to sign; another class at either pool keeps one ID). Walk-through 7 covers it.
 - The owner's rulings (October 30, 2026): Bills for lessons only (both prices on every line, closed days not billed, billed by the 19th and drafted on the 1st, or 10 days after a later bill); Messages with three ready-made notes and the school's offers to answer; the approvals inbox (talks about a custody or health yes, owed lessons offered with the same coach, waitlist offers a person chooses and sends, notes to read, Done), as the owner's first tab; two sandbox shortcuts (the school cancels a lesson, a family leaves a full class). Walk-throughs 8, 9 and 10 cover it.
+- After the rulings ("keep building"): leaving a waitlist from Home (walk-through 11); fill-ins for a family's own miss, ruling 5 (walk-through 12); following up a "different time" note from the inbox, at the family's own pool, one open offer per child (walk-through 13). Every screen reads one rule for whether a new date or fill-in still stands. Each round had a design-critic and a rules-checker pass, logged in docs/check-report.md.
 
 ## Next
 
@@ -95,7 +96,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 182 unit tests and 50 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 195 unit tests and 50 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone the family release runs about twelve screens by design (every line visible, never folded).

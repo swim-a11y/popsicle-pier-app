@@ -16,9 +16,10 @@ export function heldByWaitlistOffers(data: Readonly<AppData>, classId: string, t
   return data.waitlistOffers.filter((o) => o.classId === classId && o.id !== exceptOfferId && offerOpen(o, today)).length;
 }
 
-/** Every date offered somewhere else for one lesson: owed lessons' dates and fill-ins. */
+/** Every date offered somewhere else for one lesson: owed lessons' dates and fill-ins. A fill-in goes with the class it stood in for. */
 function oneOffOffers(data: Readonly<AppData>, exceptId?: string): OwedOffer[] {
-  return [...data.owedLessons.filter((o) => o.id !== exceptId).flatMap((o) => o.offers), ...data.fillIns.filter((f) => f.id !== exceptId).map((f) => f.offer)];
+  const live = (enrollmentId: string) => data.enrollments.some((e) => e.id === enrollmentId && !e.endedOn);
+  return [...data.owedLessons.filter((o) => o.id !== exceptId).flatMap((o) => o.offers), ...data.fillIns.filter((f) => f.id !== exceptId && live(f.enrollmentId)).map((f) => f.offer)];
 }
 
 /** Places on one date of a class or evaluation time taken by owed lessons and fill-ins: booked there, or offered and still open. */

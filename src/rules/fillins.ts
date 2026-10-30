@@ -11,8 +11,7 @@
 import type { Transaction } from "@/data/store";
 import type { AppData, DateOnly, FamilyNote, FillIn, IsoTime } from "@/data/types";
 import { addDays, clockTime, longDate } from "@/rules/dates";
-import { lessonInfo } from "@/rules/family";
-import { offerOpen } from "@/rules/holds";
+import { fillInOpen, isActive, lessonInfo } from "@/rules/family";
 import { BY_THE_SCHOOL, OfferProblemError } from "@/rules/offers";
 import { coachSlots, type OwedSlot } from "@/rules/owed";
 
@@ -41,16 +40,22 @@ function missedLesson(data: Readonly<AppData>, note: FamilyNote) {
   return info && info.lessonKind !== "evaluation" ? info : null;
 }
 
-/** Where a "We'll miss" note's fill-in stands. null: a note that has no fill-in (a move or stop note, or a free evaluation). */
+/**
+ * Where a "We'll miss" note's fill-in stands. null: a note that has no
+ * fill-in (a move or stop note, a free evaluation, or a class the family has
+ * since left). A fill-in still waiting closes if its day is cancelled or
+ * closed, or its class ends.
+ */
 export function fillInState(data: Readonly<AppData>, note: FamilyNote, today: DateOnly): FillInState | null {
   const info = missedLesson(data, note);
   if (!info) return null;
   const fillIn = fillInForNote(data, note.id);
   if (fillIn) {
     if (fillIn.offer.answer === "yes") return { kind: "booked", fillIn };
-    if (offerOpen(fillIn.offer, today)) return { kind: "waiting", fillIn };
+    if (fillInOpen(data, fillIn, today)) return { kind: "waiting", fillIn };
     return { kind: "closed", fillIn };
   }
+  if (!isActive(info.enrollment)) return null;
   const missed = note.lessonDate!;
   const last = addDays(missed, FILL_IN_WEEK_DAYS);
   let from = addDays(today, FILL_IN_LEAD_DAYS);
@@ -120,7 +125,7 @@ export function sendFillIn(
 export function answerFillIn(tx: Transaction, input: { fillInId: string; familyId: string; answer: "yes" | "no"; today: DateOnly; now: IsoTime }): FillIn {
   const fillIn = tx.get("fillIns", input.fillInId);
   if (!fillIn || fillIn.familyId !== input.familyId) throw new OfferProblemError("That fill-in isn't here anymore.");
-  if (fillIn.offer.answer !== null || !offerOpen(fillIn.offer, input.today)) throw new OfferProblemError("This fill-in has closed.");
+  if (!fillInOpen(tx.data(), fillIn, input.today)) throw new OfferProblemError("This fill-in has closed.");
   return tx.update("fillIns", fillIn.id, { offer: { ...fillIn.offer, answer: input.answer, answeredAt: input.now } });
 }
 

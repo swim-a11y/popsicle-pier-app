@@ -14,7 +14,7 @@ import { cancellationOn, closureOn } from "@/rules/closures";
 import { addDays, ageInMonths, clockTime, longDate, minutesOfDay, weekdayOf } from "@/rules/dates";
 import { heldByWaitlistOffers, offerOpen, oneOffsOn } from "@/rules/holds";
 import { ANSWER_DAYS, BY_THE_SCHOOL, OfferProblemError, offersForFamily } from "@/rules/offers";
-import { isActive } from "@/rules/family";
+import { fillInOpen, isActive, oneOffGone } from "@/rules/family";
 import { classFits } from "@/rules/times";
 
 export const OWED_WINDOW_DAYS = 21;
@@ -125,10 +125,12 @@ export function owedState(data: Readonly<AppData>, owed: OwedLesson, today: Date
   if (owed.creditApprovedAt) return { kind: "credited" };
   const yes = owed.offers.find((o) => o.answer === "yes");
   if (yes) return { kind: "booked", offer: yes };
-  const last = owed.offers[owed.offers.length - 1];
+  // A date the school then cancels or closes before the family answers isn't one of the two: it closes, and a person can offer another.
+  const counted = owed.offers.filter((o) => o.answer !== null || !oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: o }));
+  const last = counted[counted.length - 1];
   if (last && offerOpen(last, today)) return { kind: "waiting", offer: last };
-  if (last && owed.offers.length >= MAX_OWED_OFFERS) return { kind: "closed", offer: last };
-  const round = owed.offers.length + 1;
+  if (last && counted.length >= MAX_OWED_OFFERS) return { kind: "closed", offer: last };
+  const round = counted.length + 1;
   const slots = owedSlots(data, owed, today);
   return slots.length > 0 ? { kind: "offer", round, slots } : { kind: "no-opening", round };
 }
@@ -268,13 +270,13 @@ export interface AnswerWaiting {
 export function answersWaiting(data: Readonly<AppData>, familyId: string, today: DateOnly): AnswerWaiting[] {
   const name = (id: string) => data.children.find((c) => c.id === id)?.firstName ?? "";
   const out: AnswerWaiting[] = [];
-  for (const o of offersForFamily(data, familyId)) if (offerOpen(o, today)) out.push({ kind: "waitlist", id: o.id, childFirstName: name(o.childRecordId), answerBy: o.answerBy, asked: Boolean(o.fromNoteId) });
+  for (const o of offersForFamily(data, familyId)) if (offerOpen(o, today)) out.push({ kind: "waitlist", id: o.id, childFirstName: name(o.childRecordId), answerBy: o.answerBy, asked: Boolean(o.fromNoteId && o.inPlaceOfEnrollmentId) });
   for (const owed of owedForFamily(data, familyId)) {
     const state = owedState(data, owed, today);
     if (state.kind === "waiting") out.push({ kind: "owed", id: owed.id, childFirstName: name(owed.childRecordId), answerBy: state.offer.answerBy });
   }
   for (const f of data.fillIns.filter((x) => x.familyId === familyId)) {
-    if (f.offer.answer === null && offerOpen(f.offer, today)) out.push({ kind: "fill-in", id: f.id, childFirstName: name(f.childRecordId), answerBy: f.offer.answerBy });
+    if (fillInOpen(data, f, today)) out.push({ kind: "fill-in", id: f.id, childFirstName: name(f.childRecordId), answerBy: f.offer.answerBy });
   }
   return out.sort((a, b) => (a.answerBy < b.answerBy ? -1 : 1));
 }

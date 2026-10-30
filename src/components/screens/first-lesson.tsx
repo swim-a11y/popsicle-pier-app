@@ -66,7 +66,7 @@ export function FirstLessonScreen() {
   const family = currentFamily(data);
   // Every lesson on each child's next lesson day, as Home lists them (a replacement the same day too).
   const lessons = family ? nextDayLessonsPerChild(data, family.id, today) : [];
-  if (!family || lessons.length === 0) {
+  if (!family) {
     return (
       <ScreenShell id="first-lesson">
         <PageTitle>Your first lesson</PageTitle>
@@ -76,6 +76,26 @@ export function FirstLessonScreen() {
         </p>
         <Button size="block" onClick={() => go("/sign-up")}>
           Sign up for lessons
+        </Button>
+      </ScreenShell>
+    );
+  }
+  if (lessons.length === 0) {
+    // Signed up, with nothing ahead: a free evaluation that has happened, or a waitlist only.
+    const waiting = [...new Set(data.waitlistEntries.filter((w) => w.familyId === family.id).map((w) => w.childRecordId))]
+      .map((id) => data.children.find((c) => c.id === id)?.firstName)
+      .filter((n): n is string => Boolean(n));
+    return (
+      <ScreenShell id="first-lesson">
+        <PageTitle>{data.attendanceMarks.some((m) => m.familyId === family.id) ? "Your next lesson" : "Your first lesson"}</PageTitle>
+        <p data-testid="nothing-ahead">
+          No lesson is coming up yet.
+          {waiting.length > 0
+            ? ` ${waiting.join(" and ")} ${waiting.length > 1 ? "are" : "is"} on a waitlist; Home shows where that stands.`
+            : ""}
+        </p>
+        <Button size="block" onClick={() => go("/family/add")}>
+          Add a child or a class
         </Button>
       </ScreenShell>
     );

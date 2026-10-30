@@ -60,7 +60,7 @@ Walk-through 1's family sends "We'll miss Mia's lesson on ..." (the next date sh
 
 ## 13. A different time, from the family's note
 
-Walk-through 1's family sends "We'd like a different time" for Jules. As the owner, the note's card lists open times that fit Jules; pick one, see the drafted words (in place of his Sunday 9:30 class), send. As the family: Home asks for the answer ("See Jules's spot"); Messages; Yes, book it; Home shows his new class.
+Walk-through 1's family sends "We'd like a different time" for Mia. As the owner, the note's card says no other time that fits Mia is open at Madison now; put her on the Madison waitlist for any time that fits. Pretend a family left a full class: the Wednesday 4:30 class opens. Mia's waitlist card offers it; pick "In place of the Sunday 10:00 am class", see the drafted words ("You asked about a different time for Mia."), send. As the family: Home asks for the answer ("See Mia's new time"); Messages shows Now and New ("Same price as now."); Yes, move Mia; Home shows her new class and that the Sunday class has ended.
 
 ## Counts
 
@@ -80,6 +80,6 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 10. A lesson the school cancels (and the other family in that class) | 17 | 26 | 0 |
 | 11. Join a waitlist, then leave it | 7 | 10 | 0 |
 | 12. A fill-in for a lesson the family will miss | 10 | 15 | 0 |
-| 13. A different time, from the family's note | 10 | 14 | 0 |
+| 13. A different time, from the family's note | 12 | 17 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

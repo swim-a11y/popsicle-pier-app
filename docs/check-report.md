@@ -6,7 +6,7 @@
 <!-- wt-1 -->
 ### Walk-through 1: New parent, one child (age 4) at Madison, with Fill in a sample family
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
 
 - One spot gone from Sundays at 10:00 am; one release signature and one bank-draft authorization saved.
 - Refreshing You're in booked nothing.
@@ -32,7 +32,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 13 screens,
 <!-- wt-2 -->
 ### Walk-through 2: Two children at Buckhead (ages 3 and 6) with a grandmother listed
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
 
 - Closed the tab at Your people; Pick up where you left off came back to Your people.
 - One release covers Leo and Ada; Ada is flagged for a person; no Buckhead date before Sunday, November 8, 2026.
@@ -59,7 +59,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 14 screens,
 <!-- wt-3 -->
 ### Walk-through 3: A 2-year-old at Buckhead (told when they can start), then at Madison (private, parent in the water, free evaluation only)
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -81,7 +81,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 12 screens,
 <!-- wt-4 -->
 ### Walk-through 4: The family moving over (two children at Madison)
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -100,7 +100,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 
 <!-- wt-5 -->
 ### Walk-through 5: Cold run: one child at Madison, every field typed (no fill button), paying by card
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -121,7 +121,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 11 screens,
 <!-- wt-6 -->
 ### Walk-through 6: The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
 
 - Pressing Pretend the first lesson happened again added nothing.
 - Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck. Ada's first lesson waits for a talk about her custody yes.
@@ -144,7 +144,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 <!-- wt-7 -->
 ### Walk-through 7: Add a brother or sister to walk-through 1's family, then another class for Mia at the other pool
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 15 screens, 18 taps, 4 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 15 screens, 18 taps, 4 typed fields.
 
 - Jules was covered by the family's current release with a coverage row and three consent rows; nothing new was signed; a refresh added nothing.
 - Mia's second class is at Buckhead and she keeps PP26-0042 across both pools.
@@ -172,7 +172,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 15 screens,
 <!-- wt-8 -->
 ### Walk-through 8: Walk-through 1 and 7's family reads its bills and sends a note that Mia will miss a lesson
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 12 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 12 taps, 0 typed fields.
 
 - Every bill line shows the bank draft price, then the card price; closed days are listed and not billed.
 - Mia's note for Sunday, November 8 was saved with the app's own words; no text box anywhere; Lesson dates mark the day Not coming.
@@ -195,7 +195,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 <!-- wt-9 -->
 ### Walk-through 9: As the owner: talk with Ada's family, read Mia's note, offer the spot a family left, and Ada's family says yes
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 12 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 12 taps, 0 typed fields.
 
 - The talk with Ada's family was recorded and her flag cleared; Mia's note was marked read.
 - A sample family left the full 9:00 class; a person chose to offer it in place of Ada's 10:00 class and saw the drafted words before sending.
@@ -216,7 +216,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 
 <!-- wt-10 -->
 ### Walk-through 10: The school cancels a lesson for walk-through 1's family; the owner offers a date with the same coach; the family says yes
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 17 screens, 26 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 17 screens, 26 taps, 0 typed fields.
 
 - The school cancelled Jules's lesson; a person offered one date with Coach Dev; the family said yes; Lesson dates and Bills show the new date.
 - Walk-through 5's Noa, in the same cancelled class, was owed the lesson too; a person offered her a date and she said yes. Home and Your first lesson agree on her next day.
@@ -246,7 +246,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 17 screens,
 <!-- wt-11 -->
 ### Walk-through 11: Walk-through 1's family puts Mia on the waitlist for a full class, then takes her off it from Home
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 10 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 10 taps, 0 typed fields.
 
 - Mia joined the waitlist for the full Wednesday 4:30 class (the done screen says so, not an earlier class), then the family took her off it from Home.
 
@@ -265,7 +265,7 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 7 screens, 
 <!-- wt-12 -->
 ### Walk-through 12: Walk-through 1's family says Mia will miss a lesson; the owner offers one fill-in with the same coach the week after; the family says yes
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 15 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 15 taps, 0 typed fields.
 
 - Mia's family said she'll miss Wednesday, November 11; a person offered one fill-in with the same coach the week after; the family said yes; Lesson dates show it under the missed day.
 
@@ -285,11 +285,11 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 <!-- /wt-12 -->
 
 <!-- wt-13 -->
-### Walk-through 13: Walk-through 1's family asks for a different time for Jules; the owner offers an open time in place of his class; the family says yes
+### Walk-through 13: Walk-through 1's family asks for a different time for Mia; nothing else fits at Madison yet, so the owner puts her on the Madison waitlist; a family leaves the full Wednesday class; the owner offers it in place of her Sunday class; the family says yes
 
-Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 14 taps, 0 typed fields.
+Run 2026-10-30 23:33 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 17 taps, 0 typed fields.
 
-- Jules's family asked for a different time; a person offered an open time that fits, in place of his Sunday 9:30 class; the family said yes and the old class ended.
+- Mia's family asked for a different time; nothing else that fit was open at Madison, so a person put her on the Madison waitlist for any time that fits; when a family left the full Wednesday class, a person offered it in place of her Sunday class; the family said yes and the Sunday class ended.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -298,12 +298,14 @@ Run 2026-10-30 23:09 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 | Which swimmer | 1 | 0 |
 | Your note | 1 | 0 |
 | Sandbox: play as the owner | 2 | 0 |
-| Inbox: offer a different time | 2 | 0 |
+| Inbox: nothing else fits yet, so the waitlist | 1 | 0 |
+| Sandbox: Pretend a family left a full class | 2 | 0 |
+| Inbox: offer Wednesday in place of Sunday | 2 | 0 |
 | Sandbox: play as Mia's family again | 2 | 0 |
 | Home: an answer is needed | 1 | 0 |
 | Messages: say yes | 1 | 0 |
-| Home: Jules's new class | 1 | 0 |
-| **Total** | **14** | **0** |
+| Home: Mia's new class | 1 | 0 |
+| **Total** | **17** | **0** |
 <!-- /wt-13 -->
 <!-- walkthroughs:end -->
 
@@ -458,3 +460,28 @@ Both agents ran on walk-through 12 (fill-ins) and on the fixes from the round be
 | A fill-in could outlive its class; a cancelled day missed one-offs booked into it; a noted miss could be owed twice | All three fixed (DECISIONS.md 115, tests added) |
 
 It passed the fill-in terms, people choose, family words, no child IDs on parent screens, evaluation-time holds, same-day lessons, tokens, sandbox and the release. After the fixes and walk-through 13: 179 unit tests and 50 e2e tests pass; 192 of 192 feature entries.
+
+### The different-time follow-up, and the fixes to the round before
+
+Both agents ran on walk-through 13 (following up a "different time" note) and on the fill-in fixes.
+
+**Design critic.** Eight fixes, all made:
+- A switch shows Now and New with both prices ("Same price as now." when they match). It's titled "A different time for Mia", with "Yes, move Mia" and "No, keep Mia's class" (DECISIONS.md 117).
+- Answered cards show the outcome and the day, not the question. Home says "New class from ..." until the first lesson, and each class on a child's card is its own block (DECISIONS.md 118).
+- The inbox says which class a different time replaces, and what reading the note without an offer leaves as it is. The Done list says what each date was for (DECISIONS.md 119).
+- "Missing" reads "Not coming" (DECISIONS.md 120).
+
+**Rules checker.** No HARD RULE broken. Fails, all fixed:
+
+| Finding | Done |
+|---|---|
+| Lesson dates, Messages and Bills still showed a new date or fill-in as booked after its day was cancelled, closed or marked held, while Home didn't. A fill-in vanished from Lesson dates once its missed day passed | One rule for whether it still stands, read by every screen; Lesson dates build from Home's list; a passed missed day's fill-in gets its own row (DECISIONS.md 121, 122, three render tests) |
+| A different time could be at the other pool, even the same day and time, and a no left the child on that pool's waitlist | Only at a pool where the child has a class, never the same day and time (DECISIONS.md 124). Walk-through 13 now follows Mia through the waitlist (DECISIONS.md 129) |
+| A second "different time" note made a second waitlist and could send a second open offer | One open offer per child; one "any time" waitlist per child and pool (DECISIONS.md 125, test added) |
+| Your first lesson asked a signed-up family with nothing ahead to sign up | "No lesson is coming up yet." with "Add a child or a class" (DECISIONS.md 128, test added) |
+| A fill-in or new date still waiting stayed "needs your answer" after its day was cancelled or its class ended | It closes, a yes is refused, and a new date closed that way isn't one of the two (DECISIONS.md 123, test added) |
+| Five feature entries claimed more than their tests proved | Tests added for a cancelled first day, a new date in a class slot, a closed day, two classes, a waiting offer and a family with no way to pay; two entries superseded (DECISIONS.md 129) |
+| The inbox said "no other time is open" when the child had no class to replace, and only told the owner about a family with no way to pay after a tap | The card says what's true first (DECISIONS.md 126) |
+| The switch's words didn't say the old class ends the day of the yes | They do now, and so does the Now block (DECISIONS.md 127) |
+
+It passed people choose (a person picks and sends; only the family's yes moves a child), the owner's rulings, family words, no child IDs on parent screens, the sandbox, the clean room, the release rows, child IDs, payment, ages and stages, and the staff screens. After the fixes, 195 unit tests and 50 e2e tests pass, and 207 of 207 feature entries.

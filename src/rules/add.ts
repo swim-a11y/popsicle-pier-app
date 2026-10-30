@@ -186,7 +186,7 @@ export function commitAdd(
     });
   }
   for (const classId of draft.kid.waitlistClassIds) {
-    tx.add("waitlistEntries", { id: newId(), familyId: family.id, childRecordId, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, createdAt: now });
+    tx.add("waitlistEntries", { id: newId(), familyId: family.id, childRecordId, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, fromNoteId: null, createdAt: now });
   }
 
   if (draft.mode === "child") {

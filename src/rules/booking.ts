@@ -421,7 +421,7 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
       if (cls) spotsTaken.set(cls.id, (spotsTaken.get(cls.id) ?? 0) + 1);
     }
     for (const classId of c.waitlistClassIds) {
-      tx.add("waitlistEntries", { id: newId(), familyId, childRecordId: child.id, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, createdAt: now });
+      tx.add("waitlistEntries", { id: newId(), familyId, childRecordId: child.id, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, fromNoteId: null, createdAt: now });
     }
     signed.push({ key: c.key, child: tx.get("children", child.id)!, answers: draft.release.perChild[c.key] });
   }

@@ -8,7 +8,7 @@ import { familyLessons, lessonDaysAhead, nextLessonPerChild, replacementLessons 
 import { answerFillIn, fillInState, sendFillIn } from "@/rules/fillins";
 import { missOptions, sendNote } from "@/rules/notes";
 import { leaveClass, OfferProblemError } from "@/rules/offers";
-import { cancelClassDate, owedState } from "@/rules/owed";
+import { answerOwedOffer, answersWaiting, cancelClassDate, owedState, sendOwedOffer } from "@/rules/owed";
 import { timesForChild } from "@/rules/times";
 import { buildSeed } from "@/sandbox/seed";
 import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
@@ -143,5 +143,71 @@ describe("fill-ins and the dates around them", () => {
     await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }));
     const mark = (await store.snapshot()).attendanceMarks.find((m) => m.familyId === familyId)!;
     expect([mark.lessonDate, mark.slot, mark.instructorFirstName]).toEqual(["2026-11-15", "11:30", "Wren"]);
+  });
+
+  /** Mia's November 1 lesson is cancelled; Coach Dev's Sunday 9:30 class (a Shallows class here) on November 8 is offered in its place. */
+  async function newDateInClassSlot(answer: "yes" | null) {
+    const ctx = await family(completeDraft({}), devShallows);
+    const [owed] = await ctx.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-01", reason: "x", now: NOW, newId: testId }));
+    await ctx.store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW }));
+    if (answer) await ctx.store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId: ctx.familyId, answer, today: TODAY, now: NOW }));
+    return { ...ctx, owedId: owed.id };
+  }
+
+  it("a lesson marked held after a cancelled first day isn't listed as coming, or offered to miss", async () => {
+    const { store, familyId, child } = await family();
+    await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-01", reason: "x", now: NOW, newId: testId }));
+    await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }));
+    const data = await store.snapshot();
+    expect(data.attendanceMarks.map((m) => m.lessonDate)).toEqual(["2026-11-08"]);
+    const days = lessonDaysAhead(data, familyLessons(data, familyId)[0], TODAY, 6).map((d) => d.date);
+    expect(days.slice(0, 2)).toEqual(["2026-11-01", "2026-11-15"]);
+    expect(missOptions(data, familyId, child.id, TODAY).map((o) => o.date)).not.toContain("2026-11-08");
+  });
+
+  it("a new date in a class slot holds its place: a new weekly booking there starts after that day", async () => {
+    const { store } = await newDateInClassSlot("yes");
+    const data = await store.snapshot();
+    const slot = timesForChild({ data, poolId: "pool-madison", birthDate: "2022-01-01", stage: "shallows", today: TODAY }).classes.find((c) => c.id === "mad-sun-0930-pier")!;
+    expect(slot.firstLessonDate).toBe("2026-11-15");
+  });
+
+  it("a booked new date whose day is cancelled is owed again; one whose day is closed isn't coming", async () => {
+    const cancelled = await newDateInClassSlot("yes");
+    expect(replacementLessons(await cancelled.store.snapshot(), cancelled.familyId, TODAY)).toHaveLength(1);
+    const again = await cancelled.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    expect(again.map((o) => [o.childRecordId, o.cancelledDate])).toEqual([[cancelled.child.id, "2026-11-08"]]);
+    expect(replacementLessons(await cancelled.store.snapshot(), cancelled.familyId, TODAY)).toEqual([]);
+
+    const closed = await newDateInClassSlot("yes");
+    await closed.store.transaction((tx) => tx.add("closures", { id: "closure-test", poolId: "pool-madison", date: "2026-11-08", reason: "x" }));
+    expect(replacementLessons(await closed.store.snapshot(), closed.familyId, TODAY)).toEqual([]);
+  });
+
+  it("a booked new date stays when the family moves to another class: the lesson it replaces is on their bill", async () => {
+    const { store, familyId, child } = await newDateInClassSlot("yes");
+    const sunday = (await store.snapshot()).enrollments.find((e) => e.childRecordId === child.id)!;
+    await store.transaction((tx) => leaveClass(tx, sunday.id, TODAY));
+    expect(replacementLessons(await store.snapshot(), familyId, TODAY).map((l) => [l.date, l.startTime])).toEqual([["2026-11-08", "09:30"]]);
+  });
+
+  it("an offer still waiting closes when the school cancels its day: a fill-in has closed; a new date isn't one of the two", async () => {
+    const { store, familyId, child } = await family(completeDraft({}), devShallows);
+    const note = await miss(store, familyId, child.id, "2026-11-01");
+    const f = await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+    expect(answersWaiting(await store.snapshot(), familyId, TODAY).map((a) => a.kind)).toEqual(["fill-in"]);
+    await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    let data = await store.snapshot();
+    expect(fillInState(data, note, TODAY)?.kind).toBe("closed");
+    expect(answersWaiting(data, familyId, TODAY)).toEqual([]);
+    await expect(store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This fill-in has closed.");
+
+    const owed = await newDateInClassSlot(null);
+    await owed.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    data = await owed.store.snapshot();
+    const state = owedState(data, data.owedLessons.find((o) => o.id === owed.owedId)!, TODAY);
+    expect(state).toMatchObject({ kind: "offer", round: 1 });
+    expect(answersWaiting(data, owed.familyId, TODAY)).toEqual([]);
+    await expect(owed.store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.owedId, familyId: owed.familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This offer has closed.");
   });
 });

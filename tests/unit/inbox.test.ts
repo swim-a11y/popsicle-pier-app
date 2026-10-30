@@ -50,7 +50,7 @@ describe("the approvals inbox: waitlist offers", () => {
     const tenOClock = item.ownClasses[0].enrollment;
     const offer = await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: tenOClock.id, today: TODAY, now: NOW, newId: testId }));
     expect(flat(offer.words)).toBe(
-      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead, with Coach Wren. Would you like Ada to move there from the Sunday 10:00 am class at Buckhead, with Coach Ines? If you say yes, that class ends for Ada; if you say no, nothing changes. Please answer by Friday, November 6.",
+      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead, with Coach Wren. Would you like Ada to move there from the Sunday 10:00 am class at Buckhead, with Coach Ines? If you say yes, that class ends for Ada the day you say yes; if you say no, nothing changes. Please answer by Friday, November 6.",
     );
     // The spot is held for Ada while the family answers: nobody else can book it, and no second offer goes out.
     data = await store.snapshot();
