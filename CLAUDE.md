@@ -32,6 +32,7 @@ Everything is sandbox: made-up families, classes and prices, stored only in the 
 - `src/content/`: family words (release text, bank-draft authorization text, Path stage lines, consent wording).
 - `src/sandbox/`: everything sandbox-only behind the one `SANDBOX` switch: seeds, role switcher, erase, sample fill, the sample code, "Pretend the first lesson happened".
 - `src/config.ts`: payment settings (cardPricing, evaluationAsksForCard).
+- `src/rules/add.ts`: adding a brother or sister, or another class (times, checks, the one transaction). `src/rules/closures.ts`: closed days. Screens in `src/components/screens/add/` and `src/components/screens/lesson-dates.tsx`.
 
 ## The app: six rooms plus two later wings
 
@@ -48,7 +49,7 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 
 ## Records the later rooms will need (not in code yet)
 
-- Schedule: Closure, OwedLesson (offered date, answer by, second date, closed), FillIn (same instructor, the week after), WaitlistOffer (a person's choice).
+- Schedule: OwedLesson (offered date, answer by, second date, closed), FillIn (same instructor, the week after), WaitlistOffer (a person's choice). (Closure is in code now, for the parent's Lesson dates.)
 - Deck: RosterDay (a person builds it), CheckIn (the attendance record), Incident (holds that lesson's video), HoldFlag (health or custody yes, no details).
 - Money: Bill, BillLine (both prices), Charge (scheduled, pending, settled, returned, refunded, disputed), Credit (owner approves), RegistrationFee, CountyFee, FoundingMarker, FacilityShareReport, Deposit and DepositLine, PaymentCostMonth.
 - Progress and Video: StageChange (staff choose), MonthlyNote, Clip (released only after its mark is confirmed), LibraryItem, SeasonReel.
@@ -66,16 +67,19 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 - Step 6: all six walk-throughs pass at 375x667 in e2e/sign-up.spec.ts; counts in docs/check-report.md and WALKTHROUGH.md.
 - Every entry in feature_list.json passes.
 - Two agent rounds (after step 4 and at the end) are logged in docs/check-report.md with what was fixed.
+- Next phase (the owner said to keep building with best judgement, inside the HARD RULES): Lesson dates with closed days, the parent's side of the Schedule room (a Closure record, sample closed days, first and next lessons skip them, Lesson dates under More); and Add a child or a class behind Home's card (a brother or sister gets a coverage row with their own answers, nothing new to sign; another class at either pool keeps one ID). Walk-through 7 covers it.
 
 ## Next
 
-- The next room to fill is Schedule (closures, owed lessons, fill-ins, waitlist offers a person makes), using the records listed above.
-- Re-signing and adding a child exist in the data layer (src/rules/release.ts) with tests, but have no screens yet ("Add a child or a class" is a coming-next card on Home).
+- The parent's sides of Family and Schedule are filled. What's left needs the owner first, because the HARD RULES allow only parent screens:
+  - Staff-side Schedule (owed lessons, fill-ins, waitlist offers a person makes) needs staff screens, or the planned approvals inbox; ask the owner before building any.
+  - Bills (Money room) needs the fee rules and amounts the owner hasn't set (registration, county fee, founding marker).
+  - Messages needs a ruling on the message-box idea (listed under "Ideas not ruled"), and a free-text box can invite health details the HARD RULES keep out.
 - A second session runs /code-review and /security-review.
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 96 unit tests and 33 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 107 unit tests and 42 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone, Your swimmers' Continue button sits just below the first screen, and the family release runs about twelve screens by design (every line visible, never folded).
