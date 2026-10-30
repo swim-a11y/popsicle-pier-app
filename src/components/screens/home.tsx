@@ -1,6 +1,7 @@
 "use client";
 
 import { NoteCard } from "@/components/parts/note-card";
+import { PriceRows } from "@/components/parts/price-rows";
 import { SkeletonRows } from "@/components/parts/skeleton";
 import { Tag } from "@/components/parts/tag";
 import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
@@ -13,8 +14,7 @@ import { useGo } from "@/lib/nav";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
 import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, lessonPerChild, upcomingLessonDate } from "@/rules/family";
-import { money } from "@/rules/prices";
-import { latestSignature, namesList } from "@/rules/release";
+import { latestSignature } from "@/rules/release";
 
 export function HomeScreen() {
   const loaded = useAppData();
@@ -49,7 +49,12 @@ export function HomeScreen() {
   const version = signature ? data.releaseVersions.find((v) => v.id === signature.versionId) : undefined;
   const { main } = familyPayment(data, family.id);
   const movingNotDone = family.source === "moving-over" && !family.movedOverAt;
-  const next = firsts.map((l) => ({ ...l, date: upcomingLessonDate(data, l, today) })).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+  // Soonest first, and by time on the same day, so each child keeps their own time and coach.
+  const upcoming = firsts
+    .map((l) => ({ ...l, date: upcomingLessonDate(data, l, today) }))
+    .sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
+  const next = upcoming[0];
+  const sameDay = next ? upcoming.filter((l) => l.date === next.date) : [];
   const firstTitle = family.source === "moving-over" || data.attendanceMarks.some((m) => m.familyId === family.id) ? "Your next lesson" : "Your first lesson";
 
   return (
@@ -78,13 +83,28 @@ export function HomeScreen() {
           <h2 id="first-lesson-card" className="font-heading text-big text-heading">
             {firstTitle}
           </h2>
-          <p className="font-heading text-big text-heading">
-            {longDate(next.date, today)}, {clockTime(next.startTime)}
-          </p>
-          <p>
-            {namesList(firsts.filter((l) => upcomingLessonDate(data, l, today) === next.date).map((l) => l.child.firstName))} at {next.pool.name} with Coach{" "}
-            {next.instructorFirstName}
-          </p>
+          {sameDay.length === 1 ? (
+            <>
+              <p className="font-heading text-big text-heading">
+                {longDate(next.date, today)}, {clockTime(next.startTime)}
+              </p>
+              <p>
+                {next.child.firstName} at {next.pool.name} with Coach {next.instructorFirstName}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-heading text-big text-heading">{longDate(next.date, today)}</p>
+              <ul className="flex flex-col gap-1" data-testid="home-lead-children">
+                {sameDay.map((l) => (
+                  <li key={l.child.id}>
+                    <span className="font-strong">{l.child.firstName}</span>, {clockTime(l.startTime)} with Coach {l.instructorFirstName}
+                  </li>
+                ))}
+              </ul>
+              <p>At {next.pool.name}</p>
+            </>
+          )}
           <Button size="block" onClick={() => go("/first-lesson")}>
             {firstTitle === "Your first lesson" ? "See your first lesson" : "See your next lesson"}
           </Button>
@@ -112,9 +132,7 @@ export function HomeScreen() {
                   </p>
                   <p>{lessonKindWords(l)}</p>
                   {l.bankCents !== null ? (
-                    <p data-testid="home-prices">
-                      <span className="font-strong">Bank draft {money(l.bankCents)}</span>, card {money(l.cardCents ?? l.bankCents)} a lesson
-                    </p>
+                    <PriceRows bankCents={l.bankCents} testId="home-prices" />
                   ) : (
                     <p className="font-strong">Never charged</p>
                   )}

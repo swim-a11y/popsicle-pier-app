@@ -41,6 +41,11 @@ export function YoureInScreen() {
   const { main } = familyPayment(data, family.id);
   const anyClass = lessons.some((l) => l.lessonKind !== "evaluation");
   const pool = data.pools.find((p) => p.id === family.homePoolId);
+  const seeFirstLesson = (
+    <Button size="block" onClick={() => go("/first-lesson")}>
+      See your first lesson
+    </Button>
+  );
 
   return (
     <ScreenShell id="youre-in">
@@ -51,6 +56,7 @@ export function YoureInScreen() {
           {namesList(kids.map((k) => k.firstName))} {kids.length === 1 ? "is" : "are"} signed up at {pool?.name}.
         </p>
       </div>
+      {kids.length > 1 ? seeFirstLesson : null}
       {kids.map((kid) => {
         const lesson = lessons.find((l) => l.child.id === kid.id);
         const waits = data.waitlistEntries.filter((w) => w.childRecordId === kid.id);
@@ -87,9 +93,7 @@ export function YoureInScreen() {
           </section>
         );
       })}
-      <Button size="block" onClick={() => go("/first-lesson")}>
-        See your first lesson
-      </Button>
+      {kids.length === 1 ? seeFirstLesson : null}
       <p className="rounded-card bg-success px-4 py-3">
         {anyClass ? "Nothing was charged today. Your first bill comes before your first lesson." : "Nothing was charged today. The free evaluation is never charged."}
       </p>

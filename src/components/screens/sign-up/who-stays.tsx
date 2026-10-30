@@ -69,7 +69,7 @@ export function WhoStaysStep() {
               <Button
                 variant="quiet"
                 size="small"
-                className="self-start"
+                className="mt-1 self-start"
                 onClick={() => void step.save((d) => ({ ...d, listedAdults: d.listedAdults.filter((x) => x.key !== a.key) }))}
               >
                 Remove {a.firstName}

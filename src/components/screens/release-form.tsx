@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Tag } from "@/components/parts/tag";
 import { Button } from "@/components/ui/button";
@@ -66,9 +66,27 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
   const [tried, setTried] = useState(false);
   const [problem, setProblem] = useState<ReactNode | null>(null);
   const [saving, setSaving] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
   const busy = useRef(false);
 
+  // After a tap with something missing, bring the first missing answer into view once it's marked.
+  useEffect(() => {
+    if (!focusId) return;
+    const el = document.getElementById(focusId);
+    el?.scrollIntoView({ block: "center" });
+    el?.focus({ preventScroll: true });
+  }, [focusId]);
+
   const answers = (key: string) => release.perChild[key] ?? NO_ANSWERS;
+  const missingBoxes = view.groups.filter((g) => !release.groups[g.key]);
+  const firstMissingId = (): string | null => {
+    if (missingBoxes.length > 0) return `box-${missingBoxes[0].key}`;
+    const kid = kids.find((k) => !answers(k.key).custody || !answers(k.key).health);
+    if (kid) return `${kid.key}-${answers(kid.key).custody ? "health" : "custody"}-yes`;
+    if (!typedName.trim()) return "typed-name";
+    if (!release.agreeElectronic) return "agree-electronic";
+    return null;
+  };
   const setAnswer = (key: string, patch: Partial<DraftChildRelease>) =>
     onChange({ ...release, typedName, perChild: { ...release.perChild, [key]: { ...answers(key), ...patch } } });
   const set = (patch: Partial<Release>) => onChange({ ...release, typedName, ...patch });
@@ -83,8 +101,9 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
       setProblem(found);
       busy.current = false;
       setSaving(false);
-      const firstInvalid = document.querySelector<HTMLElement>('[data-release] [aria-invalid="true"]');
-      firstInvalid?.focus();
+      setFocusId(null);
+      const target = firstMissingId();
+      if (target) window.requestAnimationFrame(() => setFocusId(target));
     }
   };
 
@@ -118,7 +137,8 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
                 <YesNo id={`${q.childKey}-health`} question={q.health} value={answers(q.childKey).health} invalid={tried && !answers(q.childKey).health} onChange={(v) => setAnswer(q.childKey, { health: v })} />
               </div>
             ))}
-            <div className="border-t-2 border-line pt-2">
+            <div className="flex flex-col gap-2 border-t-2 border-line pt-2">
+              {tried && !release.groups[g.key] ? <p className="rounded-control bg-notice px-3 py-2">Please check this box.</p> : null}
               <CheckRow id={`box-${g.key}`} checked={Boolean(release.groups[g.key])} invalid={tried && !release.groups[g.key]} onChange={(v) => set({ groups: { ...release.groups, [g.key]: v } })}>
                 {g.box}
               </CheckRow>
@@ -182,8 +202,18 @@ export function ReleaseForm({ version, kids, schoolEmail, release, onChange, onS
           {AGREE_ELECTRONIC}
         </CheckRow>
         {problem ? (
-          <div role="alert" className="rounded-control bg-notice px-4 py-3">
-            {problem}
+          <div role="alert" className="flex flex-col gap-2 rounded-control bg-notice px-4 py-3">
+            <span>{problem}</span>
+            {missingBoxes.length > 0 ? (
+              <>
+                <span>
+                  {missingBoxes.length} {missingBoxes.length === 1 ? "box still needs" : "boxes still need"} a check.
+                </span>
+                <button type="button" className="min-h-tap self-start font-strong text-primary underline" onClick={() => setFocusId(`box-${missingBoxes[0].key}`)}>
+                  Go to &quot;{missingBoxes[0].title}&quot;
+                </button>
+              </>
+            ) : null}
           </div>
         ) : null}
         <Button size="block" onClick={() => void sign()} aria-disabled={saving ? true : undefined}>

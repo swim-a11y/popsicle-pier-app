@@ -76,5 +76,10 @@ test("missing answers, a wrong code, nothing open and an unfinished release", as
   await page.getByRole("button", { name: "Sign and save my spot" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Please check the box" })).toContainText('Please check the box for "Staying at the pool".');
   await expect(page).toHaveURL(/\/sign-up\/release$/);
+  await expect(page.getByRole("alert").filter({ hasText: "boxes still need a check" })).toContainText("8 boxes still need a check.");
+  await expect(page.getByText("Please check this box.")).toHaveCount(8);
+  // The first unchecked box is brought into view and focused.
+  await expect(page.locator("#box-staying")).toBeFocused();
+  await expect(page.locator("#box-staying")).toBeInViewport();
   await capture(page, "release-unfinished");
 });

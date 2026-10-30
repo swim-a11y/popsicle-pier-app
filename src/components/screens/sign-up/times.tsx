@@ -8,7 +8,7 @@ import { NO_PARTNER_YET } from "@/content/sign-up";
 import { ANY_TIME, type DraftChild, type SignUpDraft } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { clockTime, longDate, weekdayName } from "@/rules/dates";
-import { priceLines } from "@/rules/prices";
+import { PriceRows } from "@/components/parts/price-rows";
 import { draftBirthDate, stepHref } from "@/rules/sign-up";
 import { timesForChild, type TimeOption } from "@/rules/times";
 
@@ -31,14 +31,7 @@ function TimeDetails({ o, today }: { o: TimeOption; today: string }) {
       <span className="block">{kindWords(o)}</span>
       {o.parentInWater ? <span className="block">You&apos;re in the water too.</span> : null}
       {o.bankCents !== null ? (
-        <span className="mt-1 grid grid-cols-[auto_1fr] gap-x-4" data-testid="prices">
-          {priceLines(o.bankCents).map((p) => (
-            <span key={p.method} className="contents">
-              <span className="font-strong">{p.label}</span>
-              <span>{p.amount} a lesson</span>
-            </span>
-          ))}
-        </span>
+        <PriceRows bankCents={o.bankCents} testId="prices" />
       ) : (
         <span className="block font-strong">Never charged</span>
       )}
@@ -119,10 +112,11 @@ export function TimesStep() {
     <StepScreen step={step} stepKey="times">
       <div className="flex flex-col gap-2">
         <StepTitle>{kid.stage === "evaluation" ? `Pick a time for ${name}'s free evaluation` : `Pick a time for ${name}`}</StepTitle>
-        <p>
-          {pool.name} times that fit {name}.
-          {t.under3 && !t.tooYoung ? ` ${name} is under 3, so lessons are private, with you in the water.` : ""}
-        </p>
+        {!t.tooYoung && (t.classes.length > 0 || kid.stage === "evaluation") ? (
+          <p>
+            {pool.name} times that fit {name}.{t.under3 ? ` ${name} is under 3, so lessons are private, with you in the water.` : ""}
+          </p>
+        ) : null}
       </div>
 
       {t.tooYoung ? (
@@ -155,10 +149,8 @@ export function TimesStep() {
           {t.classes.map((o) =>
             o.full ? (
               <div key={o.id} className="flex flex-col gap-1 rounded-card border-2 border-dashed border-line px-4 py-3" data-testid={`time-${o.id}`}>
-                <span className="flex items-center justify-between gap-2">
-                  <span className="font-heading text-big text-heading">{timeTitle(o, today)}</span>
-                  <Tag tone="plain">Full</Tag>
-                </span>
+                <span className="font-heading text-big text-heading">{timeTitle(o, today)}</span>
+                <Tag tone="plain">Full</Tag>
                 <TimeDetails o={o} today={today} />
                 <div className="pt-2">{waitlistButton(o.id, "Join the waitlist")}</div>
               </div>

@@ -71,3 +71,11 @@ Where the brief left room, or a step needed a fix, the choice is written here: t
 40. **A changed seedVersion wipes signatures too.** That is the brief's reseed rule, and like the Sandbox erase it only exists in the sandbox; the app itself never edits or deletes a signature, coverage, consent or authorization.
 41. **Kept as the brief has them, after the design critic's notes.** The release's typed full name isn't filled in from step 5, because typing it is the act of signing. Your people keeps "Skip and continue" for the brief's "or Skip".
 42. **Who stays leads with "Just me for now".** The primary button sits under the no-drop-off words; adding another adult (one tap for anyone from step 6, or typed) follows under "Another adult staying too?".
+
+## From the final agent round
+
+43. **Home's next-lesson card gives each child their own time and coach.** When two children have lessons on the same day it shows the date once and one line per child, soonest first (the design critic's blocker: one time for both would have sent Juniper 30 minutes late). *Change:* src/components/screens/home.tsx.
+44. **One price layout everywhere.** Times, Home and moving over all show "Bank draft $34.00 a lesson" over "Card $35.00 a lesson" (src/components/parts/price-rows.tsx), and clock times keep "9:00 am" on one line.
+45. **A release sent with something missing** scrolls to and focuses the first missing answer, marks each unchecked group with "Please check this box.", and counts what's left with a button to go there.
+46. **You're in with two or more children** puts "See your first lesson" right under the summary line, above the children's cards.
+47. **Times stay in time order.** The critic suggested listing open times before full ones; they stay in order so a family sees its first choice where it expects it (walk-through 2's first choice is the Full 9:00 class). The Full tag now sits under the time instead of beside it.

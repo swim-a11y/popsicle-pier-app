@@ -55,7 +55,7 @@ describe("parent screens", () => {
     const child = screen.getByTestId("home-child");
     expect(within(child).getByTestId("home-stage")).toHaveTextContent("The Shallows");
     expect(within(child).getByText(/Sundays at 10:00 am, Madison, Coach Dev/)).toBeInTheDocument();
-    expect(within(child).getByTestId("home-prices")).toHaveTextContent("Bank draft $34.00, card $35.00 a lesson");
+    expect(within(child).getByTestId("home-prices")).toHaveTextContent(/^Bank draft\s*\$34\.00 a lesson\s*Card\s*\$35\.00 a lesson$/);
     expect(screen.getByTestId("home-release")).toHaveTextContent("You signed version 2 on October 30, 2026.");
     expect(screen.getByTestId("home-pay")).toHaveTextContent("Bank draft, with a backup card");
     expect(screen.getByTestId("add-child-card")).toHaveTextContent("Coming next");
@@ -65,6 +65,25 @@ describe("parent screens", () => {
     render(<HomeScreen />);
     const after = await screen.findByTestId("home-lead");
     expect(within(after).getByTestId("how-it-went")).toHaveTextContent("How it went for Mia");
+  });
+
+  it("Home gives each child their own time and coach on the same day", async () => {
+    const store = freshStore();
+    await signUp(
+      store,
+      completeDraft({
+        poolId: "pool-buckhead",
+        kids: [
+          { firstName: "Ada", birth: "2020-06-01", stage: "cove", booking: { kind: "class", timeId: "buc-sun-1000-cove" } },
+          { firstName: "Leo", birth: "2023-05-01", stage: "pier", booking: { kind: "class", timeId: "buc-sun-0930-pier" } },
+        ],
+      }),
+    );
+    render(<HomeScreen />);
+    const lead = await screen.findByTestId("home-lead");
+    expect(lead).toHaveTextContent("Sunday, November 8");
+    const lines = within(lead).getAllByRole("listitem").map((li) => li.textContent?.replace(/\s+/g, " "));
+    expect(lines).toEqual(["Leo, 9:30 am with Coach Wren", "Ada, 10:00 am with Coach Ines"]);
   });
 
   it("Your first lesson shows where, what and who", async () => {
@@ -210,7 +229,7 @@ describe("moving over", () => {
     const classes = await screen.findAllByTestId("move-class");
     expect(classes.map((c) => within(c).getByText(/^(Juniper|Theo)$/).textContent)).toEqual(["Juniper", "Theo"]);
     expect(classes[1]).toHaveTextContent("Wednesdays at 5:00 pm, Madison");
-    expect(within(classes[1]).getByTestId("prices")).toHaveTextContent("Bank draft $34.00, Card $35.00 a lesson");
+    expect(within(classes[1]).getByTestId("prices")).toHaveTextContent(/^Bank draft\s*\$34\.00 a lesson\s*Card\s*\$35\.00 a lesson$/);
     expect(classes[1]).toHaveTextContent("No partner yet.");
     cleanup();
 

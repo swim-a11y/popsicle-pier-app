@@ -5,7 +5,7 @@ import { stageName } from "@/content/path";
 import { EMAIL_US_FIRST, NO_PARTNER_YET, relationshipLabel, SIGNS_ON_PAPER } from "@/content/sign-up";
 import { clockTime, weekdayName } from "@/rules/dates";
 import { familyChildren, familyLessons, lessonKindWords, stillUnpaired } from "@/rules/family";
-import { priceLines } from "@/rules/prices";
+import { PriceRows } from "@/components/parts/price-rows";
 
 import { ChangeLine, LooksRight, MoveOverScreen, useMoveOver } from "./shared";
 
@@ -109,14 +109,7 @@ export function MoveOverClasses() {
                 <p>
                   {lessonKindWords(l)} with Coach {l.instructorFirstName}
                 </p>
-                {l.bankCents !== null ? (
-                  <p data-testid="prices">
-                    {priceLines(l.bankCents)
-                      .map((p) => `${p.label} ${p.amount}`)
-                      .join(", ")}{" "}
-                    a lesson
-                  </p>
-                ) : null}
+                {l.bankCents !== null ? <PriceRows bankCents={l.bankCents} testId="prices" /> : null}
                 {stillUnpaired(loaded.data, l.enrollment) ? <p className="rounded-control bg-page px-3 py-2">{NO_PARTNER_YET}</p> : null}
               </div>
             ))}

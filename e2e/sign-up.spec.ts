@@ -193,7 +193,7 @@ test("walk-through 1: new parent, one child (age 4) at Madison, with the sample 
   await expect(page).toHaveURL(/\/sign-up\/times\?child=1$/);
   const option = page.getByTestId("time-mad-sun-1000-shallows");
   await expect(option).toContainText("Bank draft");
-  const priceText = await option.getByTestId("prices").innerText();
+  const priceText = (await option.getByTestId("prices").innerText()).replace(/\s+/g, " ");
   expect(priceText.indexOf("Bank draft")).toBeLessThan(priceText.indexOf("Card"));
   expect(priceText).toContain("$34.00 a lesson");
   expect(priceText).toContain("$35.00 a lesson");
@@ -250,7 +250,7 @@ test("walk-through 1: new parent, one child (age 4) at Madison, with the sample 
   await expect(page.getByRole("heading", { name: "You're in" })).toBeVisible();
   const booked = page.getByTestId("booked-child");
   await expect(booked).toHaveCount(1);
-  await expect(booked.getByTestId("first-lesson-when")).toContainText(/Sunday, \w+ \d+, 10:00 am/);
+  await expect(booked.getByTestId("first-lesson-when")).toContainText(/Sunday, \w+ \d+, 10:00\sam/);
   await expect(booked.getByTestId("first-lesson-where")).toHaveText("Madison with Coach Dev");
   await expect(booked.getByTestId("price-they-pay")).toHaveText("$34.00 a lesson by bank draft");
   await expect(page.getByText("Nothing was charged today. Your first bill comes before your first lesson.")).toBeVisible();
@@ -575,7 +575,7 @@ test("walk-through 5: cold run, one child at Madison, every field typed, paying 
   screen("4 Times");
   const option = page.getByTestId("time-mad-sun-0930-pier");
   // The card price shows before they choose.
-  await expect(option.getByTestId("prices")).toContainText("Card$35.00 a lesson");
+  await expect(option.getByTestId("prices")).toContainText(/Card\s*\$35\.00\sa\slesson/);
   await expect(option).toContainText("No partner yet. You pay the semi-private price for the first month.");
   await check("times");
   await tap(option);
