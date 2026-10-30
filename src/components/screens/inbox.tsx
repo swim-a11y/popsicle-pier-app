@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
+import { PriceRows } from "@/components/parts/price-rows";
 import { SkeletonRows } from "@/components/parts/skeleton";
 import { Tag } from "@/components/parts/tag";
 import { ChoiceButton } from "@/components/screens/sign-up/shared";
@@ -289,18 +290,30 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
   return (
     <>
       <p className="font-strong text-heading">A different time: pick one to offer, or none.</p>
+      {own.length === 1 ? (
+        <p data-testid="in-place-of">
+          This takes the place of {child.firstName}&apos;s class: {weekdayName(own[0].weekday)}s at {clockTime(own[0].startTime)}, {own[0].pool.name}, Coach{" "}
+          {own[0].instructorFirstName}. It doesn&apos;t add a class.
+        </p>
+      ) : null}
       <div className="flex flex-col gap-2">
-        {times.map((t) => (
-          <ChoiceButton
-            outlined
-            key={t.cls.id}
-            title={`${weekdayName(t.cls.weekday)}s at ${clockTime(t.cls.startTime)}, ${t.pool.name}`}
-            line={`Coach ${t.cls.instructorFirstName}`}
-            selected={pick === t.cls.id}
-            testId={`different-time-${t.cls.id}`}
-            onClick={() => setPick(t.cls.id)}
-          />
-        ))}
+        {times.map((t) => {
+          const lt = data.lessonTypes.find((x) => x.id === t.cls.lessonTypeId);
+          return (
+            <ChoiceButton
+              outlined
+              key={t.cls.id}
+              title={`${weekdayName(t.cls.weekday)}s at ${clockTime(t.cls.startTime)}, ${t.pool.name}`}
+              line={`Coach ${t.cls.instructorFirstName}`}
+              selected={pick === t.cls.id}
+              testId={`different-time-${t.cls.id}`}
+              onClick={() => setPick(t.cls.id)}
+            >
+              {lt ? <PriceRows bankCents={lt.bankDraftCents} /> : null}
+              {own.every((l) => l.pool.id !== t.pool.id) ? <Tag>Different pool</Tag> : null}
+            </ChoiceButton>
+          );
+        })}
       </div>
       {chosen && own.length > 1 ? (
         <div className="flex flex-col gap-2">
@@ -312,7 +325,7 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
       ) : null}
       {chosen && inPlaceOf ? (
         <Draft
-          words={waitlistOfferWords({ child, cls: chosen.cls, pool: chosen.pool, inPlaceOf, answerBy: addDays(today, ANSWER_DAYS), today })}
+          words={waitlistOfferWords({ child, cls: chosen.cls, pool: chosen.pool, inPlaceOf, answerBy: addDays(today, ANSWER_DAYS), today, asked: true })}
           to={family.parentFullName}
           busy={busy}
           onSend={() =>
@@ -321,6 +334,9 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
         />
       ) : null}
       {markRead("Mark as read, no offer")}
+      <p>
+        {own.length === 1 ? `${child.firstName} stays in ${classWords(own[0])}.` : `${child.firstName} keeps every class.`} The family sees you read their note.
+      </p>
     </>
   );
 }

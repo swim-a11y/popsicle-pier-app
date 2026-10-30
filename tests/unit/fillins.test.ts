@@ -59,7 +59,7 @@ describe("fill-ins", () => {
     await store.transaction((tx) => answerFillIn(tx, { fillInId: fillIn.id, familyId, answer: "yes", today: TODAY, now: NOW }));
     data = await store.snapshot();
     expect(fillInState(data, note, TODAY)?.kind).toBe("booked");
-    expect(flat(doneItems(data, TODAY)[0].line)).toBe("Offered Mia a fill-in on Sunday, November 15 for Sunday, November 8. They said yes.");
+    expect(flat(doneItems(data, TODAY)[0].line)).toBe("Offered Mia a fill-in on Sunday, November 15 for the missed lesson on Sunday, November 8. They said yes.");
     await expect(store.transaction((tx) => answerFillIn(tx, { fillInId: fillIn.id, familyId, answer: "no", today: TODAY, now: NOW }))).rejects.toThrow("This fill-in has closed.");
   });
 

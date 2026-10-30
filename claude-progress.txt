@@ -36,3 +36,5 @@ Agent round on replacement dates, leaving a waitlist and Continue: design critic
 Next: an agent round on fill-ins and these fixes, then docs and push.
 Design round on fill-ins (DECISIONS 109 to 111) and rules round (113 to 116) fixed; built the follow-up for "different time" notes (DECISIONS 112, walk-through 13); 179 unit, 50 e2e; 192 of 192 entries pass.
 Next: an agent round on the different-time follow-up and these fixes; then ask the owner about the later-room rules that need a ruling (two missed in a row, an unpaired child past the first month, time for a talk).
+Design round on the different-time follow-up fixed (DECISIONS 117 to 120): a switch shows now and new with both prices; answered cards show the outcome and the day; the inbox says what a different time replaces; Home's class blocks; "Not coming"; 182 unit, 50 e2e; 196 of 196 entries pass.
+Next: the rules checker's round on the same work (screens that disagree about one-off lessons, a different time at the family's own pool, one open offer per child, Your first lesson with nothing ahead, offers that go stale).

@@ -15,9 +15,10 @@ import { getStore } from "@/data/app-store";
 import type { AppData, DateOnly, WaitlistEntry } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
+import { cn } from "@/lib/utils";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
-import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, upcomingLessons } from "@/rules/family";
+import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonInfo, lessonKindWords, upcomingLessons } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { leaveWaitlist } from "@/rules/offers";
 import { answersWaiting } from "@/rules/owed";
@@ -134,7 +135,9 @@ export function HomeScreen() {
           {waiting.map((w) => (
             <p key={w.id}>
               {w.kind === "waitlist"
-                ? `A spot opened for ${w.childFirstName}`
+                ? w.asked
+                  ? `A different time for ${w.childFirstName}`
+                  : `A spot opened for ${w.childFirstName}`
                 : w.kind === "fill-in"
                   ? `A fill-in for ${w.childFirstName}'s missed lesson`
                   : `A new date for ${w.childFirstName}'s cancelled lesson`}
@@ -145,7 +148,9 @@ export function HomeScreen() {
             {waiting.length > 1
               ? "Open Messages"
               : waiting[0].kind === "waitlist"
-                ? `See ${waiting[0].childFirstName}'s spot`
+                ? waiting[0].asked
+                  ? `See ${waiting[0].childFirstName}'s new time`
+                  : `See ${waiting[0].childFirstName}'s spot`
                 : waiting[0].kind === "fill-in"
                   ? `See ${waiting[0].childFirstName}'s fill-in`
                   : `See ${waiting[0].childFirstName}'s new date`}
@@ -223,20 +228,31 @@ export function HomeScreen() {
                 <h3 className="font-heading text-big text-heading">{k.firstName}</h3>
                 <span data-testid="home-stage">{stageName(k.stageId) ?? "Stage set after the free evaluation"}</span>
               </div>
-              {mine.map((l) => (
-                <div key={l.enrollment.id} className="flex flex-col gap-1">
-                  <p>
-                    {l.lessonKind === "evaluation" ? `Free evaluation, ${longDate(l.firstLessonDate, today)}` : `${weekdayName(l.weekday)}s at ${clockTime(l.startTime)}`}, {l.pool.name}, Coach{" "}
-                    {l.instructorFirstName}
-                  </p>
-                  <p>{lessonKindWords(l)}</p>
-                  {l.bankCents !== null ? (
-                    <PriceRows bankCents={l.bankCents} testId="home-prices" />
-                  ) : (
-                    <p className="font-strong">Never charged</p>
-                  )}
-                </div>
-              ))}
+              {mine.map((l, i) => {
+                // A class the family moved to from another one: say so until its first lesson.
+                const switched = data.waitlistOffers.find((o) => o.enrollmentId === l.enrollment.id && o.answer === "yes" && o.inPlaceOfEnrollmentId);
+                const was = switched && today <= l.firstLessonDate ? data.enrollments.find((e) => e.id === switched.inPlaceOfEnrollmentId) : undefined;
+                const wasInfo = was ? lessonInfo(data, was) : null;
+                return (
+                  <div key={l.enrollment.id} className={cn("flex flex-col gap-1", i > 0 && "mt-2 border-t border-line pt-3")} data-testid="home-class">
+                    <p className="font-strong">
+                      {l.lessonKind === "evaluation" ? `Free evaluation, ${longDate(l.firstLessonDate, today)}` : `${weekdayName(l.weekday)}s at ${clockTime(l.startTime)}`}, {l.pool.name}, Coach{" "}
+                      {l.instructorFirstName}
+                    </p>
+                    <p>{lessonKindWords(l)}</p>
+                    {l.bankCents !== null ? (
+                      <PriceRows bankCents={l.bankCents} testId="home-prices" />
+                    ) : (
+                      <p className="font-strong">Never charged</p>
+                    )}
+                    {wasInfo ? (
+                      <p data-testid="home-switched">
+                        New class from {longDate(l.firstLessonDate, today)}. The {weekdayName(wasInfo.weekday)} {clockTime(wasInfo.startTime)} class at {wasInfo.pool.name} has ended.
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
               {k.flaggedForPerson ? (
                 <p className="rounded-control bg-success px-3 py-2" data-testid="home-talk">
                   {SOMEONE_WILL_TALK}

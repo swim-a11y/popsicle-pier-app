@@ -34,7 +34,7 @@ describe("a different time, after a family's note", () => {
     const own = familyLessons(await store.snapshot(), familyId)[0];
     const offer = await store.transaction((tx) => offerDifferentTime(tx, { noteId: note.id, classId: "buc-sun-0930-pier", inPlaceOfEnrollmentId: own.enrollment.id, today: TODAY, now: NOW, newId: testId }));
     expect(flat(offer.words)).toBe(
-      "A spot opened for Jules in the Sunday 9:30 am class at Buckhead, with Coach Wren. Would you like Jules to move there from the Sunday 9:30 am class? Please answer by Friday, November 6.",
+      "You asked about a different time for Jules. There's a place in the Sunday 9:30 am class at Buckhead, with Coach Wren. If you say yes, Jules moves there from the Sunday 9:30 am class at Madison, with Coach Dev, and that class ends for Jules. If you say no, or don't answer, Jules keeps that class and stays on the Buckhead waitlist for a time that fits. Please answer by Friday, November 6.",
     );
     let data = await store.snapshot();
     expect(data.familyNotes.find((n) => n.id === note.id)!.readAt).toBe(NOW);

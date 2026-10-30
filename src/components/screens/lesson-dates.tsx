@@ -139,7 +139,7 @@ export function LessonDatesScreen() {
                 ) : missNoted(data, l.enrollment.id, d.date) ? (
                   <li key={d.date} className="flex flex-col gap-1" data-testid="missing-day">
                     <span className="font-strong">{longDate(d.date, today)}</span>
-                    <Tag>Missing</Tag>
+                    <Tag>Not coming</Tag>
                     <span>{missLine(data, l.enrollment.id, d.date, l.child.firstName, today)}</span>
                     {fillInRow(data, l.enrollment.id, d.date, today)}
                   </li>

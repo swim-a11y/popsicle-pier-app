@@ -107,7 +107,7 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
     const state = owedState(data, owed, today);
     for (const o of owed.offers) {
       const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
-      items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(owed.childRecordId)} ${longDate(o.date, today)} for ${longDate(owed.cancelledDate, today)}. ${answer}` });
+      items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(owed.childRecordId)} a new date, ${longDate(o.date, today)}, for the cancelled lesson on ${longDate(owed.cancelledDate, today)}. ${answer}` });
     }
     if (state.kind === "credited") items.push({ at: owed.creditApprovedAt!, line: `Approved a credit for ${name(owed.childRecordId)}'s lesson on ${longDate(owed.cancelledDate, today)}.` });
     if (state.kind === "closed") items.push({ at: state.offer.answeredAt ?? state.offer.offeredAt, line: `Closed with no credit: ${name(owed.childRecordId)}'s lesson on ${longDate(owed.cancelledDate, today)}.` });
@@ -115,7 +115,7 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
   for (const f of data.fillIns) {
     const o = f.offer;
     const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
-    items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(f.childRecordId)} a fill-in on ${longDate(o.date, today)} for ${longDate(f.missedDate, today)}. ${answer}` });
+    items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(f.childRecordId)} a fill-in on ${longDate(o.date, today)} for the missed lesson on ${longDate(f.missedDate, today)}. ${answer}` });
   }
   return items.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, limit);
 }

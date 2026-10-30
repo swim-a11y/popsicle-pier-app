@@ -69,18 +69,41 @@ export function waitlistItems(data: Readonly<AppData>, today: DateOnly): Waitlis
   return items;
 }
 
-/** The words a person reviews before sending. Exactly these are stored and shown to the family. */
-export function waitlistOfferWords(input: { child: Pick<Child, "firstName">; cls: SwimClass; pool: Pick<Pool, "name">; inPlaceOf: Pick<LessonInfo, "weekday" | "startTime"> | null; answerBy: DateOnly; today: DateOnly }): string {
-  const { child, cls, pool, inPlaceOf, answerBy, today } = input;
-  const spot = `A spot opened for ${child.firstName} in ${classWords(cls)} at ${pool.name}, with Coach ${cls.instructorFirstName}.`;
-  const ask = inPlaceOf ? `Would you like ${child.firstName} to move there from ${classWords(inPlaceOf)}?` : "Would you like it?";
-  return `${spot} ${ask} Please answer by ${longDate(answerBy, today)}.`;
+/** "the Sunday 9:30 am class at Madison, with Coach Dev": a class in full, since both pools have look-alike times. */
+export function classFullWords(cls: Pick<SwimClass, "weekday" | "startTime" | "instructorFirstName">, poolName: string): string {
+  return `${classWords(cls)} at ${poolName}, with Coach ${cls.instructorFirstName}`;
+}
+
+/**
+ * The words a person reviews before sending. Exactly these are stored and
+ * shown to the family. A switch names both classes in full and says what yes
+ * and no do; a reply to the family's "different time" note says so.
+ */
+export function waitlistOfferWords(input: {
+  child: Pick<Child, "firstName">;
+  cls: SwimClass;
+  pool: Pick<Pool, "name">;
+  inPlaceOf: (Pick<LessonInfo, "weekday" | "startTime" | "instructorFirstName"> & { pool: Pick<Pool, "name"> }) | null;
+  answerBy: DateOnly;
+  today: DateOnly;
+  asked?: boolean;
+}): string {
+  const { child, cls, pool, inPlaceOf, answerBy, today, asked } = input;
+  const name = child.firstName;
+  const there = classFullWords(cls, pool.name);
+  const by = `Please answer by ${longDate(answerBy, today)}.`;
+  if (!inPlaceOf) return `A spot opened for ${name} in ${there}. Would you like it? ${by}`;
+  const from = classFullWords(inPlaceOf, inPlaceOf.pool.name);
+  if (asked) {
+    return `You asked about a different time for ${name}. There's a place in ${there}. If you say yes, ${name} moves there from ${from}, and that class ends for ${name}. If you say no, or don't answer, ${name} keeps that class and stays on the ${pool.name} waitlist for a time that fits. ${by}`;
+  }
+  return `A spot opened for ${name} in ${there}. Would you like ${name} to move there from ${from}? If you say yes, that class ends for ${name}; if you say no, nothing changes. ${by}`;
 }
 
 /** A person sends the drafted offer. The spot is held for the family until they answer or the week is up. */
 export function sendWaitlistOffer(
   tx: Transaction,
-  input: { entryId: string; classId: string; inPlaceOfEnrollmentId: string | null; today: DateOnly; now: IsoTime; newId: () => string; by?: string },
+  input: { entryId: string; classId: string; inPlaceOfEnrollmentId: string | null; today: DateOnly; now: IsoTime; newId: () => string; by?: string; fromNoteId?: string },
 ): WaitlistOffer {
   const item = waitlistItems(tx.data(), input.today).find((i) => i.entry.id === input.entryId);
   if (!item) throw new OfferProblemError("That waitlist entry isn't here anymore.");
@@ -99,7 +122,8 @@ export function sendWaitlistOffer(
     poolId: item.pool.id,
     classId: spot.cls.id,
     inPlaceOfEnrollmentId: inPlaceOf?.enrollment.id ?? null,
-    words: waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy, today: input.today }),
+    fromNoteId: input.fromNoteId ?? null,
+    words: waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy, today: input.today, asked: Boolean(input.fromNoteId) }),
     offeredAt: input.now,
     offeredBy: input.by ?? BY_THE_SCHOOL,
     answerBy,
@@ -225,7 +249,7 @@ export function offerDifferentTime(
   const cls = tx.get("classes", input.classId);
   if (!cls || !differentTimes(tx.data(), note.childRecordId, input.today).some((t) => t.cls.id === cls.id)) throw new OfferProblemError("That time isn't open anymore.");
   const entry = tx.add("waitlistEntries", { id: input.newId(), familyId: note.familyId, childRecordId: note.childRecordId, poolId: cls.poolId, classId: null, createdAt: input.now });
-  const offer = sendWaitlistOffer(tx, { entryId: entry.id, classId: cls.id, inPlaceOfEnrollmentId: input.inPlaceOfEnrollmentId, today: input.today, now: input.now, newId: input.newId, by: input.by });
+  const offer = sendWaitlistOffer(tx, { entryId: entry.id, classId: cls.id, inPlaceOfEnrollmentId: input.inPlaceOfEnrollmentId, today: input.today, now: input.now, newId: input.newId, by: input.by, fromNoteId: note.id });
   if (!note.readAt) tx.update("familyNotes", note.id, { readAt: input.now, readBy: input.by ?? BY_THE_SCHOOL });
   return offer;
 }

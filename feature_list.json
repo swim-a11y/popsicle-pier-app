@@ -1348,5 +1348,33 @@
     "description": "Cancelling a class date owes the lesson to everyone booked into it that day (one-offs too) but not to a family that already said they'll miss it; a one-off on a cancelled, closed or left class's day isn't shown as coming.",
     "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a cancelled day is owed to who was booked into it; a noted miss isn't owed twice / a booked fill-in goes once the family leaves the class it stood in for",
     "passes": true
+  },
+  {
+    "id": "switch-now-and-new",
+    "area": "family",
+    "description": "An offer to switch classes says what it is: \"A different time for Jules\" when it answers the family's note (\"A spot for Ada\" otherwise); its words name both classes in full and say what yes and no do; Now and New each show both prices (\"Same price as now.\" when they match); the buttons read \"Yes, move Jules\" and \"No, keep Jules's class\"; Home's answer card says \"A different time for Jules\" and \"See Jules's new time\".",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson; messages and notes > a waitlist offer: words, both prices, and the family's yes books it; tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it",
+    "passes": true
+  },
+  {
+    "id": "answered-shows-outcome",
+    "area": "family",
+    "description": "Once a family answers a waitlist offer, a new date or a fill-in, its card in Messages shows what happened and the day they answered, not the question; after a yes to a switch it says the old class has ended, and Home says \"New class from ...\" under the new class until its first lesson; a no keeps the class.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson / a no keeps the class and the waitlist the family asked for; messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; missed days and fill-ins on every screen > the inbox can read a miss with no fill-in; Messages can say no; Lesson dates say where each stands",
+    "passes": true
+  },
+  {
+    "id": "inbox-switch-context",
+    "area": "office",
+    "description": "The inbox's different-time card says which class the offer replaces and that it doesn't add one, shows both prices on each time, and says what \"Mark as read, no offer\" leaves as it is; the Done list says what each new date and fill-in was for.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson; tests/unit/fillins.test.ts: fill-ins > a person sends it with the app's words; the note is read; the family answers by the day before",
+    "passes": true
+  },
+  {
+    "id": "home-class-blocks",
+    "area": "family",
+    "description": "On Home each class on a child's card is its own block, its day, time, pool and coach in semibold, with a hairline between classes; on Lesson dates a day the family said they'll miss reads \"Not coming\".",
+    "test": "tests/unit/rooms-render.test.tsx: Home's swimmer cards > each class is its own block, a hairline between, its when, where and who in semibold; messages and notes > sends a ready-made note picked from a lesson date; it waits for a person, then shows read",
+    "passes": true
   }
 ]

@@ -19,7 +19,7 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.10";
+export const SEED_VERSION = "2026-10-30.11";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {

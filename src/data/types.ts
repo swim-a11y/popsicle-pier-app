@@ -506,6 +506,8 @@ export interface WaitlistOffer {
   classId: string;
   /** A person chose to offer it in place of this class (a switch), or null for another class. */
   inPlaceOfEnrollmentId: string | null;
+  /** Offered in reply to the family's own "different time" note. */
+  fromNoteId: string | null;
   words: string;
   offeredAt: IsoTime;
   offeredBy: string;

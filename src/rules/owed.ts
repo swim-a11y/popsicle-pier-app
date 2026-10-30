@@ -260,13 +260,15 @@ export interface AnswerWaiting {
   id: string;
   childFirstName: string;
   answerBy: DateOnly;
+  /** A waitlist offer that answers the family's own "different time" note. */
+  asked?: boolean;
 }
 
 /** Offers waiting for this family's answer: a waitlist spot, a date for a cancelled lesson, or a fill-in. Soonest answer-by first. */
 export function answersWaiting(data: Readonly<AppData>, familyId: string, today: DateOnly): AnswerWaiting[] {
   const name = (id: string) => data.children.find((c) => c.id === id)?.firstName ?? "";
   const out: AnswerWaiting[] = [];
-  for (const o of offersForFamily(data, familyId)) if (offerOpen(o, today)) out.push({ kind: "waitlist", id: o.id, childFirstName: name(o.childRecordId), answerBy: o.answerBy });
+  for (const o of offersForFamily(data, familyId)) if (offerOpen(o, today)) out.push({ kind: "waitlist", id: o.id, childFirstName: name(o.childRecordId), answerBy: o.answerBy, asked: Boolean(o.fromNoteId) });
   for (const owed of owedForFamily(data, familyId)) {
     const state = owedState(data, owed, today);
     if (state.kind === "waiting") out.push({ kind: "owed", id: owed.id, childFirstName: name(owed.childRecordId), answerBy: state.offer.answerBy });

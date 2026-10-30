@@ -95,7 +95,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 179 unit tests and 50 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 182 unit tests and 50 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone the family release runs about twelve screens by design (every line visible, never folded).
