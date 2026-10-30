@@ -41,11 +41,11 @@ export function AddDoneScreen() {
   }
   const { child, enrollment } = added;
   const info = enrollment ? lessonInfo(data, enrollment) : null;
-  const anotherClass = Boolean(enrollment) && data.enrollments.filter((e) => e.childRecordId === child.id).length > 1;
+  const anotherClass = Boolean(enrollment) && data.enrollments.filter((e) => e.childRecordId === child.id && !e.endedOn).length > 1;
   const since = enrollment?.createdAt ?? child.createdAt;
   const waits = data.waitlistEntries.filter((w) => w.childRecordId === child.id && w.createdAt >= since);
   const { main } = familyPayment(data, family.id);
-  const firstTimeAtPool = info && !data.enrollments.some((e) => e.familyId === family.id && e.id !== enrollment!.id && e.poolId === info.pool.id);
+  const firstTimeAtPool = info && !data.enrollments.some((e) => e.familyId === family.id && e.id !== enrollment!.id && !e.endedOn && e.poolId === info.pool.id);
 
   return (
     <ScreenShell id="add-done">

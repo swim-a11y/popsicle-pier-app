@@ -238,7 +238,7 @@ export function latestAddition(data: Readonly<AppData>, familyId: string): { chi
   const family = data.families.find((f) => f.id === familyId);
   if (!family) return null;
   const newest = <T extends { createdAt: string }>(rows: T[]) => [...rows].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
-  const enrollment = newest(data.enrollments.filter((e) => e.familyId === familyId && e.createdAt > family.createdAt));
+  const enrollment = newest(data.enrollments.filter((e) => e.familyId === familyId && !e.endedOn && e.createdAt > family.createdAt));
   const child = newest(data.children.filter((c) => c.familyId === familyId && c.createdAt > family.createdAt));
   if (child && (!enrollment || child.createdAt > enrollment.createdAt)) return { child, enrollment: null };
   if (!enrollment) return null;

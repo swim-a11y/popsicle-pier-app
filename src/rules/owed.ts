@@ -14,6 +14,7 @@ import { cancellationOn, closureOn } from "@/rules/closures";
 import { addDays, ageInMonths, clockTime, longDate, minutesOfDay, weekdayOf } from "@/rules/dates";
 import { heldByWaitlistOffers, offerOpen, oneOffsOn } from "@/rules/holds";
 import { ANSWER_DAYS, BY_THE_SCHOOL, OfferProblemError, offersForFamily } from "@/rules/offers";
+import { isActive } from "@/rules/family";
 import { classFits } from "@/rules/times";
 
 export const OWED_WINDOW_DAYS = 21;
@@ -27,24 +28,28 @@ export interface OwedSlot {
 }
 
 /**
- * Dates a person can offer: the child's own coach at the same pool, from
- * tomorrow to three weeks after the cancelled lesson, in a class that fits
- * the child or one of the coach's private (free evaluation) times, with a
- * place free that day. Never a closed or cancelled day, the child's own
- * class, a date already offered, or a time that runs into one of the
- * child's lessons.
+ * Dates a person can offer: the child's own coach at the same pool, after the
+ * cancelled lesson and at least a week and a day out (so the family has its
+ * full week to answer), up to three weeks after the cancelled lesson, in a
+ * class that fits the child or one of the coach's private (free evaluation)
+ * times, with a place free that day. Never a closed or cancelled day, the
+ * child's own class, a date already offered, or a time that runs into one
+ * of the child's lessons.
  */
 export function owedSlots(data: Readonly<AppData>, owed: OwedLesson, today: DateOnly): OwedSlot[] {
   const child = data.children.find((c) => c.id === owed.childRecordId);
   const pool = data.pools.find((p) => p.id === owed.poolId);
   if (!child || !pool) return [];
   const own = data.enrollments
-    .filter((e) => e.childRecordId === child.id && e.kind === "class")
+    .filter((e) => e.childRecordId === child.id && e.kind === "class" && isActive(e))
     .map((e) => data.classes.find((c) => c.id === e.timeId))
     .filter((c): c is SwimClass => Boolean(c));
   const offered = new Set(owed.offers.map((o) => `${o.timeId}|${o.date}`));
   const last = addDays(owed.cancelledDate, OWED_WINDOW_DAYS);
-  let from = addDays(today, 1);
+  // A full week to answer before the date, and never before the lesson it replaces.
+  let from = addDays(today, ANSWER_DAYS + 1);
+  const after = addDays(owed.cancelledDate, 1);
+  if (after > from) from = after;
   if (pool.opensOn && pool.opensOn > from) from = pool.opensOn;
   const times: { kind: OwedSlot["kind"]; time: SwimClass | EvaluationTime }[] = [
     ...data.classes.map((time) => ({ kind: "class" as const, time })),
@@ -58,8 +63,7 @@ export function owedSlots(data: Readonly<AppData>, owed: OwedLesson, today: Date
     const lt = kind === "class" ? data.lessonTypes.find((l) => l.id === (time as SwimClass).lessonTypeId) : undefined;
     if (kind === "class" && !lt) continue;
     for (let d = addDays(from, (time.weekday - weekdayOf(from) + 7) % 7); d <= last; d = addDays(d, 7)) {
-      // Never the cancelled day itself: the coach may be away all day.
-      if (d === owed.cancelledDate || closureOn(data, pool.id, d) || cancellationOn(data, time.id, d) || offered.has(`${time.id}|${d}`)) continue;
+      if (closureOn(data, pool.id, d) || cancellationOn(data, time.id, d) || offered.has(`${time.id}|${d}`)) continue;
       const age = ageInMonths(child.birthDate, d);
       if (lt ? !classFits(time as SwimClass, lt, age, child.stageId, pool) : age < pool.youngestAgeMonths) continue;
       const held = kind === "class" ? heldByWaitlistOffers(data, time.id, today) : 0;
@@ -91,18 +95,16 @@ export function owedState(data: Readonly<AppData>, owed: OwedLesson, today: Date
   return slots.length > 0 ? { kind: "offer", round, slots } : { kind: "no-opening", round };
 }
 
-/** A week to answer, and always before the date offered. */
-export function owedAnswerBy(date: DateOnly, today: DateOnly): DateOnly {
-  const week = addDays(today, ANSWER_DAYS);
-  const dayBefore = addDays(date, -1);
-  return week < dayBefore ? week : dayBefore;
+/** A week to answer. Every date offered is later than that. */
+export function owedAnswerBy(today: DateOnly): DateOnly {
+  return addDays(today, ANSWER_DAYS);
 }
 
 /** The words a person reviews before sending. Exactly these are stored and shown to the family. */
 export function owedOfferWords(input: { childFirstName: string; owed: Pick<OwedLesson, "cancelledDate">; slot: OwedSlot; pool: Pick<Pool, "name">; round: number; today: DateOnly }): string {
   const { childFirstName: name, owed, slot, pool, round, today } = input;
   const when = `${longDate(slot.date, today)} at ${clockTime(slot.time.startTime)} with Coach ${slot.time.instructorFirstName} at ${pool.name}`;
-  const ask = `Does that work? Please answer by ${longDate(owedAnswerBy(slot.date, today), today)}.`;
+  const ask = `Does that work? Please answer by ${longDate(owedAnswerBy(today), today)}.`;
   if (round === 1) return `We cancelled ${name}'s lesson on ${longDate(owed.cancelledDate, today)}. We can offer ${when} instead. ${ask}`;
   return `One more date for ${name}'s lesson we cancelled on ${longDate(owed.cancelledDate, today)}: ${when}. ${ask}`;
 }
@@ -128,7 +130,7 @@ export function sendOwedOffer(
     words: owedOfferWords({ childFirstName: child.firstName, owed, slot, pool, round: state.round, today: input.today }),
     offeredAt: input.now,
     offeredBy: input.by ?? BY_THE_SCHOOL,
-    answerBy: owedAnswerBy(slot.date, input.today),
+    answerBy: owedAnswerBy(input.today),
     answer: null,
     answeredAt: null,
   };
@@ -147,11 +149,11 @@ export function answerOwedOffer(tx: Transaction, input: { owedId: string; family
 }
 
 /** Only the owner, and only when no opening exists: that lesson comes off the bill. */
-export function approveOwedCredit(tx: Transaction, input: { owedId: string; today: DateOnly; now: IsoTime }): OwedLesson {
+export function approveOwedCredit(tx: Transaction, input: { owedId: string; today: DateOnly; now: IsoTime; by?: string }): OwedLesson {
   const owed = tx.get("owedLessons", input.owedId);
   if (!owed) throw new OfferProblemError("That owed lesson isn't here anymore.");
   if (owedState(tx.data(), owed, input.today).kind !== "no-opening") throw new OfferProblemError("A credit is only for when no opening exists.");
-  return tx.update("owedLessons", owed.id, { creditApprovedAt: input.now });
+  return tx.update("owedLessons", owed.id, { creditApprovedAt: input.now, creditApprovedBy: input.by ?? "the owner" });
 }
 
 /**
@@ -161,10 +163,11 @@ export function approveOwedCredit(tx: Transaction, input: { owedId: string; toda
  */
 export function cancelClassDate(tx: Transaction, input: { classId: string; date: DateOnly; reason: string; now: IsoTime; newId: () => string }): OwedLesson[] {
   const cls = tx.get("classes", input.classId);
-  if (!cls || weekdayOf(input.date) !== cls.weekday || cancellationOn(tx.data(), cls.id, input.date)) return [];
+  // A closed day has no lesson to cancel: closed days are never billed and never made up.
+  if (!cls || weekdayOf(input.date) !== cls.weekday || closureOn(tx.data(), cls.poolId, input.date) || cancellationOn(tx.data(), cls.id, input.date)) return [];
   const cancellation = tx.add("cancellations", { id: input.newId(), classId: cls.id, poolId: cls.poolId, date: input.date, reason: input.reason, createdAt: input.now });
   const owed: OwedLesson[] = [];
-  for (const e of tx.list("enrollments").filter((x) => x.kind === "class" && x.timeId === cls.id && x.firstLessonDate <= input.date)) {
+  for (const e of tx.list("enrollments").filter((x) => x.kind === "class" && x.timeId === cls.id && x.firstLessonDate <= input.date && (!x.endedOn || x.endedOn > input.date))) {
     owed.push(
       tx.add("owedLessons", {
         id: input.newId(),
@@ -177,6 +180,7 @@ export function cancelClassDate(tx: Transaction, input: { classId: string; date:
         instructorFirstName: cls.instructorFirstName,
         offers: [],
         creditApprovedAt: null,
+        creditApprovedBy: null,
         createdAt: input.now,
       }),
     );

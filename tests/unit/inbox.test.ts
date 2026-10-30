@@ -6,9 +6,10 @@ import { signAndSave, TimeFilledError, bookTime } from "@/rules/booking";
 import { familyLessons, lessonDaysAhead, nextLessonPerChild } from "@/rules/family";
 import { doneItems, flagAnswers, inboxCounts, recordTalk, talkItems } from "@/rules/inbox";
 import { answerWaitlistOffer, OfferProblemError, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
-import { answerOwedOffer, approveOwedCredit, bookedOwedDates, owedState, sendOwedOffer } from "@/rules/owed";
+import { answerOwedOffer, approveOwedCredit, bookedOwedDates, cancelClassDate, owedState, sendOwedOffer } from "@/rules/owed";
 import { timesForChild } from "@/rules/times";
 import { buildSeed } from "@/sandbox/seed";
+import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
 import { pretendFamilyLeft, pretendSchoolCancelled } from "@/sandbox/pretend-school";
 
 import { completeDraft, memoryStorage, NOW, testId, TODAY } from "./helpers";
@@ -41,7 +42,7 @@ describe("the approvals inbox: waitlist offers", () => {
     expect(await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }))).toEqual(["buc-sun-0900-cove"]);
     data = await store.snapshot();
     expect(data.classes.find((c) => c.id === "buc-sun-0900-cove")!.openSpots).toBe(1);
-    const partner = data.enrollments.filter((e) => e.timeId === "buc-sun-0900-cove");
+    const partner = data.enrollments.filter((e) => e.timeId === "buc-sun-0900-cove" && !e.endedOn);
     expect(partner).toHaveLength(1);
     expect(partner[0].unpairedSince).toBe("2026-11-08");
     [item] = waitlistItems(data, TODAY);
@@ -177,7 +178,27 @@ describe("the approvals inbox: owed lessons", () => {
     await store.transaction((tx) => approveOwedCredit(tx, { owedId: owed.id, today: TODAY, now: NOW }));
     data = await store.snapshot();
     expect(owedState(data, data.owedLessons[0], TODAY).kind).toBe("credited");
+    expect(data.owedLessons[0].creditApprovedBy).toBe("the owner");
     expect(inboxCounts(data, TODAY).owed).toBe(0);
+  });
+
+  it("never before the cancelled lesson, always a full week to answer, and never on a closed day", async () => {
+    const { store, familyId } = await signedUp(completeDraft({}));
+    // Cancel Mia's November 8 lesson: dates start after it, at least 8 days out, and stop three weeks on.
+    const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-08", reason: "Coach Dev is away that day (sample)", now: NOW, newId: testId }));
+    const state = owedState(await store.snapshot(), owed, TODAY);
+    if (state.kind !== "offer") throw new Error(state.kind);
+    for (const s of state.slots) {
+      expect(s.date > "2026-11-08").toBe(true);
+      expect(s.date >= "2026-11-07").toBe(true);
+      expect(s.date <= "2026-11-29").toBe(true);
+    }
+    expect(state.slots.map((s) => s.date)).not.toContain("2026-11-29");
+    const offer = await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: state.slots[0].time.id, date: state.slots[0].date, today: TODAY, now: NOW }));
+    expect(offer.answerBy).toBe("2026-11-06");
+    // A closed day has no lesson to cancel.
+    expect(await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-29", reason: "x", now: NOW, newId: testId }))).toEqual([]);
+    expect((await store.snapshot()).owedLessons.filter((o) => o.familyId === familyId)).toHaveLength(1);
   });
 
   it("cancelling the same date twice adds nothing", async () => {
@@ -205,5 +226,15 @@ describe("the approvals inbox: talk with a family first", () => {
     await expect(store.transaction((tx) => recordTalk(tx, { childRecordId: ada.id, now: NOW, newId: testId }))).rejects.toThrow(OfferProblemError);
     expect(data.talkRecords).toEqual([talk]);
     expect(doneItems(data, TODAY)[0].line).toMatch(/^Talked with Jordan Sample about Ada/);
+  });
+
+  it("the first lesson waits for the talk: the sandbox's first lesson skips the child until a person records it", async () => {
+    const { store, familyId } = await signedUp(adaDraft());
+    const first = await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }));
+    expect(first).toEqual({ added: 0, held: ["Ada"] });
+    expect((await store.snapshot()).attendanceMarks.filter((m) => m.familyId === familyId)).toEqual([]);
+    const ada = (await store.snapshot()).children.find((c) => c.familyId === familyId)!;
+    await store.transaction((tx) => recordTalk(tx, { childRecordId: ada.id, now: NOW, newId: testId }));
+    expect(await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }))).toEqual({ added: 1, held: [] });
   });
 });

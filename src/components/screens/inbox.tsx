@@ -55,11 +55,12 @@ function Problem({ text }: { text: string | null }) {
 }
 
 /** The words the app drafted, shown exactly as the family will see them, then the person sends them. */
-function Draft({ words, busy, onSend }: { words: string; busy: boolean; onSend: () => void }) {
+function Draft({ words, to, busy, onSend }: { words: string; to: string; busy: boolean; onSend: () => void }) {
   return (
     <div className="flex flex-col gap-3 rounded-control border-2 border-line px-4 py-3" data-testid="draft">
       <p className="font-strong text-heading">Drafted for you to send</p>
       <p data-testid="draft-words">{words}</p>
+      <p>Goes to {to}&apos;s Messages in the app.</p>
       <Button size="block" disabled={busy} onClick={onSend}>
         {busy ? "Sending..." : "Send the offer (sample)"}
       </Button>
@@ -89,7 +90,12 @@ function TalkCard({ data, item, today }: { data: Readonly<AppData>; item: TalkIt
   return (
     <Card title={childTitle(data, item.child.id)} sub={familyLine(data, item.family.id)} testId="inbox-talk">
       <p>
-        A yes on {topics || "a question"}. {item.next ? `Their first lesson, ${longDate(item.next.date, today)} at ${item.next.poolName}, waits until someone has talked with the family.` : ""}
+        A yes on {topics || "a question"}.{" "}
+        {item.next
+          ? item.hadFirst
+            ? `Their next lesson is ${longDate(item.next.date, today)} at ${item.next.poolName}.`
+            : `Their first lesson, ${longDate(item.next.date, today)} at ${item.next.poolName}, waits until someone has talked with the family.`
+          : ""}
       </p>
       <p>
         {item.family.confirmedEmail ?? item.family.email}
@@ -130,6 +136,7 @@ function OwedCard({ data, owed, state, today }: { data: Readonly<AppData>; owed:
           <div className="flex flex-col gap-2">
             {slots.map((s) => (
               <ChoiceButton
+                outlined
                 key={`${s.time.id}|${s.date}`}
                 title={slotLabel(s, today)}
                 line={s.kind === "evaluation" ? `Coach ${s.time.instructorFirstName}'s private time` : `${classWords(s.time)}, with room that day`}
@@ -142,6 +149,7 @@ function OwedCard({ data, owed, state, today }: { data: Readonly<AppData>; owed:
           {chosen ? (
             <Draft
               words={owedOfferWords({ childFirstName: child.firstName, owed, slot: chosen, pool, round: state.round, today })}
+              to={data.families.find((f) => f.id === owed.familyId)?.parentFullName ?? "the family"}
               busy={busy}
               onSend={() => void act((tx, t, now) => sendOwedOffer(tx, { owedId: owed.id, timeId: chosen.time.id, date: chosen.date, today: t, now }))}
             />
@@ -194,7 +202,7 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
             <div className="flex flex-col gap-2">
               <p className="font-strong text-heading">Pick the class to offer.</p>
               {item.open.map((o) => (
-                <ChoiceButton key={o.cls.id} title={classWords(o.cls)} line={`Coach ${o.cls.instructorFirstName}`} selected={classId === o.cls.id} onClick={() => setClassId(o.cls.id)} />
+                <ChoiceButton outlined key={o.cls.id} title={classWords(o.cls)} line={`Coach ${o.cls.instructorFirstName}`} selected={classId === o.cls.id} onClick={() => setClassId(o.cls.id)} />
               ))}
             </div>
           ) : (
@@ -205,9 +213,10 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
           {item.ownClasses.length > 0 ? (
             <div className="flex flex-col gap-2">
               <p className="font-strong text-heading">Offer it as</p>
-              <ChoiceButton title="Another class" line="They keep their other classes." selected={mode === "another"} onClick={() => setMode("another")} />
+              <ChoiceButton outlined title="Another class" line="They keep their other classes." selected={mode === "another"} onClick={() => setMode("another")} />
               {item.ownClasses.map((l) => (
                 <ChoiceButton
+                outlined
                   key={l.enrollment.id}
                   title={`In place of ${classWords(l)}`}
                   line="That class ends when they say yes."
@@ -220,6 +229,7 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
           {ready && spot ? (
             <Draft
               words={waitlistOfferWords({ child: item.child, cls: spot.cls, pool: item.pool, inPlaceOf: inPlaceOf ?? null, answerBy: addDays(today, ANSWER_DAYS), today })}
+              to={item.family.parentFullName}
               busy={busy}
               onSend={() =>
                 void act((tx, t, now) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: spot.cls.id, inPlaceOfEnrollmentId: inPlaceOf?.enrollment.id ?? null, today: t, now, newId }))
@@ -249,14 +259,15 @@ function NoteItem({ data, note }: { data: Readonly<AppData>; note: FamilyNote })
   );
 }
 
-function Section({ id, title, count, empty, children }: { id: string; title: string; count: number; empty: string; children: ReactNode }) {
+function Section({ id, title, count, children }: { id: string; title: string; count: number; children: ReactNode[] }) {
+  if (children.length === 0) return null;
   return (
     <section className="flex flex-col gap-3" aria-labelledby={id} data-testid={`inbox-section-${id}`}>
       <h2 id={id} className="flex items-center justify-between gap-2 font-heading text-big text-heading">
         <span>{title}</span>
-        <Tag tone={count > 0 ? "mark" : "plain"}>{count}</Tag>
+        {count > 0 ? <Tag tone="mark">{count}</Tag> : null}
       </h2>
-      {count === 0 && !children ? <p>{empty}</p> : children}
+      {children}
     </section>
   );
 }
@@ -282,34 +293,26 @@ export function InboxScreen() {
   const waits = waitlistItems(data, today);
   const notes = unreadNotes(data);
   const done = doneItems(data, today);
-  const list = (nodes: ReactNode[]) => (nodes.length > 0 ? nodes : null);
+  const sections = [
+    { id: "talks", title: "Talk with a family first", count: counts.talks, items: talks.map((t) => <TalkCard key={t.child.id} data={data} item={t} today={today} />) },
+    { id: "owed", title: "Owed lessons", count: counts.owed, items: owed.map((o) => <OwedCard key={o.owed.id} data={data} owed={o.owed} state={o.state} today={today} />) },
+    { id: "waitlist", title: "Waitlist", count: counts.waitlist, items: waits.map((w) => <WaitCard key={w.entry.id} data={data} item={w} today={today} />) },
+    { id: "notes", title: "Notes from families", count: counts.notes, items: notes.map((n) => <NoteItem key={n.id} data={data} note={n} />) },
+  ];
 
   return (
     <ScreenShell id="owner-inbox">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <PageTitle>Inbox</PageTitle>
-        <p>Each item waits for a person. The app lists what&apos;s waiting and drafts the words; nothing is sent or booked until you choose.</p>
-        <div className="flex items-start gap-3">
-          <Tag>SAMPLE</Tag>
-          <p>Made-up families. Nothing leaves this phone.</p>
-        </div>
+        <p>Nothing is sent or booked until you choose.</p>
       </div>
 
-      <Section id="talks" title="Talk with a family first" count={counts.talks} empty="No one is waiting for a talk.">
-        {list(talks.map((t) => <TalkCard key={t.child.id} data={data} item={t} today={today} />))}
-      </Section>
-
-      <Section id="owed" title="Owed lessons" count={counts.owed} empty="No lessons are owed.">
-        {list(owed.map((o) => <OwedCard key={o.owed.id} data={data} owed={o.owed} state={o.state} today={today} />))}
-      </Section>
-
-      <Section id="waitlist" title="Waitlist" count={counts.waitlist} empty="No one is on a waitlist.">
-        {list(waits.map((w) => <WaitCard key={w.entry.id} data={data} item={w} today={today} />))}
-      </Section>
-
-      <Section id="notes" title="Notes from families" count={counts.notes} empty="No notes waiting.">
-        {list(notes.map((n) => <NoteItem key={n.id} data={data} note={n} />))}
-      </Section>
+      {sections.every((s) => s.items.length === 0) ? <p className="rounded-card bg-surface px-4 py-3 shadow-card">Nothing is waiting for a person.</p> : null}
+      {sections.map((s) => (
+        <Section key={s.id} id={s.id} title={s.title} count={s.count}>
+          {s.items}
+        </Section>
+      ))}
 
       <section className="flex flex-col gap-3 border-t-2 border-line pt-5" aria-labelledby="done" data-testid="inbox-done">
         <h2 id="done" className="font-heading text-big text-heading">
@@ -325,6 +328,11 @@ export function InboxScreen() {
           </ul>
         )}
       </section>
+
+      <div className="flex items-start gap-3">
+        <Tag>SAMPLE</Tag>
+        <p>Made-up families. Each item waits for a person; the app lists what&apos;s waiting and drafts the words.</p>
+      </div>
     </ScreenShell>
   );
 }

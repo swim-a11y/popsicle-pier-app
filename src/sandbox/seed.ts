@@ -19,7 +19,7 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.8";
+export const SEED_VERSION = "2026-10-30.9";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {
@@ -103,7 +103,7 @@ function child(id: string, familyId: string, firstName: string, birthDate: strin
 }
 
 function enrollment(id: string, f: string, c: string, classId: string, lessonTypeId: string, poolId: string, firstLessonDate: string, unpairedSince: string | null = null): Enrollment {
-  return { id, familyId: f, childRecordId: c, kind: "class", poolId, timeId: classId, lessonTypeId, firstLessonDate, unpairedSince, createdAt: SEEDED_AT };
+  return { id, familyId: f, childRecordId: c, kind: "class", poolId, timeId: classId, lessonTypeId, firstLessonDate, unpairedSince, endedOn: null, createdAt: SEEDED_AT };
 }
 
 /** A signature for a seeded sample family: all boxes, no choices, signed online. */

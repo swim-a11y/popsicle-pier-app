@@ -90,7 +90,8 @@ async function shoot(base: string) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `screenshots/${base}.png`, fullPage: true });
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  if (height <= 1400) return;
+  // Anything taller than one phone screen also gets phone-height slices, since the fixed tab bar sits across a full-page shot.
+  if (height <= 667) return;
   let part = 1;
   for (let top = 0; top < height - 200; top += 480, part += 1) {
     await page.evaluate((y) => window.scrollTo(0, y), top);
@@ -701,10 +702,15 @@ test("walk-through 6: the first Sunday, continuing walk-through 1", async () => 
   await openSandbox();
   await tap(page.getByRole("button", { name: "Pretend the first lesson happened" }));
   await expect(page).toHaveURL(/\/$/);
+  // Ada's custody yes holds her first lesson until a person talks with the family (walk-through 9 records the talk).
+  await expect(page.getByTestId("home-child").filter({ hasText: "Ada" }).getByTestId("home-talk")).toHaveText(
+    "Thanks. Someone from the school will talk with you before the first lesson.",
+  );
   screen("Progress for walk-through 2's family");
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "Progress" }));
   const deck = page.getByTestId("on-deck");
-  await expect(deck).toHaveCount(2);
+  await expect(deck).toHaveCount(1);
+  await expect(page.getByTestId("note-not-yet")).toContainText("Ada's first lesson on");
   for (const line of await deck.allInnerTexts()) {
     expect(line).toBe("On deck: you");
     expect(line).not.toContain("Rose");
@@ -712,7 +718,7 @@ test("walk-through 6: the first Sunday, continuing walk-through 1", async () => 
   const marksNow = (await stored()).attendanceMarks.filter((m: { adult: { kind: string } }) => m.adult.kind !== "parent");
   expect(marksNow).toHaveLength(0);
   await check("progress-family-2");
-  run!.notes.push("Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.");
+  run!.notes.push("Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck. Ada's first lesson waits for a talk about her custody yes.");
   run!.passed = true;
 });
 
@@ -866,7 +872,7 @@ test("walk-through 8: bills and a note, continuing walk-throughs 1 and 7", async
   screen("Messages");
   await page.goBack();
   await tap(page.getByRole("link", { name: /^Messages/ }));
-  await expect(page.getByText("Tap a note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeVisible();
+  await expect(page.getByText("Send a ready-made note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeVisible();
   await check("messages-empty");
   await tap(page.getByRole("button", { name: "Send a note" }));
 
@@ -958,9 +964,9 @@ test("walk-through 9: the owner's approvals inbox, a talk, a note and a waitlist
   await tap(page.getByRole("button", { name: /^Leo and Ada's family/ }));
 
   screen("Home: an answer is needed");
-  await expect(page.getByTestId("home-needs-answer")).toContainText("A spot for Ada.");
+  await expect(page.getByTestId("home-needs-answer")).toContainText("A spot opened for Ada.");
   await check("home-needs-answer");
-  await tap(page.getByRole("button", { name: "Open Messages" }));
+  await tap(page.getByRole("button", { name: "See Ada's spot" }));
 
   screen("Messages: the offer");
   const offer = page.getByTestId("school-offer");
@@ -970,7 +976,9 @@ test("walk-through 9: the owner's approvals inbox, a talk, a note and a waitlist
   await tap(offer.getByRole("button", { name: "Yes, book it" }));
   await expect(page.getByTestId("offer-status")).toContainText("You said yes. Ada's first lesson there is");
   const after = await stored();
-  const adaClasses = after.enrollments.filter((e: { childRecordId: string }) => e.childRecordId === adaRow.id).map((e: { timeId: string }) => e.timeId);
+  const adaClasses = after.enrollments
+    .filter((e: { childRecordId: string; endedOn: string | null }) => e.childRecordId === adaRow.id && !e.endedOn)
+    .map((e: { timeId: string }) => e.timeId);
   expect(adaClasses).toEqual(["buc-sun-0900-cove"]);
   expect(after.waitlistEntries.filter((w: { childRecordId: string }) => w.childRecordId === adaRow.id)).toHaveLength(0);
   await check("messages-offer-yes");
@@ -998,7 +1006,7 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
   const card = page.getByTestId("school-cancelled").first();
   const heading = await card.getByRole("heading").innerText();
   const who = heading.match(/^We cancelled (\w+)'s lesson$/)![1];
-  await expect(card.getByTestId("offer-status")).toHaveText("A person at the school offers you another date with Coach Dev.");
+  await expect(card.getByTestId("offer-status")).toHaveText("A person at the school is choosing a date with Coach Dev.");
   await check("messages-cancelled");
 
   screen("Sandbox: play as the owner");
@@ -1021,7 +1029,7 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
 
   screen("Home: an answer is needed");
   await expect(page.getByTestId("home-needs-answer")).toContainText(`A new date for ${who}'s cancelled lesson.`);
-  await tap(page.getByRole("button", { name: "Open Messages" }));
+  await tap(page.getByRole("button", { name: `See ${who}'s new date` }));
 
   screen("Messages: say yes");
   const answer = page.getByTestId("school-cancelled").filter({ hasText: `We cancelled ${who}'s lesson` }).first();
@@ -1032,8 +1040,9 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
   screen("Lesson dates");
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
   await tap(page.getByRole("link", { name: /^Lesson dates/ }));
-  await expect(page.getByTestId("cancelled-day").first()).toContainText("Its new date is");
-  await expect(page.getByTestId("owed-dates")).toContainText(who);
+  const cancelledDay = page.getByTestId("lesson-dates").filter({ hasText: who }).getByTestId("cancelled-day").first();
+  await expect(cancelledDay).toContainText(/Its new date is \w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev\./);
+  await expect(cancelledDay.getByTestId("owed-day")).toContainText("New date");
   await check("lesson-dates-owed");
 
   screen("Bills");

@@ -62,12 +62,17 @@ describe("bills", () => {
     const nov = within(months[0]);
     expect(nov.getByRole("heading", { name: "November" })).toBeInTheDocument();
     expect(flat(nov.getByTestId("bill-date").textContent)).toBe("Friday, October 30");
-    expect(flat(nov.getByTestId("draft-date").textContent)).toBe("Monday, November 9");
+    expect(flat(nov.getByTestId("draft-date").textContent)).toBe("Tuesday, December 1");
     expect(flat(nov.getByTestId("billed-dates").textContent)).toBe("4 lessons: November 1, 8, 15 and 22");
     expect(flat(nov.getByTestId("not-billed").textContent)).toBe("November 29: Closed for the holiday weekend (sample). Not billed.");
     const prices = flat(nov.getByTestId("line-prices").textContent);
     expect(prices).toBe("Bank draft$136.00, 4 at $34.00Card$140.00, 4 at $35.00");
-    expect(flat(nov.getByTestId("you-pay").textContent)).toBe("You pay $136.00 by bank draft, drafted on Monday, November 9.");
+    expect(flat(nov.getByTestId("you-pay").textContent)).toBe("You pay $136.00 by bank draft, drafted on Tuesday, December 1.");
+    // The first bill went out after the 19th, so it's drafted on the next 1st at least 10 days on, and says why.
+    expect(nov.getByTestId("draft-moved")).toHaveTextContent("This bill reached you after the 19th, so it's drafted on the next 1st at least 10 days later.");
+    expect(within(months[1]).queryByTestId("draft-moved")).toBeNull();
+    // The money comes first in each month: the total and what you pay, above the lines.
+    expect(months[0].querySelector('[data-testid="you-pay"]')!.compareDocumentPosition(nov.getAllByTestId("bill-line")[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(months[1]).getByRole("heading", { name: "December" })).toBeInTheDocument();
     expect(flat(within(months[1]).getByTestId("draft-date").textContent)).toBe("Tuesday, December 1");
     expect(screen.getByText("Sample bills, worked out from your lesson dates. Nothing is ever charged in the sample.")).toBeInTheDocument();
@@ -118,7 +123,11 @@ describe("messages and notes", () => {
       await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: item.ownClasses[0].enrollment.id, today: TODAY, now: NOW, newId: testId }));
     });
     render(<HomeScreen />);
-    expect(flat((await screen.findByTestId("home-needs-answer")).textContent)).toContain("A spot for Ada. Please answer by Friday, November 6.");
+    const answer = await screen.findByTestId("home-needs-answer");
+    expect(flat(answer.textContent)).toContain("A spot opened for Ada. Please answer by Friday, November 6.");
+    // It comes first on Home, with the one filled button.
+    expect(screen.getAllByRole("heading", { level: 2 })[0]).toHaveTextContent("The school needs your answer");
+    expect(within(answer).getByRole("button", { name: "See Ada's spot" })).toBeInTheDocument();
     cleanup();
     render(<MessagesScreen />);
     const offer = await screen.findByTestId("school-offer");
@@ -130,7 +139,9 @@ describe("messages and notes", () => {
     await act(async () => fireEvent.click(within(offer).getByRole("button", { name: "Yes, book it" })));
     expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said yes. Ada's first lesson there is Sunday, November 8.");
     const data = await store.snapshot();
-    expect(data.enrollments.filter((e) => e.familyId === familyId).map((e) => e.timeId)).toEqual(["buc-sun-0900-cove"]);
+    expect(data.enrollments.filter((e) => e.familyId === familyId && !e.endedOn).map((e) => e.timeId)).toEqual(["buc-sun-0900-cove"]);
+    // The 10:00 class is kept with its end date, so its bill and notes still find it.
+    expect(data.enrollments.find((e) => e.familyId === familyId && e.timeId === "buc-sun-1000-cove")!.endedOn).toBe(TODAY);
   });
 
   it("a lesson the school cancels: the notice, the date offered, and the family's answer", async () => {
@@ -143,7 +154,7 @@ describe("messages and notes", () => {
     const card = await screen.findByTestId("school-cancelled");
     expect(within(card).getByRole("heading", { name: "We cancelled Mia's lesson" })).toBeInTheDocument();
     expect(flat(card.textContent)).toContain("Sunday, November 1 at 10:00 am, Madison. Coach Dev is away that day (sample).");
-    expect(within(card).getByTestId("offer-status")).toHaveTextContent("A person at the school offers you another date with Coach Dev.");
+    expect(within(card).getByTestId("offer-status")).toHaveTextContent("A person at the school is choosing a date with Coach Dev.");
     const owedId = (await store.snapshot()).owedLessons[0].id;
     await act(async () => {
       await store.transaction((tx) => sendOwedOffer(tx, { owedId, timeId: "mad-eval-sun-1100", date: "2026-11-08", today: TODAY, now: NOW }));
@@ -152,10 +163,12 @@ describe("messages and notes", () => {
     expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said yes. Mia's lesson is on Sunday, November 8 at 11:00 am with Coach Dev.");
     cleanup();
     render(<LessonDatesScreen />);
-    expect(flat((await screen.findByTestId("cancelled-day")).textContent)).toBe(
-      "Sunday, November 1CancelledWe cancelled this lesson. Coach Dev is away that day (sample). Its new date is Sunday, November 8.",
+    const cancelledDay = await screen.findByTestId("cancelled-day");
+    expect(flat(cancelledDay.textContent)).toContain(
+      "Sunday, November 1CancelledWe cancelled this lesson. Coach Dev is away that day (sample). Its new date is Sunday, November 8 at 11:00 am with Coach Dev.",
     );
-    expect(flat(screen.getByTestId("owed-dates").textContent)).toContain("Mia, Sunday, November 8 at 11:00 am");
+    // The new date sits right under the cancelled one, in Mia's own card.
+    expect(flat(within(cancelledDay).getByTestId("owed-day").textContent)).toBe("Sunday, November 8 at 11:00 amNew date");
     cleanup();
     render(<BillsScreen />);
     expect(flat((await screen.findAllByTestId("cancelled-billed"))[0].textContent)).toBe("November 1: we cancelled this lesson. Its new date is Sunday, November 8.");
@@ -191,6 +204,7 @@ describe("the approvals inbox", () => {
     expect(flat(within(owed).getByTestId("draft-words").textContent)).toBe(
       "We cancelled Mia's lesson on Sunday, November 1. We can offer Sunday, November 8 at 11:00 am with Coach Dev at Madison instead. Does that work? Please answer by Friday, November 6.",
     );
+    expect(within(owed).getByTestId("draft")).toHaveTextContent("Goes to Jordan Sample's Messages in the app.");
     await act(async () => fireEvent.click(within(owed).getByRole("button", { name: "Send the offer (sample)" })));
     expect(flat((await within(screen.getByTestId("inbox-owed")).findByTestId("inbox-waiting")).textContent)).toBe(
       "Offered Sunday, November 8. Waiting for the family's answer by Friday, November 6.",
@@ -215,6 +229,17 @@ describe("the approvals inbox", () => {
     await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Mark as read" })));
     expect(screen.queryByTestId("inbox-note")).toBeNull();
     expect(flat(screen.getByTestId("inbox-done").textContent)).toContain("Read: \"We'd like to talk about a different lesson time for Mia.\"");
+  });
+});
+
+describe("the approvals inbox, empty", () => {
+  it("one plain line, no headed zeros", async () => {
+    freshStore();
+    render(<InboxScreen />);
+    expect(await screen.findByText("Nothing is waiting for a person.")).toBeInTheDocument();
+    expect(screen.queryByTestId("inbox-section-talks")).toBeNull();
+    expect(screen.queryByTestId("inbox-section-notes")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Done" })).toBeInTheDocument();
   });
 });
 

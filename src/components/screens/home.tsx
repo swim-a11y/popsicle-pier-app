@@ -7,6 +7,7 @@ import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME } from "@/content/brand";
 import { CLIPS_LATER_LINE } from "@/content/first-lesson";
+import { SOMEONE_WILL_TALK } from "@/content/sign-up";
 import { stageName } from "@/content/path";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
@@ -62,6 +63,23 @@ export function HomeScreen() {
     <ScreenShell id="parent-home">
       <PageTitle>Hi, {family.parentFullName.split(" ")[0]}</PageTitle>
 
+      {/* An answer the school is waiting for comes first: it has a day to answer by. */}
+      {waiting.length > 0 ? (
+        <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby="needs-answer" data-testid="home-needs-answer">
+          <h2 id="needs-answer" className="font-heading text-big text-heading">
+            The school needs your answer
+          </h2>
+          {waiting.map((w) => (
+            <p key={w.id}>
+              {w.kind === "waitlist" ? `A spot opened for ${w.childFirstName}` : `A new date for ${w.childFirstName}'s cancelled lesson`}. Please answer by {longDate(w.answerBy, today)}.
+            </p>
+          ))}
+          <Button size="block" onClick={() => go("/more/messages")}>
+            {waiting.length > 1 ? "Open Messages" : waiting[0].kind === "waitlist" ? `See ${waiting[0].childFirstName}'s spot` : `See ${waiting[0].childFirstName}'s new date`}
+          </Button>
+        </section>
+      ) : null}
+
       {movingNotDone ? (
         <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby="finish-moving">
           <h2 id="finish-moving" className="font-heading text-big text-heading">
@@ -106,24 +124,8 @@ export function HomeScreen() {
               <p>At {next.pool.name}</p>
             </>
           )}
-          <Button size="block" onClick={() => go("/first-lesson")}>
+          <Button size="block" variant={waiting.length > 0 ? "secondary" : "primary"} onClick={() => go("/first-lesson")}>
             {firstTitle === "Your first lesson" ? "See your first lesson" : "See your next lesson"}
-          </Button>
-        </section>
-      ) : null}
-
-      {waiting.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby="needs-answer" data-testid="home-needs-answer">
-          <h2 id="needs-answer" className="font-heading text-big text-heading">
-            The school needs your answer
-          </h2>
-          {waiting.map((w) => (
-            <p key={w.id}>
-              {w.kind === "waitlist" ? `A spot for ${w.childFirstName}` : `A new date for ${w.childFirstName}'s cancelled lesson`}. Please answer by {longDate(w.answerBy, today)}.
-            </p>
-          ))}
-          <Button variant="secondary" size="block" onClick={() => go("/more/messages")}>
-            Open Messages
           </Button>
         </section>
       ) : null}
@@ -155,6 +157,11 @@ export function HomeScreen() {
                   )}
                 </div>
               ))}
+              {k.flaggedForPerson ? (
+                <p className="rounded-control bg-success px-3 py-2" data-testid="home-talk">
+                  {SOMEONE_WILL_TALK}
+                </p>
+              ) : null}
               {waits.map((w) => {
                 const cls = w.classId ? data.classes.find((c) => c.id === w.classId) : null;
                 return <p key={w.id}>On the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits"}.</p>;

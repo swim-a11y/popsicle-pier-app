@@ -181,6 +181,8 @@ export interface Enrollment {
   firstLessonDate: DateOnly;
   /** A semi-private enrollment with no partner carries the date it became unpaired. */
   unpairedSince: DateOnly | null;
+  /** The day the class ended (a switch, or a family leaving): no lessons from then on. Kept, so bills and notes still find it. */
+  endedOn: DateOnly | null;
   createdAt: IsoTime;
 }
 
@@ -471,6 +473,7 @@ export interface OwedLesson {
   offers: OwedOffer[];
   /** The owner approved a credit because no opening exists: that lesson isn't billed. */
   creditApprovedAt: IsoTime | null;
+  creditApprovedBy: string | null;
   createdAt: IsoTime;
 }
 

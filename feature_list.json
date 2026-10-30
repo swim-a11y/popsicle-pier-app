@@ -1010,7 +1010,8 @@
     "area": "money",
     "description": "A bill reaches the family by the 19th, at least 10 days before the draft on the 1st; a bill that can only go out later (a family joining after the 19th) is dated the day the class was added and drafted 10 days after.",
     "test": "tests/unit/bills.test.ts: bills, lessons only > reaches the family by the 19th, at least 10 days before the draft on the 1st",
-    "passes": true
+    "passes": true,
+    "supersededBy": "bills-draft-first (rules round, DECISIONS.md 82): a late bill is drafted on the next 1st at least 10 days later, never mid-month."
   },
   {
     "id": "bills-who-pays",
@@ -1122,6 +1123,62 @@
     "area": "walkthrough",
     "description": "Walk-through 10: the school cancels a lesson for walk-through 1's family; the owner offers a date with the same coach; the family says yes; Lesson dates and Bills show the new date.",
     "test": "e2e/sign-up.spec.ts: walk-through 10",
+    "passes": true
+  },
+  {
+    "id": "bills-draft-first",
+    "area": "money",
+    "description": "Every draft is on a 1st, at least 10 days after its bill, and every bill reaches the family by the 19th before its draft, as the bank-draft words say: a family joining after the 19th gets its first bill that day, before its first lesson, drafted on the next 1st at least 10 days later; a class added after its month's bill went out is drafted on its own later 1st, and an earlier bill's draft never moves.",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > reaches the family by the 19th, at least 10 days before the draft on the 1st / a class added after its month's bill went out is drafted on its own later 1st; the first bill's draft doesn't move; tests/unit/rooms-render.test.tsx: bills > each month's lessons with both prices on every line, closed days not billed, nothing charged",
+    "passes": true
+  },
+  {
+    "id": "class-ended-kept",
+    "area": "money",
+    "description": "A class that ends (a switch, or a family leaving) keeps its booking with an end date: the lessons already taught stay on the bill, notes keep their class, and a partner left alone pays the same price.",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > a class that ends keeps its lessons already taught on the bill; a partner leaving changes no price",
+    "passes": true
+  },
+  {
+    "id": "owed-full-week",
+    "area": "schedule",
+    "description": "A date offered for a cancelled lesson is after that lesson and at least eight days out, so the family always has its full week to answer; a closed day is never cancelled or owed; a credit records who approved it.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: owed lessons > never before the cancelled lesson, always a full week to answer, and never on a closed day / a credit only when no opening exists, and only by the owner's approval",
+    "passes": true
+  },
+  {
+    "id": "talk-holds-first-lesson",
+    "area": "office",
+    "description": "A custody or health yes holds the child's first lesson: the sandbox's \"Pretend the first lesson happened\" skips that child, and says why, until a person records the talk in the inbox; Home says someone from the school will talk with the family.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: talk with a family first > the first lesson waits for the talk: the sandbox's first lesson skips the child until a person records it; e2e/sign-up.spec.ts: walk-through 6",
+    "passes": true
+  },
+  {
+    "id": "answer-first",
+    "area": "family",
+    "description": "An answer the school is waiting for comes first: Home leads with it (one filled button naming the child), Messages puts the school's offers first with one sun highlight at most, and owed-lesson words describe where it stands (choosing a date, checking what's open) without promising one.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > a waitlist offer: words, both prices, and the family's yes books it / a lesson the school cancels: the notice, the date offered, and the family's answer; e2e/sign-up.spec.ts: walk-throughs 9 and 10",
+    "passes": true
+  },
+  {
+    "id": "bills-money-first",
+    "area": "money",
+    "description": "Each month's bill shows its total (bank draft first) and what the family pays before the class lines, says why a draft moved to a later 1st, and a line with no lessons still shows both prices.",
+    "test": "tests/unit/rooms-render.test.tsx: bills > each month's lessons with both prices on every line, closed days not billed, nothing charged",
+    "passes": true
+  },
+  {
+    "id": "inbox-calm",
+    "area": "office",
+    "description": "The inbox shows only sections with something in them (or \"Nothing is waiting for a person.\"), outlined choices inside its cards, and where each drafted offer goes.",
+    "test": "tests/unit/rooms-render.test.tsx: the approvals inbox > a person talks with a family, offers a spot and a date, and reads a note; the app only drafts; the approvals inbox, empty > one plain line, no headed zeros",
+    "passes": true
+  },
+  {
+    "id": "lesson-dates-new-date",
+    "area": "schedule",
+    "description": "On Lesson dates, a cancelled lesson's new date and time sit right under it in the child's own card.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; e2e/sign-up.spec.ts: walk-through 10",
     "passes": true
   }
 ]

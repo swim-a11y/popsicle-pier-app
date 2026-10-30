@@ -64,10 +64,15 @@ export function lessonInfo(data: Readonly<AppData>, enrollment: Enrollment, mode
   };
 }
 
-/** Each child's lessons, soonest first. */
-export function familyLessons(data: Readonly<AppData>, familyId: string): LessonInfo[] {
+/** A class or evaluation still going: not ended by a switch or a family leaving. */
+export function isActive(e: Pick<Enrollment, "endedOn">): boolean {
+  return !e.endedOn;
+}
+
+/** Each child's lessons, soonest first. Bills also read classes that have ended (`includeEnded`). */
+export function familyLessons(data: Readonly<AppData>, familyId: string, opts: { includeEnded?: boolean } = {}): LessonInfo[] {
   return data.enrollments
-    .filter((e) => e.familyId === familyId)
+    .filter((e) => e.familyId === familyId && (opts.includeEnded || isActive(e)))
     .map((e) => lessonInfo(data, e))
     .filter((x): x is LessonInfo => Boolean(x))
     .sort((a, b) => (a.firstLessonDate === b.firstLessonDate ? (a.startTime < b.startTime ? -1 : 1) : a.firstLessonDate < b.firstLessonDate ? -1 : 1));
@@ -86,7 +91,7 @@ export function familyPayment(data: Readonly<AppData>, familyId: string): { main
 export function hasLessonPayment(data: Readonly<AppData>, familyId: string): boolean {
   const { main } = familyPayment(data, familyId);
   if (!main) return false;
-  return main.kind === "bank" || data.enrollments.some((e) => e.familyId === familyId && e.kind === "class");
+  return main.kind === "bank" || data.enrollments.some((e) => e.familyId === familyId && e.kind === "class" && isActive(e));
 }
 
 /** "Bank draft, with a backup card", "Card", or "Not linked yet". */
@@ -94,7 +99,7 @@ export function howTheyPay(data: Readonly<AppData>, familyId: string): string {
   const { main, backup } = familyPayment(data, familyId);
   if (!main) return "Not linked yet";
   if (main.kind === "bank") return backup ? "Bank draft, with a backup card" : "Bank draft";
-  const onlyEvaluations = data.enrollments.filter((e) => e.familyId === familyId).every((e) => e.kind === "evaluation");
+  const onlyEvaluations = data.enrollments.filter((e) => e.familyId === familyId && isActive(e)).every((e) => e.kind === "evaluation");
   return onlyEvaluations ? "A card holds the spot. The free evaluation is never charged." : "Card";
 }
 

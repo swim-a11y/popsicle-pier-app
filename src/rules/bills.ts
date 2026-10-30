@@ -1,12 +1,14 @@
 /*
   Monthly bills, lessons only (the owner's ruling, October 30, 2026): each
   month's lessons times the lesson price, with the bank draft and card
-  price on every line. Closed days aren't billed. A bill reaches the family
-  by the 19th, at least 10 days before its draft on the 1st; a bill that
-  can only go out later (a family who joins after the 19th) moves its draft
-  to 10 days after, so the 10 days always hold. No fees until the owner
-  sets the amounts. Bills are worked out from the lesson dates, never
-  stored, in this sample, and nothing is ever charged.
+  price on every line. Closed days aren't billed. Every draft is on a 1st,
+  and every bill reaches the family by the 19th before its draft, at least
+  10 days ahead, as the bank-draft words they sign say. A bill that can only
+  go out later (a family joining after the 19th, or a class added then)
+  reaches them the day the class is added, before its first lesson, and is
+  drafted on the next 1st at least 10 days on. No fees until the owner sets
+  the amounts. Bills are worked out from the lesson dates, never stored, in
+  this sample, and nothing is ever charged.
 */
 import { cardPricing, type CardPricing } from "@/config";
 import type { AppData, DateOnly } from "@/data/types";
@@ -20,6 +22,9 @@ export const MIN_NOTICE_DAYS = 10;
 
 export interface BillLine {
   lesson: LessonInfo;
+  /** The day this line's bill reaches the family, and the 1st it's drafted on. */
+  billDate: DateOnly;
+  draftDate: DateOnly;
   /** The lesson dates on this bill. */
   billed: DateOnly[];
   /** Closed days: no lesson, not billed. */
@@ -37,13 +42,14 @@ export interface BillLine {
 export interface MonthBill {
   /** The month's first day, "2026-11-01". */
   month: DateOnly;
+  /** The month's bill: its first lines' bill date and draft. A line added later carries its own. */
   billDate: DateOnly;
   draftDate: DateOnly;
   lines: BillLine[];
   bankCents: number;
   cardCents: number;
-  /** What this family pays, by how they pay. null until a way to pay is linked. */
-  pays: { method: "bank" | "card"; cents: number } | null;
+  /** What this family pays on each draft date, by how they pay. null until a way to pay is linked. */
+  pays: { method: "bank" | "card"; drafts: { draftDate: DateOnly; cents: number }[] } | null;
 }
 
 function monthOf(d: DateOnly): DateOnly {
@@ -55,14 +61,28 @@ function maxDate(a: DateOnly, b: DateOnly): DateOnly {
   return a > b ? a : b;
 }
 
-/** A class's weekly dates in one month, from its first lesson on. */
+/** A class's weekly dates in one month, from its first lesson on, and before the day it ended, if it has. */
 function classDatesIn(info: LessonInfo, month: DateOnly): DateOnly[] {
   const next = addMonths(month, 1);
+  const end = info.enrollment.endedOn && info.enrollment.endedOn < next ? info.enrollment.endedOn : next;
   let d = maxDate(info.firstLessonDate, month);
   d = addDays(d, (info.weekday - weekdayOf(d) + 7) % 7);
   const out: DateOnly[] = [];
-  for (; d < next; d = addDays(d, 7)) out.push(d);
+  for (; d < end; d = addDays(d, 7)) out.push(d);
   return out;
+}
+
+/**
+ * One class's bill for a month: it reaches the family by the 19th before the
+ * month, or the day the class was added if that's later; it's drafted on the
+ * first 1st at least 10 days after that.
+ */
+export function billDates(month: DateOnly, addedOn: DateOnly): { billDate: DateOnly; draftDate: DateOnly } {
+  const before = parseDate(addMonths(month, -1));
+  const billDate = maxDate(makeDate(before.y, before.m, BILL_DAY), addedOn);
+  const earliest = parseDate(addDays(billDate, MIN_NOTICE_DAYS));
+  const draftDate = earliest.d === 1 ? makeDate(earliest.y, earliest.m, 1) : addMonths(makeDate(earliest.y, earliest.m, 1), 1);
+  return { billDate, draftDate };
 }
 
 /**
@@ -86,13 +106,13 @@ export function firstBillMonth(data: Readonly<AppData>, familyId: string): DateO
 /** One month's bill for a family: a line per class, both prices on every line. */
 export function monthBill(data: Readonly<AppData>, familyId: string, month: DateOnly, mode: CardPricing = cardPricing): MonthBill {
   const lines: BillLine[] = [];
-  let joined = "";
-  for (const info of familyLessons(data, familyId)) {
+  for (const info of familyLessons(data, familyId, { includeEnded: true })) {
     if (info.bankCents === null || info.lessonKind === "evaluation") continue;
     const dates = classDatesIn(info, month);
     if (dates.length === 0) continue;
     const line: BillLine = {
       lesson: info,
+      ...billDates(month, todayAtSchool(new Date(info.enrollment.createdAt))),
       billed: [],
       closed: [],
       cancelled: [],
@@ -118,25 +138,19 @@ export function monthBill(data: Readonly<AppData>, familyId: string, month: Date
     line.bankCents = line.billed.length * line.bankEach;
     line.cardCents = line.billed.length * (line.cardEach + line.cardFeeEach);
     lines.push(line);
-    const added = todayAtSchool(new Date(info.enrollment.createdAt));
-    if (added > joined) joined = added;
   }
-  // By the 19th before the month, or the day the newest class on it was added, if later.
-  const before = parseDate(addMonths(month, -1));
-  const billDate = maxDate(makeDate(before.y, before.m, BILL_DAY), joined);
-  const draftDate = maxDate(month, addDays(billDate, MIN_NOTICE_DAYS));
+  // The month's bill date and draft are its first lines'; a class added after them is drafted on its own later 1st.
+  const first = [...lines].sort((a, b) => (a.billDate < b.billDate ? -1 : a.billDate > b.billDate ? 1 : 0))[0];
+  const billDate = first?.billDate ?? billDates(month, month).billDate;
+  const draftDate = first?.draftDate ?? billDates(month, month).draftDate;
   const bankCents = lines.reduce((s, l) => s + l.bankCents, 0);
   const cardCents = lines.reduce((s, l) => s + l.cardCents, 0);
   const { main } = familyPayment(data, familyId);
-  return {
-    month,
-    billDate,
+  const drafts = [...new Set(lines.map((l) => l.draftDate))].sort().map((draftDate) => ({
     draftDate,
-    lines,
-    bankCents,
-    cardCents,
-    pays: main ? { method: main.kind, cents: main.kind === "bank" ? bankCents : cardCents } : null,
-  };
+    cents: lines.filter((l) => l.draftDate === draftDate).reduce((s, l) => s + (main?.kind === "card" ? l.cardCents : l.bankCents), 0),
+  }));
+  return { month, billDate, draftDate, lines, bankCents, cardCents, pays: main ? { method: main.kind, drafts } : null };
 }
 
 /** This month's bill and the next (from the first month billed), for the Bills screen. */

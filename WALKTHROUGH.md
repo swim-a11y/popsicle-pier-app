@@ -32,7 +32,7 @@ A new parent, one child at Madison, every field typed with no fill button, payin
 
 ## 6. The first Sunday, continuing walk-through 1
 
-Your first lesson shows parking, door, arrival time, what to bring, "No drop-off" and you alone on deck. Pretend the first lesson happened: Home now leads with the "How it went" note; Progress shows the stage name, the coach's two lines, "On deck: you" and "Approved by Coach [name]"; no tier, no other child; pressing it again adds nothing. Then for walk-through 2's family: the Waiting grandmother is never named as the adult on deck.
+Your first lesson shows parking, door, arrival time, what to bring, "No drop-off" and you alone on deck. Pretend the first lesson happened: Home now leads with the "How it went" note; Progress shows the stage name, the coach's two lines, "On deck: you" and "Approved by Coach [name]"; no tier, no other child; pressing it again adds nothing. Then for walk-through 2's family: the Waiting grandmother is never named as the adult on deck, and Ada's first lesson waits, because of her custody yes, until a person records the talk (walk-through 9 does).
 
 ## 7. Add a brother or sister, then another class (the next phase)
 
@@ -44,11 +44,11 @@ Continuing walk-throughs 1 and 7: Bills shows each month with a line per class, 
 
 ## 9. The owner's approvals inbox
 
-As the owner: walk-through 2's Ada waits under "Talk with a family first" (a yes on the custody question, no details); "We've talked with the family" clears it. Mia's note is marked read. Ada waits for the full Sunday 9:00 class; Pretend a family left a full class; a person picks "In place of the Sunday 10:00 am class", sees the drafted words and sends them. As Ada's family: Home says the school needs an answer; Messages shows the offer with both prices; Yes, book it moves Ada to 9:00 and off the waitlist.
+As the owner: walk-through 2's Ada waits under "Talk with a family first" (a yes on the custody question, no details, her first lesson on hold); "We've talked with the family" clears it. Mia's note is marked read. Ada waits for the full Sunday 9:00 class; Pretend a family left a full class; a person picks "In place of the Sunday 10:00 am class", sees the drafted words and sends them. As Ada's family: Home leads with "The school needs your answer" and "See Ada's spot"; Messages shows the offer first, with both prices; Yes, book it moves Ada to 9:00 and off the waitlist (her 10:00 class is kept with its end date).
 
 ## 10. A lesson the school cancels
 
-Mia's family sees its note was read. Pretend the school cancelled a lesson: Messages says which lesson and that a person offers another date with Coach Dev. As the owner: pick one date with Coach Dev, see the drafted words, send. As the family: Home asks for an answer; Yes, that works; Lesson dates show the cancelled day with its new date, and Bills says the lesson stays on the bill with its new date.
+Mia's family sees its note was read. Pretend the school cancelled a lesson: Messages says which lesson and that a person at the school is choosing a date with Coach Dev. As the owner: pick one date with Coach Dev (at least eight days out, so the family has a full week), see the drafted words and where they go, send. As the family: Home leads with the answer; Yes, that works; Lesson dates show the cancelled day with its new date and time right under it, and Bills says the lesson stays on the bill with its new date.
 
 ## Counts
 

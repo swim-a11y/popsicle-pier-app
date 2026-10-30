@@ -93,14 +93,15 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 138 unit tests and 47 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 143 unit tests and 47 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone, Your swimmers' Continue button sits just below the first screen, and the family release runs about twelve screens by design (every line visible, never folded).
 - The sample banner wraps to four lines at 375px, not the three planned (DECISIONS.md 32).
 - Times stay in time order, so a Full time can come first in the list (DECISIONS.md 47).
 - Home's next lesson follows the weekly classes; a date booked in place of a cancelled lesson shows on Lesson dates and in Messages (DECISIONS.md 76).
-- "Pretend the first lesson happened" doesn't wait for a talk about a custody or health yes; the inbox records the talk (DECISIONS.md 78).
+- A family joining after the 19th has its first month drafted on the next 1st with the following month's (DECISIONS.md 82); the owner may want to confirm that reading.
+- The inbox has no sign-in or roles: anyone on this phone can open it. Real data needs both first.
 - Screenshots are made by `npm run e2e` into `screenshots/` and aren't committed.
 
 ## Keep for later (from the owner's handoff notes)

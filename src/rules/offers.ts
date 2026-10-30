@@ -11,7 +11,7 @@ import type { AppData, Child, DateOnly, Family, IsoTime, Pool, SwimClass, Waitli
 import { lessonPaymentNote } from "@/rules/add";
 import { bookTime } from "@/rules/booking";
 import { addDays, clockTime, longDate, weekdayName } from "@/rules/dates";
-import { familyLessons, hasLessonPayment, lessonInfo, upcomingLessonDate, type LessonInfo } from "@/rules/family";
+import { familyLessons, hasLessonPayment, isActive, lessonInfo, upcomingLessonDate, type LessonInfo } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { timesForChild } from "@/rules/times";
 
@@ -110,14 +110,16 @@ export function sendWaitlistOffer(
 }
 
 /**
- * Ends one class for a child: the enrollment goes and its spot opens. A
- * partner left alone in a semi-private class starts the unpaired month again
- * from their next lesson; their price doesn't change.
+ * Ends one class for a child from today: the enrollment is kept with its end
+ * date (so bills keep the lessons already taught, and notes keep their
+ * class) and its spot opens. A partner left alone in a semi-private class
+ * starts the unpaired month again from their next lesson; their price
+ * doesn't change.
  */
 export function leaveClass(tx: Transaction, enrollmentId: string, today: DateOnly): void {
   const e = tx.get("enrollments", enrollmentId);
-  if (!e) return;
-  tx.remove("enrollments", e.id);
+  if (!e || !isActive(e)) return;
+  tx.update("enrollments", e.id, { endedOn: today });
   if (e.kind === "evaluation") {
     const ev = tx.get("evaluationTimes", e.timeId);
     if (ev) tx.update("evaluationTimes", ev.id, { openSpots: Math.min(ev.capacity, ev.openSpots + 1) });
@@ -127,7 +129,7 @@ export function leaveClass(tx: Transaction, enrollmentId: string, today: DateOnl
   if (!cls) return;
   tx.update("classes", cls.id, { openSpots: Math.min(cls.capacity, cls.openSpots + 1) });
   const lt = tx.get("lessonTypes", cls.lessonTypeId);
-  const rest = tx.list("enrollments").filter((x) => x.kind === "class" && x.timeId === cls.id);
+  const rest = tx.list("enrollments").filter((x) => x.kind === "class" && x.timeId === cls.id && isActive(x));
   if (lt?.kind === "semi-private" && rest.length === 1) {
     const info = lessonInfo(tx.data(), rest[0]);
     if (info) tx.update("enrollments", rest[0].id, { unpairedSince: upcomingLessonDate(tx.data(), info, today) });

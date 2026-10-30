@@ -151,6 +151,7 @@ export function ChoiceButton({
   onClick,
   children,
   testId,
+  outlined,
 }: {
   title: ReactNode;
   line?: ReactNode;
@@ -158,6 +159,8 @@ export function ChoiceButton({
   onClick: () => void;
   children?: ReactNode;
   testId?: string;
+  /** Inside a white card: a line-colored border so each choice still reads as tappable. */
+  outlined?: boolean;
 }) {
   return (
     <button
@@ -166,8 +169,9 @@ export function ChoiceButton({
       aria-pressed={selected ? true : undefined}
       data-testid={testId}
       className={cn(
-        "flex min-h-tap-big w-full flex-col items-start gap-1 rounded-card border-2 bg-surface px-4 py-3 text-left shadow-card",
-        selected ? "border-primary" : "border-transparent",
+        "flex min-h-tap-big w-full flex-col items-start gap-1 rounded-card border-2 bg-surface px-4 py-3 text-left",
+        outlined ? "shadow-none" : "shadow-card",
+        selected ? "border-primary" : outlined ? "border-line" : "border-transparent",
       )}
     >
       <span className="flex w-full items-start justify-between gap-3">

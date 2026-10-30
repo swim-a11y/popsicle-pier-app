@@ -132,6 +132,10 @@ function SandboxSheetBody({ close }: { close: () => void }) {
                 setMessage("Sign up a family first, or pick one under Play as.");
                 return null;
               }
+              if (result.added === 0 && result.held.length > 0) {
+                setMessage(`${namesList(result.held)}'s first lesson waits until someone from the school has talked with the family. Play as the owner and record the talk in the inbox, then try again.`);
+                return null;
+              }
               if (result.added === 0) {
                 setMessage("Nothing new to add. This family's first lesson already happened in the sample.");
                 return null;

@@ -311,6 +311,7 @@ export function bookTime(
       lessonTypeId: lt.id,
       firstLessonDate: first,
       unpairedSince: lt.kind === "semi-private" && input.alone ? first : null,
+      endedOn: null,
       createdAt: now,
     });
     tx.update("classes", cls.id, { openSpots: cls.openSpots - 1 });
@@ -329,6 +330,7 @@ export function bookTime(
     lessonTypeId: null,
     firstLessonDate: firstOpenLessonDate(ev.weekday, today, pool.opensOn, [...closed, ...datesFullOfOneOffs(tx.data(), ev, today)]),
     unpairedSince: null,
+    endedOn: null,
     createdAt: now,
   });
   tx.update("evaluationTimes", ev.id, { openSpots: ev.openSpots - 1 });

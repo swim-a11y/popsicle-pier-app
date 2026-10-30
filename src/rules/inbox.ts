@@ -9,6 +9,7 @@ import type { Transaction } from "@/data/store";
 import type { AppData, Child, DateOnly, Family, FamilyNote, IsoTime, OwedLesson, TalkRecord } from "@/data/types";
 import { longDate, shownAtSchool } from "@/rules/dates";
 import { nextLessonPerChild } from "@/rules/family";
+import { hasHadFirstLesson } from "@/rules/first-sunday";
 import { BY_THE_SCHOOL, OfferProblemError, classWords, waitlistItems } from "@/rules/offers";
 import { owedState, type OwedState } from "@/rules/owed";
 
@@ -20,6 +21,8 @@ export interface TalkItem {
   health: boolean;
   /** The lesson that waits until a person has talked with the family. */
   next: { date: DateOnly; poolName: string } | null;
+  /** A lesson already marked held (a yes added after the first lesson). */
+  hadFirst: boolean;
 }
 
 /** The child's newest yes or no answers: from the signature that named them, or the coverage row when they were added. */
@@ -39,7 +42,7 @@ export function talkItems(data: Readonly<AppData>, today: DateOnly): TalkItem[] 
     .map((child) => {
       const family = data.families.find((f) => f.id === child.familyId)!;
       const next = family ? nextLessonPerChild(data, family.id, today).find((l) => l.child.id === child.id) : undefined;
-      return { child, family, ...flagAnswers(data, child.id), next: next ? { date: next.date, poolName: next.pool.name } : null };
+      return { child, family, ...flagAnswers(data, child.id), next: next ? { date: next.date, poolName: next.pool.name } : null, hadFirst: hasHadFirstLesson(data, child.id) };
     })
     .filter((t) => Boolean(t.family))
     .sort((a, b) => ((a.next?.date ?? "9") < (b.next?.date ?? "9") ? -1 : 1));

@@ -48,12 +48,12 @@ export async function fillSampleFamily(): Promise<string> {
   });
 }
 
-export async function pretendTheFirstLesson(): Promise<{ added: number; familyName: string | null }> {
+export async function pretendTheFirstLesson(): Promise<{ added: number; held: string[]; familyName: string | null }> {
   const store = getStore();
   const now = new Date().toISOString();
   return store.transaction((tx) => {
     const family = currentFamily(tx.data());
-    if (!family) return { added: 0, familyName: null };
+    if (!family) return { added: 0, held: [], familyName: null };
     return { ...pretendFirstLesson(tx, { familyId: family.id, now, newId }), familyName: family.parentFullName };
   });
 }

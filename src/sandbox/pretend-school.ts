@@ -18,7 +18,7 @@ export function pretendFamilyLeft(tx: Transaction, input: { today: DateOnly }): 
   for (const classId of wanted) {
     const cls = tx.get("classes", classId);
     if (!cls || cls.openSpots > 0) continue;
-    const leaving = tx.list("enrollments").find((e) => e.kind === "class" && e.timeId === cls.id && sample.has(e.familyId));
+    const leaving = tx.list("enrollments").find((e) => e.kind === "class" && e.timeId === cls.id && !e.endedOn && sample.has(e.familyId));
     if (!leaving) continue;
     leaveClass(tx, leaving.id, input.today);
     freed.push(cls.id);

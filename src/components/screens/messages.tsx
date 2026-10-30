@@ -23,7 +23,7 @@ import { answerOwedOffer, answersWaiting, owedForFamily, owedState } from "@/rul
 
 function AnswerButtons({ yes, onAnswer, busy }: { yes: string; onAnswer: (answer: "yes" | "no") => void; busy: boolean }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <Button size="block" disabled={busy} onClick={() => onAnswer("yes")}>
         {busy ? "Saving..." : yes}
       </Button>
@@ -54,7 +54,7 @@ function useAnswer() {
   return { busy, problem, answer };
 }
 
-function WaitlistOfferCard({ data, offer, today }: { data: Readonly<AppData>; offer: WaitlistOffer; today: DateOnly }) {
+function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppData>; offer: WaitlistOffer; today: DateOnly; first: boolean }) {
   const { busy, problem, answer } = useAnswer();
   const child = data.children.find((c) => c.id === offer.childRecordId);
   const cls = data.classes.find((c) => c.id === offer.classId);
@@ -70,7 +70,7 @@ function WaitlistOfferCard({ data, offer, today }: { data: Readonly<AppData>; of
         <h3 id={`offer-${offer.id}`} className="font-heading text-big text-heading">
           A spot for {child.firstName}
         </h3>
-        {open ? <Tag tone="highlight">Needs your answer</Tag> : null}
+        {open ? <Tag tone={first ? "highlight" : "plain"}>Needs your answer</Tag> : null}
       </div>
       <p data-testid="offer-words">{offer.words}</p>
       {open ? (
@@ -101,7 +101,7 @@ function WaitlistOfferCard({ data, offer, today }: { data: Readonly<AppData>; of
   );
 }
 
-function CancelledCard({ data, owed, today }: { data: Readonly<AppData>; owed: OwedLesson; today: DateOnly }) {
+function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; owed: OwedLesson; today: DateOnly; first: boolean }) {
   const { busy, problem, answer } = useAnswer();
   const child = data.children.find((c) => c.id === owed.childRecordId);
   const pool = data.pools.find((p) => p.id === owed.poolId);
@@ -117,7 +117,7 @@ function CancelledCard({ data, owed, today }: { data: Readonly<AppData>; owed: O
         <h3 id={`owed-${owed.id}`} className="font-heading text-big text-heading">
           We cancelled {child.firstName}&apos;s lesson
         </h3>
-        {state.kind === "waiting" ? <Tag tone="highlight">Needs your answer</Tag> : null}
+        {state.kind === "waiting" ? <Tag tone={first ? "highlight" : "plain"}>Needs your answer</Tag> : null}
       </div>
       <p>
         {longDate(owed.cancelledDate, today)}
@@ -145,8 +145,10 @@ function CancelledCard({ data, owed, today }: { data: Readonly<AppData>; owed: O
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
           No date with Coach {owed.instructorFirstName} was open, so the owner approved a credit. {longDate(owed.cancelledDate, today)} comes off your bill.
         </p>
+      ) : state.kind === "no-opening" ? (
+        <p data-testid="offer-status">A person at the school is checking what&apos;s open with Coach {owed.instructorFirstName}.</p>
       ) : (
-        <p data-testid="offer-status">A person at the school offers you another date with Coach {owed.instructorFirstName}.</p>
+        <p data-testid="offer-status">A person at the school is choosing a date with Coach {owed.instructorFirstName}.</p>
       )}
       {problem ? <p className="rounded-control bg-notice px-3 py-2">{problem}</p> : null}
     </article>
@@ -184,35 +186,35 @@ export function MessagesScreen() {
   const notes = notesForFamily(data, family.id);
   // Anything waiting for an answer first, then the rest newest first.
   const school = [
-    ...offers.map((o) => ({ key: o.id, at: o.answeredAt ?? o.offeredAt, open: waiting.some((w) => w.id === o.id), node: <WaitlistOfferCard key={o.id} data={data} offer={o} today={today} /> })),
-    ...owed.map((o) => ({ key: o.id, at: o.offers[o.offers.length - 1]?.offeredAt ?? o.createdAt, open: waiting.some((w) => w.id === o.id), node: <CancelledCard key={o.id} data={data} owed={o} today={today} /> })),
+    ...offers.map((o) => ({ key: o.id, at: o.answeredAt ?? o.offeredAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <WaitlistOfferCard key={o.id} data={data} offer={o} today={today} first={first} /> })),
+    ...owed.map((o) => ({ key: o.id, at: o.offers[o.offers.length - 1]?.offeredAt ?? o.createdAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <CancelledCard key={o.id} data={data} owed={o} today={today} first={first} /> })),
   ].sort((a, b) => (a.open !== b.open ? (a.open ? -1 : 1) : a.at < b.at ? 1 : -1));
 
   return (
     <ScreenShell id="messages">
       <PageTitle>Messages</PageTitle>
-      <p className="rounded-card bg-success px-4 py-3">{MESSAGES_LINE}</p>
       {sent ? (
         <p role="status" className="rounded-card bg-success px-4 py-3 font-strong">
           Sent. A person at the school reads every note.
         </p>
       ) : null}
-      <Button size="block" variant={waiting.length > 0 ? "secondary" : "primary"} onClick={() => go("/more/messages/new")}>
-        Send a note
-      </Button>
-      <div className="flex items-start gap-3">
-        <Tag>SAMPLE</Tag>
-        <p>Sample only. Notes stay on this phone, and no one at the pool is told.</p>
-      </div>
 
+      {/* The school's offers come first: an answer may be due. */}
       {school.length > 0 ? (
         <section className="flex flex-col gap-3" aria-labelledby="from-school">
           <h2 id="from-school" className="font-heading text-big text-heading">
             From the school
           </h2>
-          {school.map((s) => s.node)}
+          {school.map((s, i) => s.card(i === 0 && s.open))}
         </section>
       ) : null}
+
+      <div className="flex flex-col gap-2">
+        <Button size="block" variant={waiting.length > 0 ? "secondary" : "primary"} onClick={() => go("/more/messages/new")}>
+          Send a note
+        </Button>
+        <p>{MESSAGES_LINE}</p>
+      </div>
 
       <section className="flex flex-col gap-3" aria-labelledby="your-notes">
         <h2 id="your-notes" className="font-heading text-big text-heading">
@@ -237,6 +239,11 @@ export function MessagesScreen() {
           </article>
         ))}
       </section>
+
+      <div className="flex items-start gap-3">
+        <Tag>SAMPLE</Tag>
+        <p>Sample only. No note is really sent, and no one at the pool is told.</p>
+      </div>
     </ScreenShell>
   );
 }

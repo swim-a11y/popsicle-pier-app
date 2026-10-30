@@ -98,7 +98,7 @@ describe("shell", () => {
     cleanup();
 
     // Owner rulings 2 and 3 (October 30, 2026) filled Bills and Messages, so they're no longer coming next.
-    // Messages keeps the brief's line, with tap for "tell us in a sentence": notes are ready-made, never free text.
+    // Messages keeps the brief's line, with a ready-made note for "tell us in a sentence": never free text.
     const store = freshStore();
     const draft = completeDraft({});
     await act(async () => {
@@ -106,7 +106,7 @@ describe("shell", () => {
       await store.transaction((tx) => signAndSave(tx, { draft, today: TODAY, now: NOW, browserName: "Chrome", newId: testId }));
     });
     render(<MessagesScreen />);
-    expect(await screen.findByText("Tap a note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeInTheDocument();
+    expect(await screen.findByText("Send a ready-made note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Family tabs" })).toBeInTheDocument();
     cleanup();
 
