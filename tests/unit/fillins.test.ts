@@ -45,7 +45,7 @@ describe("fill-ins", () => {
     const { store, familyId, note } = await missNote();
     const fillIn = await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW, newId: testId }));
     expect(flat(fillIn.offer.words)).toBe(
-      "You told us Mia will miss Sunday, November 8. We can offer a fill-in on Sunday, November 15 at 11:00 am with Coach Dev at Madison. Does that work? Please answer by Saturday, November 14.",
+      "You told us Mia will miss Sunday, November 8. We can offer a fill-in on Sunday, November 15 at 11:00 am with Coach Dev at Madison. It's the one fill-in for this lesson, and it costs nothing extra. Does that work? Please answer by Saturday, November 14. If we don't hear by then, we'll close it.",
     );
     let data = await store.snapshot();
     expect(data.familyNotes.find((n) => n.id === note.id)!.readAt).toBe(NOW);

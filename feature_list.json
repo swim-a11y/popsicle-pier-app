@@ -1299,5 +1299,19 @@
     "description": "On Lesson dates a new date or a fill-in shows once, as a block right under the day it stands in for: its pill, then when and with whom.",
     "test": "tests/unit/rooms-render.test.tsx: messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; fill-ins > a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day",
     "passes": true
+  },
+  {
+    "id": "fill-in-one-chance",
+    "area": "family",
+    "description": "A fill-in's words say it's the one fill-in for that lesson, that it costs nothing extra, when to answer by, and that it closes with no answer; the owner's card says there's no second date once it's sent.",
+    "test": "tests/unit/fillins.test.ts: fill-ins > a person sends it with the app's words; the note is read; the family answers by the day before; tests/unit/rooms-render.test.tsx: fill-ins > a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day",
+    "passes": true
+  },
+  {
+    "id": "missed-day-status",
+    "area": "schedule",
+    "description": "On Lesson dates a missed day says where it stands (read with no fill-in, a fill-in to answer, said no, closed with no answer, or booked and shown under it); every status pill sits under its date; a weekly lesson on a day with a new date or fill-in says what the other one is.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > sends a ready-made note picked from a lesson date; it waits for a person, then shows read / a lesson the school cancels: the notice, the date offered, and the family's answer",
+    "passes": true
   }
 ]

@@ -111,7 +111,8 @@ describe("messages and notes", () => {
     // Lesson dates mark the day.
     cleanup();
     render(<LessonDatesScreen />);
-    expect(flat((await screen.findByTestId("missing-day")).textContent)).toBe("Sunday, November 8MissingYou sent a note that Mia will miss it.");
+    // A person read the note and offered no fill-in: the family's page says so.
+    expect(flat((await screen.findByTestId("missing-day")).textContent)).toBe("Sunday, November 8MissingWe read your note. There's no fill-in for this one.");
     expect(familyId).toBeTruthy();
   });
 
@@ -170,7 +171,7 @@ describe("messages and notes", () => {
     expect(flat(within(cancelledDay).getByTestId("owed-day").textContent)).toBe("New dateSunday, November 8 at 11:00 am with Coach Dev");
     expect(flat(cancelledDay.textContent)).not.toContain("Its new date is");
     // Mia's weekly lesson that day shows its own time, so the two don't mix up.
-    expect(screen.getAllByTestId("lesson-day").map((li) => flat(li.textContent))).toContain("Sunday, November 8 at 10:00 am");
+    expect(screen.getAllByTestId("lesson-day").map((li) => flat(li.textContent))).toContain("Sunday, November 8 at 10:00 amMia also has a new date at 11:00 am that day.");
     cleanup();
     render(<BillsScreen />);
     expect(flat((await screen.findAllByTestId("cancelled-billed"))[0].textContent)).toBe("November 1: we cancelled this lesson. Its new date is Sunday, November 8.");
@@ -344,11 +345,11 @@ describe("fill-ins", () => {
     });
     render(<InboxScreen />);
     const note = await screen.findByTestId("inbox-note");
-    expect(flat(note.textContent)).toContain("A fill-in: one date with Coach Dev the week after. Pick one, or none.");
+    expect(flat(note.textContent)).toContain("A fill-in: one date with Coach Dev the week after. Pick one, or none. Once you send it, there's no second date.");
     expect(within(note).queryByTestId("draft")).toBeNull();
     await act(async () => fireEvent.click(within(note).getByTestId("fill-in-slot-2026-11-15-1100")));
     expect(flat(within(note).getByTestId("draft-words").textContent)).toBe(
-      "You told us Mia will miss Sunday, November 8. We can offer a fill-in on Sunday, November 15 at 11:00 am with Coach Dev at Madison. Does that work? Please answer by Saturday, November 14.",
+      "You told us Mia will miss Sunday, November 8. We can offer a fill-in on Sunday, November 15 at 11:00 am with Coach Dev at Madison. It's the one fill-in for this lesson, and it costs nothing extra. Does that work? Please answer by Saturday, November 14. If we don't hear by then, we'll close it.",
     );
     await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Send the fill-in (sample)" })));
     expect(screen.queryByTestId("inbox-note")).toBeNull();

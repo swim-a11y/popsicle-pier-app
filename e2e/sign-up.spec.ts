@@ -1172,7 +1172,7 @@ test("walk-through 12: a fill-in for a lesson the family will miss", async () =>
 
   screen("Inbox: offer a fill-in");
   const note = page.getByTestId("inbox-note").filter({ hasText: `We'll miss Mia's lesson on ${pickedDate}` });
-  await expect(note).toContainText(/A fill-in: one date with Coach \w+ the week after\. Pick one, or none\./);
+  await expect(note).toContainText(/A fill-in: one date with Coach \w+ the week after\. Pick one, or none\. Once you send it, there's no second date\./);
   await tap(note.locator('[data-testid^="fill-in-slot-"]').first());
   await expect(note.getByTestId("draft-words")).toContainText(`You told us Mia will miss ${pickedDate}. We can offer a fill-in on`);
   await check("inbox-fill-in", { family: false });

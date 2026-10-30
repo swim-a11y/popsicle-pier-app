@@ -266,7 +266,7 @@ function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: Family
       <p>Sent {shownAtSchool(note.sentAt)}</p>
       {state?.kind === "offer" ? (
         <>
-          <p className="font-strong text-heading">A fill-in: one date with Coach {state.coach} the week after. Pick one, or none.</p>
+          <p className="font-strong text-heading">A fill-in: one date with Coach {state.coach} the week after. Pick one, or none. Once you send it, there&apos;s no second date.</p>
           <div className="flex flex-col gap-2">
             {slots.map((s) => (
               <ChoiceButton

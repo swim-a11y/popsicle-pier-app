@@ -70,7 +70,7 @@ function WaitlistLine({ data, familyId, entry, childFirstName, today }: { data: 
           </Button>
         </div>
       ) : (
-        <Button variant="quiet" size="small" className="self-start" onClick={() => setAsking(true)}>
+        <Button variant="quiet" size="small" className="self-start px-0" onClick={() => setAsking(true)}>
           Leave this waitlist
         </Button>
       )}

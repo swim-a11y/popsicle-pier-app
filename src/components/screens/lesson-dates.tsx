@@ -37,8 +37,14 @@ function fillInFor(data: Readonly<AppData>, enrollmentId: string, date: DateOnly
 /** What a day the family said they'll miss means now: the note, and where its fill-in stands. */
 function missLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, name: string, today: DateOnly): string {
   const f = fillInFor(data, enrollmentId, date);
-  if (f && f.offer.answer === null && offerOpen(f.offer, today)) return `You sent a note that ${name} will miss it. Messages has a fill-in for you to answer.`;
-  return `You sent a note that ${name} will miss it.`;
+  const sent = `You sent a note that ${name} will miss it.`;
+  if (f?.offer.answer === "yes") return sent;
+  if (f?.offer.answer === "no") return `${sent} You said no, thanks, to the fill-in.`;
+  if (f && offerOpen(f.offer, today)) return `${sent} Messages has a fill-in for you to answer.`;
+  if (f) return `${sent} The fill-in we offered closed with no answer.`;
+  const note = data.familyNotes.find((n) => n.kind === "miss" && n.enrollmentId === enrollmentId && n.lessonDate === date);
+  if (note?.readAt) return "We read your note. There's no fill-in for this one.";
+  return sent;
 }
 
 /** A booked fill-in, as a row right under the day it stands in for. */
@@ -100,7 +106,8 @@ export function LessonDatesScreen() {
           <StandInBlock key={`${x.owed.id}-${x.offer.date}`} label="New date" date={x.offer.date} time={x.time.startTime} coach={x.time.instructorFirstName} today={today} testId="owed-day" />
         );
         // A day with another lesson for this swimmer too (a new date or a fill-in) shows each one's time.
-        const otherLessonDays = new Set(upcomingLessons(data, family.id, today).filter((x) => x.child.id === l.child.id && x.inPlaceOf).map((x) => x.date));
+        const otherLessons = upcomingLessons(data, family.id, today).filter((x) => x.child.id === l.child.id && x.inPlaceOf);
+        const otherLessonDays = new Set(otherLessons.map((x) => x.date));
         return (
           <section key={l.enrollment.id} className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`dates-${l.enrollment.id}`} data-testid="lesson-dates">
             <div className="flex flex-col gap-1">
@@ -116,18 +123,14 @@ export function LessonDatesScreen() {
               {days.map((d) =>
                 d.closedReason ? (
                   <li key={d.date} className="flex flex-col gap-1" data-testid="closed-day">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span>{longDate(d.date, today)}</span>
-                      <Tag>Closed</Tag>
-                    </span>
+                    <span>{longDate(d.date, today)}</span>
+                    <Tag>Closed</Tag>
                     <span>{d.closedReason}</span>
                   </li>
                 ) : d.cancelledReason ? (
                   <li key={d.date} className="flex flex-col gap-1" data-testid="cancelled-day">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span>{longDate(d.date, today)}</span>
-                      <Tag>Cancelled</Tag>
-                    </span>
+                    <span>{longDate(d.date, today)}</span>
+                    <Tag>Cancelled</Tag>
                     <span>
                       We cancelled this lesson. {d.cancelledReason}.{owedLine(data, l.enrollment.id, d.date, today) ? ` ${owedLine(data, l.enrollment.id, d.date, today)}` : ""}
                     </span>
@@ -135,17 +138,25 @@ export function LessonDatesScreen() {
                   </li>
                 ) : missNoted(data, l.enrollment.id, d.date) ? (
                   <li key={d.date} className="flex flex-col gap-1" data-testid="missing-day">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-strong">{longDate(d.date, today)}</span>
-                      <Tag>Missing</Tag>
-                    </span>
+                    <span className="font-strong">{longDate(d.date, today)}</span>
+                    <Tag>Missing</Tag>
                     <span>{missLine(data, l.enrollment.id, d.date, l.child.firstName, today)}</span>
                     {fillInRow(data, l.enrollment.id, d.date, today)}
                   </li>
                 ) : (
-                  <li key={d.date} className="font-strong" data-testid="lesson-day">
-                    {longDate(d.date, today)}
-                    {otherLessonDays.has(d.date) ? ` at ${clockTime(l.startTime)}` : ""}
+                  <li key={d.date} className="flex flex-col gap-1" data-testid="lesson-day">
+                    <span className="font-strong">
+                      {longDate(d.date, today)}
+                      {otherLessonDays.has(d.date) ? ` at ${clockTime(l.startTime)}` : ""}
+                    </span>
+                    {otherLessons
+                      .filter((x) => x.date === d.date)
+                      .map((x) => (
+                        <span key={`${x.enrollment.id}-${x.startTime}`}>
+                          {l.child.firstName} also has a {x.fillIn ? "fill-in" : "new date"} at {clockTime(x.startTime)}
+                          {x.pool.id !== l.pool.id ? ` at ${x.pool.name}` : ""} that day.
+                        </span>
+                      ))}
                   </li>
                 ),
               )}

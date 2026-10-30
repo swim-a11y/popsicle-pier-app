@@ -76,7 +76,8 @@ export function AddTimesStep() {
         <PageTitle>{draft.mode === "class" ? `Another class for ${name}` : `Pick a time for ${name}`}</PageTitle>
         {t && !t.tooYoung && (t.classes.length > 0 || t.evaluations.length > 0) ? (
           <p>
-            {pool.name} times that fit {name}.{t.under3 ? ` ${name} is under 3, so lessons are private, with you in the water.` : ""}
+            {t.evaluations.length === 0 && t.classes.every((c) => c.full) ? `Every ${pool.name} time for ${name} is full.` : `${pool.name} times that fit ${name}.`}
+            {t.under3 ? ` ${name} is under 3, so lessons are private, with you in the water.` : ""}
           </p>
         ) : null}
       </div>

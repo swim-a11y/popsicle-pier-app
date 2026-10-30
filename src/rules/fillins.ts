@@ -72,7 +72,7 @@ export function fillInAnswerBy(date: DateOnly): DateOnly {
 /** The words a person reviews before sending. Exactly these are stored and shown to the family. */
 export function fillInWords(input: { childFirstName: string; missedDate: DateOnly; slot: OwedSlot; poolName: string; today: DateOnly }): string {
   const { childFirstName: name, missedDate, slot, poolName, today } = input;
-  return `You told us ${name} will miss ${longDate(missedDate, today)}. We can offer a fill-in on ${longDate(slot.date, today)} at ${clockTime(slot.time.startTime)} with Coach ${slot.time.instructorFirstName} at ${poolName}. Does that work? Please answer by ${longDate(fillInAnswerBy(slot.date), today)}.`;
+  return `You told us ${name} will miss ${longDate(missedDate, today)}. We can offer a fill-in on ${longDate(slot.date, today)} at ${clockTime(slot.time.startTime)} with Coach ${slot.time.instructorFirstName} at ${poolName}. It's the one fill-in for this lesson, and it costs nothing extra. Does that work? Please answer by ${longDate(fillInAnswerBy(slot.date), today)}. If we don't hear by then, we'll close it.`;
 }
 
 /** A person sends the one fill-in. Sending it also marks the family's note read. */
