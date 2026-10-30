@@ -142,12 +142,14 @@ export function movingFamily(data: Readonly<AppData>): Family | null {
  * next week's (a family moving over sees its next lesson). Weekly classes
  * only; a free evaluation is one visit.
  */
-export function upcomingLessonDate(data: Readonly<AppData>, info: LessonInfo, today: DateOnly): DateOnly {
+export function upcomingLessonDate(data: Readonly<AppData>, info: LessonInfo, today: DateOnly, opts: { skipMissed?: boolean } = {}): DateOnly {
   if (info.lessonKind === "evaluation") return info.firstLessonDate;
   const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
   const skipped = [...closedDates(data, info.pool.id), ...cancelledDates(data, info.enrollment.timeId)];
+  // A lesson the family told us they'll miss isn't the next one they'll come to.
+  const missed = opts.skipMissed ? new Set(data.familyNotes.filter((n) => n.kind === "miss" && n.enrollmentId === info.enrollment.id).map((n) => n.lessonDate)) : new Set<string | null>();
   let d = info.firstLessonDate;
-  while (d < today || held.has(d) || skipped.includes(d)) d = addDays(d, 7);
+  while (d < today || held.has(d) || skipped.includes(d) || missed.has(d)) d = addDays(d, 7);
   return d;
 }
 
@@ -178,11 +180,13 @@ export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today
   return days;
 }
 
-/** One lesson to come: a weekly class's next date, or a date booked in place of a lesson the school cancelled. */
+/** One lesson to come: a weekly class's next date, a date booked in place of a lesson the school cancelled, or a fill-in. */
 export interface NextLesson extends LessonInfo {
   date: DateOnly;
-  /** For a date booked in place of a cancelled lesson: the cancelled lesson's date. */
+  /** For a date booked in place of a cancelled lesson, or a fill-in: the lesson it stands in for. */
   inPlaceOf: DateOnly | null;
+  /** A fill-in for a lesson the family missed (not one the school cancelled). */
+  fillIn: boolean;
 }
 
 /**
@@ -192,27 +196,29 @@ export interface NextLesson extends LessonInfo {
  */
 export function replacementLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
   const out: NextLesson[] = [];
-  for (const owed of data.owedLessons.filter((o) => o.familyId === familyId)) {
-    const enrollment = data.enrollments.find((e) => e.id === owed.enrollmentId);
+  const booked = [
+    ...data.owedLessons.filter((o) => o.familyId === familyId).flatMap((o) => o.offers.map((offer) => ({ enrollmentId: o.enrollmentId, offer, inPlaceOf: o.cancelledDate, fillIn: false }))),
+    ...data.fillIns.filter((f) => f.familyId === familyId).map((f) => ({ enrollmentId: f.enrollmentId, offer: f.offer, inPlaceOf: f.missedDate, fillIn: true })),
+  ];
+  for (const { enrollmentId, offer, inPlaceOf, fillIn } of booked) {
+    if (offer.answer !== "yes" || offer.date < today) continue;
+    const enrollment = data.enrollments.find((e) => e.id === enrollmentId);
     const info = enrollment ? lessonInfo(data, enrollment) : null;
-    if (!info) continue;
-    for (const offer of owed.offers) {
-      if (offer.answer !== "yes" || offer.date < today) continue;
-      const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
-      const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
-      if (!time || !pool) continue;
-      out.push({
-        ...info,
-        pool,
-        weekday: time.weekday,
-        startTime: time.startTime,
-        instructorFirstName: time.instructorFirstName,
-        // Under 3 is always a private lesson with a parent in the water.
-        parentInWater: ageInMonths(info.child.birthDate, offer.date) < 36,
-        date: offer.date,
-        inPlaceOf: owed.cancelledDate,
-      });
-    }
+    const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
+    const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
+    if (!info || !time || !pool) continue;
+    out.push({
+      ...info,
+      pool,
+      weekday: time.weekday,
+      startTime: time.startTime,
+      instructorFirstName: time.instructorFirstName,
+      // Under 3 is always a private lesson with a parent in the water.
+      parentInWater: ageInMonths(info.child.birthDate, offer.date) < 36,
+      date: offer.date,
+      inPlaceOf,
+      fillIn,
+    });
   }
   return out;
 }
@@ -222,10 +228,10 @@ function bySoonest(a: NextLesson, b: NextLesson): number {
   return a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1;
 }
 
-/** Every lesson to come for the family, one per weekly class plus any replacement dates, soonest first. */
+/** Every lesson to come for the family, one per weekly class (past any date they said they'll miss) plus any replacement dates and fill-ins, soonest first. */
 export function upcomingLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
   return [
-    ...familyLessons(data, familyId).map((l) => ({ ...l, date: upcomingLessonDate(data, l, today), inPlaceOf: null })),
+    ...familyLessons(data, familyId).map((l) => ({ ...l, date: upcomingLessonDate(data, l, today, { skipMissed: true }), inPlaceOf: null, fillIn: false })),
     ...replacementLessons(data, familyId, today),
   ].sort(bySoonest);
 }

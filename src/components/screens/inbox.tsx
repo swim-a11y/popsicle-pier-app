@@ -14,6 +14,7 @@ import type { AppData, DateOnly, FamilyNote, OwedLesson } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { addDays, clockTime, longDate, shownAtSchool, todayAtSchool } from "@/rules/dates";
 import { doneItems, inboxCounts, owedToDo, recordTalk, talkItems, unreadNotes, type TalkItem } from "@/rules/inbox";
+import { fillInState, fillInWords, sendFillIn } from "@/rules/fillins";
 import { markNoteRead } from "@/rules/notes";
 import { ANSWER_DAYS, BY_THE_SCHOOL, classWords, sendWaitlistOffer, waitlistItems, waitlistOfferWords, type WaitlistItem } from "@/rules/offers";
 import { approveOwedCredit, owedOfferWords, sendOwedOffer, type OwedSlot, type OwedState } from "@/rules/owed";
@@ -55,14 +56,14 @@ function Problem({ text }: { text: string | null }) {
 }
 
 /** The words the app drafted, shown exactly as the family will see them, then the person sends them. */
-function Draft({ words, to, busy, onSend }: { words: string; to: string; busy: boolean; onSend: () => void }) {
+function Draft({ words, to, busy, onSend, sendLabel = "Send the offer (sample)" }: { words: string; to: string; busy: boolean; onSend: () => void; sendLabel?: string }) {
   return (
     <div className="flex flex-col gap-3 rounded-control border-2 border-line px-4 py-3" data-testid="draft">
       <p className="font-strong text-heading">Drafted for you to send</p>
       <p data-testid="draft-words">{words}</p>
       <p>Goes to {to}&apos;s Messages in the app.</p>
       <Button size="block" disabled={busy} onClick={onSend}>
-        {busy ? "Sending..." : "Send the offer (sample)"}
+        {busy ? "Sending..." : sendLabel}
       </Button>
     </div>
   );
@@ -243,18 +244,67 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
   );
 }
 
-function NoteItem({ data, note }: { data: Readonly<AppData>; note: FamilyNote }) {
+/** A family's note. A "We'll miss" note can get one fill-in (same coach, the week after): a person picks the date, or none. */
+function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: FamilyNote; today: DateOnly }) {
   const { busy, problem, act } = useAct();
+  const [pick, setPick] = useState<string | null>(null);
+  const state = fillInState(data, note, today);
+  const slots = state?.kind === "offer" ? state.slots.slice(0, 6) : [];
+  const chosen = slots.find((s) => `${s.time.id}|${s.date}` === pick);
+  const child = data.children.find((c) => c.id === note.childRecordId);
+  const pool = state?.kind === "offer" && chosen ? data.pools.find((p) => p.id === chosen.time.poolId) : undefined;
+  const markRead = (label: string) => (
+    <Button size="block" variant="secondary" disabled={busy} onClick={() => void act((tx, _t, now) => markNoteRead(tx, { noteId: note.id, now, by: BY_THE_SCHOOL }))}>
+      {busy ? "Saving..." : label}
+    </Button>
+  );
   return (
     <Card title={childTitle(data, note.childRecordId)} sub={familyLine(data, note.familyId)} testId="inbox-note">
       <p className="font-strong" data-testid="inbox-note-words">
         {note.words}
       </p>
       <p>Sent {shownAtSchool(note.sentAt)}</p>
+      {state?.kind === "offer" ? (
+        <>
+          <p className="font-strong text-heading">A fill-in: one date with Coach {state.coach} the week after. Pick one, or none.</p>
+          <div className="flex flex-col gap-2">
+            {slots.map((s) => (
+              <ChoiceButton
+                outlined
+                key={`${s.time.id}|${s.date}`}
+                title={slotLabel(s, today)}
+                line={s.kind === "evaluation" ? `Coach ${s.time.instructorFirstName}'s private time` : `${classWords(s.time)}, with room that day`}
+                selected={pick === `${s.time.id}|${s.date}`}
+                testId={`fill-in-slot-${s.date}-${s.time.startTime.replace(":", "")}`}
+                onClick={() => setPick(`${s.time.id}|${s.date}`)}
+              />
+            ))}
+          </div>
+          {chosen && child && pool ? (
+            <Draft
+              words={fillInWords({ childFirstName: child.firstName, missedDate: note.lessonDate!, slot: chosen, poolName: pool.name, today })}
+              to={data.families.find((f) => f.id === note.familyId)?.parentFullName ?? "the family"}
+              busy={busy}
+              sendLabel="Send the fill-in (sample)"
+              onSend={() => void act((tx, t, now) => sendFillIn(tx, { noteId: note.id, timeId: chosen.time.id, date: chosen.date, today: t, now, newId }))}
+            />
+          ) : null}
+          {markRead("Mark as read, no fill-in")}
+        </>
+      ) : state?.kind === "no-opening" ? (
+        <>
+          <p>No opening with Coach {state.coach} the week after, so there&apos;s no fill-in to offer.</p>
+          {markRead("Mark as read")}
+        </>
+      ) : state?.kind === "passed" ? (
+        <>
+          <p>The week after that lesson has passed, so there&apos;s no fill-in to offer.</p>
+          {markRead("Mark as read")}
+        </>
+      ) : (
+        markRead("Mark as read")
+      )}
       <Problem text={problem} />
-      <Button size="block" variant="secondary" disabled={busy} onClick={() => void act((tx, _t, now) => markNoteRead(tx, { noteId: note.id, now, by: BY_THE_SCHOOL }))}>
-        {busy ? "Saving..." : "Mark as read"}
-      </Button>
     </Card>
   );
 }
@@ -297,7 +347,7 @@ export function InboxScreen() {
     { id: "talks", title: "Talk with a family first", count: counts.talks, items: talks.map((t) => <TalkCard key={t.child.id} data={data} item={t} today={today} />) },
     { id: "owed", title: "Owed lessons", count: counts.owed, items: owed.map((o) => <OwedCard key={o.owed.id} data={data} owed={o.owed} state={o.state} today={today} />) },
     { id: "waitlist", title: "Waitlist", count: counts.waitlist, items: waits.map((w) => <WaitCard key={w.entry.id} data={data} item={w} today={today} />) },
-    { id: "notes", title: "Notes from families", count: counts.notes, items: notes.map((n) => <NoteItem key={n.id} data={data} note={n} />) },
+    { id: "notes", title: "Notes from families", count: counts.notes, items: notes.map((n) => <NoteItem key={n.id} data={data} note={n} today={today} />) },
   ];
 
   return (

@@ -1132,3 +1132,65 @@ test("walk-through 11: join a waitlist for another class, then leave it", async 
   run!.notes.push("Mia joined the waitlist for the full Wednesday 4:30 class (the done screen says so, not an earlier class), then the family took her off it from Home.");
   run!.passed = true;
 });
+
+test("walk-through 12: a fill-in for a lesson the family will miss", async () => {
+  begin(12, "Walk-through 1's family says Mia will miss a lesson; the owner offers one fill-in with the same coach the week after; the family says yes");
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+
+  screen("Send a note");
+  await page.goto("/more/messages/new?kind=miss");
+  await tap(page.getByRole("button", { name: /^Mia$/ }));
+  screen("Which lesson");
+  const pick = page.locator('[data-testid^="miss-"]').first();
+  const pickedDate = (await pick.locator("span").first().innerText()).trim();
+  await tap(pick);
+  screen("Your note");
+  await tap(page.getByRole("button", { name: "Send this note" }));
+  await expect(page.getByText("Sent. A person at the school reads every note.")).toBeVisible();
+
+  screen("Sandbox: play as the owner");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+
+  screen("Inbox: offer a fill-in");
+  const note = page.getByTestId("inbox-note").filter({ hasText: `We'll miss Mia's lesson on ${pickedDate}` });
+  await expect(note).toContainText(/A fill-in: one date with Coach \w+ the week after\. Pick one, or none\./);
+  await tap(note.locator('[data-testid^="fill-in-slot-"]').first());
+  await expect(note.getByTestId("draft-words")).toContainText(`You told us Mia will miss ${pickedDate}. We can offer a fill-in on`);
+  await check("inbox-fill-in", { family: false });
+  const fillInsBefore = (await stored()).fillIns.length;
+  await tap(note.getByRole("button", { name: "Send the fill-in (sample)" }));
+  await expect(page.getByTestId("inbox-note").filter({ hasText: `We'll miss Mia's lesson on ${pickedDate}` })).toHaveCount(0);
+  expect((await stored()).fillIns.length).toBe(fillInsBefore + 1);
+
+  screen("Sandbox: play as Mia's family again");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+
+  screen("Home: an answer is needed");
+  await expect(page.getByTestId("home-needs-answer")).toContainText("A fill-in for Mia's missed lesson.");
+  await check("home-fill-in");
+  await tap(page.getByRole("button", { name: "See Mia's fill-in" }));
+
+  screen("Messages: say yes");
+  const card = page.getByTestId("school-fill-in").first();
+  await expect(card.getByTestId("offer-words")).toContainText(`You told us Mia will miss ${pickedDate}.`);
+  await check("messages-fill-in");
+  await tap(card.getByRole("button", { name: "Yes, that works" }));
+  await expect(card.getByTestId("offer-status")).toContainText("You said yes. Mia's fill-in is on");
+
+  screen("Lesson dates");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Lesson dates/ }));
+  const missed = page.getByTestId("missing-day").filter({ hasText: pickedDate });
+  await expect(missed).toContainText("Mia's fill-in is just below.");
+  await expect(missed.getByTestId("fill-in-day")).toContainText("Fill-in");
+  await check("lesson-dates-fill-in");
+  const data = await stored();
+  expect(data.fillIns.filter((f: { offer: { answer: string | null } }) => f.offer.answer === "yes")).toHaveLength(1);
+  run!.notes.push(`Mia's family said she'll miss ${pickedDate}; a person offered one fill-in with the same coach the week after; the family said yes; Lesson dates show it under the missed day.`);
+  run!.passed = true;
+});

@@ -37,19 +37,48 @@ export interface OwedSlot {
  * of the child's lessons.
  */
 export function owedSlots(data: Readonly<AppData>, owed: OwedLesson, today: DateOnly): OwedSlot[] {
-  const child = data.children.find((c) => c.id === owed.childRecordId);
-  const pool = data.pools.find((p) => p.id === owed.poolId);
+  // A full week to answer before the date, and never before the lesson it replaces.
+  let from = addDays(today, ANSWER_DAYS + 1);
+  const after = addDays(owed.cancelledDate, 1);
+  if (after > from) from = after;
+  return coachSlots(
+    data,
+    {
+      childRecordId: owed.childRecordId,
+      poolId: owed.poolId,
+      instructorFirstName: owed.instructorFirstName,
+      from,
+      to: addDays(owed.cancelledDate, OWED_WINDOW_DAYS),
+      offered: new Set(owed.offers.map((o) => `${o.timeId}|${o.date}`)),
+      exceptId: owed.id,
+    },
+    today,
+  );
+}
+
+/**
+ * The child's own coach at one pool, from one day to another: each class
+ * that fits the child and each of the coach's private (free evaluation)
+ * times with a place free that day. Never a closed or cancelled day, before
+ * the pool opens, the child's own class, a date already offered, or a time
+ * that runs into one of the child's lessons. Owed lessons and fill-ins both
+ * read it.
+ */
+export function coachSlots(
+  data: Readonly<AppData>,
+  input: { childRecordId: string; poolId: string; instructorFirstName: string; from: DateOnly; to: DateOnly; offered: Set<string>; exceptId?: string },
+  today: DateOnly,
+): OwedSlot[] {
+  const child = data.children.find((c) => c.id === input.childRecordId);
+  const pool = data.pools.find((p) => p.id === input.poolId);
   if (!child || !pool) return [];
   const own = data.enrollments
     .filter((e) => e.childRecordId === child.id && e.kind === "class" && isActive(e))
     .map((e) => data.classes.find((c) => c.id === e.timeId))
     .filter((c): c is SwimClass => Boolean(c));
-  const offered = new Set(owed.offers.map((o) => `${o.timeId}|${o.date}`));
-  const last = addDays(owed.cancelledDate, OWED_WINDOW_DAYS);
-  // A full week to answer before the date, and never before the lesson it replaces.
-  let from = addDays(today, ANSWER_DAYS + 1);
-  const after = addDays(owed.cancelledDate, 1);
-  if (after > from) from = after;
+  const { offered } = input;
+  const last = input.to;
+  let from = input.from;
   if (pool.opensOn && pool.opensOn > from) from = pool.opensOn;
   const times: { kind: OwedSlot["kind"]; time: SwimClass | EvaluationTime }[] = [
     ...data.classes.map((time) => ({ kind: "class" as const, time })),
@@ -57,7 +86,7 @@ export function owedSlots(data: Readonly<AppData>, owed: OwedLesson, today: Date
   ];
   const slots: OwedSlot[] = [];
   for (const { kind, time } of times) {
-    if (time.poolId !== pool.id || time.instructorFirstName !== owed.instructorFirstName) continue;
+    if (time.poolId !== pool.id || time.instructorFirstName !== input.instructorFirstName) continue;
     if (own.some((c) => c.id === time.id)) continue;
     if (own.some((c) => c.weekday === time.weekday && Math.abs(minutesOfDay(c.startTime) - minutesOfDay(time.startTime)) < 30)) continue;
     const lt = kind === "class" ? data.lessonTypes.find((l) => l.id === (time as SwimClass).lessonTypeId) : undefined;
@@ -67,7 +96,7 @@ export function owedSlots(data: Readonly<AppData>, owed: OwedLesson, today: Date
       const age = ageInMonths(child.birthDate, d);
       if (lt ? !classFits(time as SwimClass, lt, age, child.stageId, pool) : age < pool.youngestAgeMonths) continue;
       const held = kind === "class" ? heldByWaitlistOffers(data, time.id, today) : 0;
-      if (time.openSpots - held - oneOffsOn(data, time.id, d, today, owed.id) < 1) continue;
+      if (time.openSpots - held - oneOffsOn(data, time.id, d, today, input.exceptId) < 1) continue;
       slots.push({ kind, time, date: d });
     }
   }
@@ -206,13 +235,13 @@ export function bookedOwedDates(data: Readonly<AppData>, childRecordId: string):
 }
 
 export interface AnswerWaiting {
-  kind: "waitlist" | "owed";
+  kind: "waitlist" | "owed" | "fill-in";
   id: string;
   childFirstName: string;
   answerBy: DateOnly;
 }
 
-/** Offers waiting for this family's answer: a waitlist spot or a date for a cancelled lesson. Soonest answer-by first. */
+/** Offers waiting for this family's answer: a waitlist spot, a date for a cancelled lesson, or a fill-in. Soonest answer-by first. */
 export function answersWaiting(data: Readonly<AppData>, familyId: string, today: DateOnly): AnswerWaiting[] {
   const name = (id: string) => data.children.find((c) => c.id === id)?.firstName ?? "";
   const out: AnswerWaiting[] = [];
@@ -220,6 +249,9 @@ export function answersWaiting(data: Readonly<AppData>, familyId: string, today:
   for (const owed of owedForFamily(data, familyId)) {
     const state = owedState(data, owed, today);
     if (state.kind === "waiting") out.push({ kind: "owed", id: owed.id, childFirstName: name(owed.childRecordId), answerBy: state.offer.answerBy });
+  }
+  for (const f of data.fillIns.filter((x) => x.familyId === familyId)) {
+    if (f.offer.answer === null && offerOpen(f.offer, today)) out.push({ kind: "fill-in", id: f.id, childFirstName: name(f.childRecordId), answerBy: f.offer.answerBy });
   }
   return out.sort((a, b) => (a.answerBy < b.answerBy ? -1 : 1));
 }

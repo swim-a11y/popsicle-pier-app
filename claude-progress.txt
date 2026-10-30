@@ -30,3 +30,5 @@ Owner said yes to both readings; recorded. Then: a replacement date counts as th
 Next: a design-critic and rules-checker round on these changes, then docs and push.
 Found and fixed while scripting walk-through 11: another class that only joins a waitlist showed an earlier class on the done screen; it now says "Mia is on the waitlist". Walk-through 11 (join, then leave a waitlist) and Noa's owed lesson in walk-through 10 pass; 148 unit, 48 e2e; 173 of 173 entries pass.
 Next: fix what the design-critic and rules-checker round on these changes finds, then the check report and push.
+Fill-ins (owner ruling 5): a person offers one fill-in from a "We'll miss" note in the inbox (same coach, the week after, a class that fits or the coach's private time); the family answers in Messages; Lesson dates show it under the missed day; a missed day isn't the next lesson; walk-through 12 passes; 154 unit, 49 e2e; 177 of 177 entries pass.
+Next: fix the design critic's notes on the last round (waitlist pools, the confirm's weights, the add-flow waitlist screen, Lesson dates' new-date block, swimmers errors), the rules checker's when it lands, then one more agent round and docs.

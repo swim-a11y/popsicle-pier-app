@@ -11,9 +11,39 @@ import { useGo } from "@/lib/nav";
 import { clockTime, longDate, weekdayName } from "@/rules/dates";
 import { currentFamily, familyLessons, lessonDaysAhead, lessonKindWords } from "@/rules/family";
 import { missNoted } from "@/rules/notes";
+import { offerOpen } from "@/rules/holds";
 import { bookedOwedDates, owedState } from "@/rules/owed";
 
 const WEEKS = 6;
+
+/** A missed lesson's fill-in, if one was offered. */
+function fillInFor(data: Readonly<AppData>, enrollmentId: string, date: DateOnly) {
+  return data.fillIns.find((f) => f.enrollmentId === enrollmentId && f.missedDate === date);
+}
+
+/** What a day the family said they'll miss means now: the note, and where its fill-in stands. */
+function missLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, name: string, today: DateOnly): string {
+  const f = fillInFor(data, enrollmentId, date);
+  if (f?.offer.answer === "yes") return `You sent a note that ${name} will miss it. ${name}'s fill-in is just below.`;
+  if (f && f.offer.answer === null && offerOpen(f.offer, today)) return `You sent a note that ${name} will miss it. Messages has a fill-in for you to answer.`;
+  return `You sent a note that ${name} will miss it.`;
+}
+
+/** A booked fill-in, as a row right under the day it stands in for. */
+function fillInRow(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, today: DateOnly) {
+  const f = fillInFor(data, enrollmentId, date);
+  if (!f || f.offer.answer !== "yes" || f.offer.date < today) return null;
+  const time = (f.offer.timeKind === "class" ? data.classes.find((c) => c.id === f.offer.timeId) : data.evaluationTimes.find((e) => e.id === f.offer.timeId))?.startTime;
+  return (
+    <span className="flex flex-wrap items-center gap-2" data-testid="fill-in-day">
+      <span className="font-strong">
+        {longDate(f.offer.date, today)}
+        {time ? ` at ${clockTime(time)}` : ""}, Coach {f.instructorFirstName}
+      </span>
+      <Tag tone="mark">Fill-in</Tag>
+    </span>
+  );
+}
 
 /** Where the lesson owed for a cancelled date stands, in a family's words. */
 function owedLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, today: DateOnly): string {
@@ -111,7 +141,8 @@ export function LessonDatesScreen() {
                       <span className="font-strong">{longDate(d.date, today)}</span>
                       <Tag>Missing</Tag>
                     </span>
-                    <span>You sent a note that {l.child.firstName} will miss it.</span>
+                    <span>{missLine(data, l.enrollment.id, d.date, l.child.firstName, today)}</span>
+                    {fillInRow(data, l.enrollment.id, d.date, today)}
                   </li>
                 ) : (
                   <li key={d.date} className="font-strong" data-testid="lesson-day">

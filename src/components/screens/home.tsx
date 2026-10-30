@@ -123,11 +123,22 @@ export function HomeScreen() {
           </h2>
           {waiting.map((w) => (
             <p key={w.id}>
-              {w.kind === "waitlist" ? `A spot opened for ${w.childFirstName}` : `A new date for ${w.childFirstName}'s cancelled lesson`}. Please answer by {longDate(w.answerBy, today)}.
+              {w.kind === "waitlist"
+                ? `A spot opened for ${w.childFirstName}`
+                : w.kind === "fill-in"
+                  ? `A fill-in for ${w.childFirstName}'s missed lesson`
+                  : `A new date for ${w.childFirstName}'s cancelled lesson`}
+              . Please answer by {longDate(w.answerBy, today)}.
             </p>
           ))}
           <Button size="block" onClick={() => go("/more/messages")}>
-            {waiting.length > 1 ? "Open Messages" : waiting[0].kind === "waitlist" ? `See ${waiting[0].childFirstName}'s spot` : `See ${waiting[0].childFirstName}'s new date`}
+            {waiting.length > 1
+              ? "Open Messages"
+              : waiting[0].kind === "waitlist"
+                ? `See ${waiting[0].childFirstName}'s spot`
+                : waiting[0].kind === "fill-in"
+                  ? `See ${waiting[0].childFirstName}'s fill-in`
+                  : `See ${waiting[0].childFirstName}'s new date`}
           </Button>
         </section>
       ) : null}
@@ -162,7 +173,11 @@ export function HomeScreen() {
               <p>
                 {next.child.firstName} at {next.pool.name} with Coach {next.instructorFirstName}
               </p>
-              {next.inPlaceOf ? <p data-testid="home-in-place">In place of the lesson on {longDate(next.inPlaceOf, today)}.</p> : null}
+              {next.inPlaceOf ? (
+                <p data-testid="home-in-place">
+                  {next.fillIn ? "A fill-in for the lesson on" : "In place of the lesson on"} {longDate(next.inPlaceOf, today)}.
+                </p>
+              ) : null}
             </>
           ) : (
             <>
@@ -171,7 +186,7 @@ export function HomeScreen() {
                 {sameDay.map((l) => (
                   <li key={`${l.enrollment.id}-${l.startTime}`}>
                     <span className="font-strong">{l.child.firstName}</span>, {clockTime(l.startTime)} with Coach {l.instructorFirstName}
-                    {l.inPlaceOf ? `, in place of ${longDate(l.inPlaceOf, today)}` : ""}
+                    {l.inPlaceOf ? `, ${l.fillIn ? "a fill-in for" : "in place of"} ${longDate(l.inPlaceOf, today)}` : ""}
                   </li>
                 ))}
               </ul>

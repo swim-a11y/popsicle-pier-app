@@ -477,6 +477,25 @@ export interface OwedLesson {
   createdAt: IsoTime;
 }
 
+/**
+ * A family's own miss gets a fill-in only: same instructor, the week after.
+ * A person offers one date from the family's "We'll miss" note; the family
+ * answers. One fill-in only: no second date, no credit.
+ */
+export interface FillIn {
+  id: string;
+  familyId: string;
+  childRecordId: string;
+  /** The class and lesson the family said they'll miss, and their note. */
+  enrollmentId: string;
+  missedDate: DateOnly;
+  noteId: string;
+  poolId: string;
+  instructorFirstName: string;
+  offer: OwedOffer;
+  createdAt: IsoTime;
+}
+
 /** A spot offered to a child on the waitlist. A person chooses who, and sends the words. */
 export interface WaitlistOffer {
   id: string;
@@ -565,6 +584,7 @@ export interface Rows {
   waitlistOffers: WaitlistOffer;
   familyNotes: FamilyNote;
   talkRecords: TalkRecord;
+  fillIns: FillIn;
 }
 
 export type CollectionName = keyof Rows;
@@ -600,6 +620,7 @@ export const COLLECTIONS: readonly CollectionName[] = [
   "waitlistOffers",
   "familyNotes",
   "talkRecords",
+  "fillIns",
 ];
 
 /** Add and list only: no edit, no delete. Only the sandbox erase wipes them. */

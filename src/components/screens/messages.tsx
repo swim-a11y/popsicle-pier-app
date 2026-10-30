@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { MESSAGES_LINE } from "@/content/messages";
 import { getStore } from "@/data/app-store";
 import { newId } from "@/data/ids";
-import type { AppData, DateOnly, OwedLesson, WaitlistOffer } from "@/data/types";
+import type { AppData, DateOnly, FillIn, OwedLesson, WaitlistOffer } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
 import { skippedDates } from "@/rules/closures";
 import { clockTime, firstOpenLessonDate, longDate, shownAtSchool, todayAtSchool } from "@/rules/dates";
 import { currentFamily } from "@/rules/family";
+import { answerFillIn, fillInsForFamily } from "@/rules/fillins";
 import { offerOpen } from "@/rules/holds";
 import { notesForFamily } from "@/rules/notes";
 import { answerWaitlistOffer, offersForFamily } from "@/rules/offers";
@@ -155,6 +156,38 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
   );
 }
 
+function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; fillIn: FillIn; today: DateOnly; first: boolean }) {
+  const { busy, problem, answer } = useAnswer();
+  const child = data.children.find((c) => c.id === fillIn.childRecordId);
+  const o = fillIn.offer;
+  const time = (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime ?? "";
+  const open = o.answer === null && offerOpen(o, today);
+  if (!child) return null;
+  return (
+    <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`fill-in-${fillIn.id}`} data-testid="school-fill-in">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 id={`fill-in-${fillIn.id}`} className="font-heading text-big text-heading">
+          A fill-in for {child.firstName}
+        </h3>
+        {open ? <Tag tone={first ? "highlight" : "plain"}>Needs your answer</Tag> : null}
+      </div>
+      <p data-testid="offer-words">{o.words}</p>
+      {open ? (
+        <AnswerButtons yes="Yes, that works" busy={busy} onAnswer={(a) => void answer((t, now) => (tx) => answerFillIn(tx, { fillInId: fillIn.id, familyId: fillIn.familyId, answer: a, today: t, now }))} />
+      ) : o.answer === "yes" ? (
+        <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
+          You said yes. {child.firstName}&apos;s fill-in is on {longDate(o.date, today)} at {clockTime(time)} with Coach {fillIn.instructorFirstName}.
+        </p>
+      ) : o.answer === "no" ? (
+        <p data-testid="offer-status">You said no, thanks.</p>
+      ) : (
+        <p data-testid="offer-status">No answer by {longDate(o.answerBy, today)}, so this fill-in closed.</p>
+      )}
+      {problem ? <p className="rounded-control bg-notice px-3 py-2">{problem}</p> : null}
+    </article>
+  );
+}
+
 /** Notes between the family and the school: ready-made notes only, and the school's offers to answer. */
 export function MessagesScreen() {
   const loaded = useAppData();
@@ -188,6 +221,7 @@ export function MessagesScreen() {
   const school = [
     ...offers.map((o) => ({ key: o.id, at: o.answeredAt ?? o.offeredAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <WaitlistOfferCard key={o.id} data={data} offer={o} today={today} first={first} /> })),
     ...owed.map((o) => ({ key: o.id, at: o.offers[o.offers.length - 1]?.offeredAt ?? o.createdAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <CancelledCard key={o.id} data={data} owed={o} today={today} first={first} /> })),
+    ...fillInsForFamily(data, family.id).map((f) => ({ key: f.id, at: f.offer.answeredAt ?? f.offer.offeredAt, open: waiting.some((w) => w.id === f.id), card: (first: boolean) => <FillInCard key={f.id} data={data} fillIn={f} today={today} first={first} /> })),
   ].sort((a, b) => (a.open !== b.open ? (a.open ? -1 : 1) : a.at < b.at ? 1 : -1));
 
   return (

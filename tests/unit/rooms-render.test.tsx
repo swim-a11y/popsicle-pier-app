@@ -276,6 +276,49 @@ describe("the approvals inbox", () => {
   });
 });
 
+describe("fill-ins", () => {
+  it("a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      const mia = (await store.snapshot()).children.find((c) => c.familyId === familyId)!;
+      const enrollmentId = (await store.snapshot()).enrollments.find((e) => e.childRecordId === mia.id)!.id;
+      await store.transaction((tx) => sendNote(tx, { familyId, childRecordId: mia.id, kind: "miss", enrollmentId, lessonDate: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<InboxScreen />);
+    const note = await screen.findByTestId("inbox-note");
+    expect(flat(note.textContent)).toContain("A fill-in: one date with Coach Dev the week after. Pick one, or none.");
+    expect(within(note).queryByTestId("draft")).toBeNull();
+    await act(async () => fireEvent.click(within(note).getByTestId("fill-in-slot-2026-11-15-1100")));
+    expect(flat(within(note).getByTestId("draft-words").textContent)).toBe(
+      "You told us Mia will miss Sunday, November 8. We can offer a fill-in on Sunday, November 15 at 11:00 am with Coach Dev at Madison. Does that work? Please answer by Saturday, November 14.",
+    );
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Send the fill-in (sample)" })));
+    expect(screen.queryByTestId("inbox-note")).toBeNull();
+    cleanup();
+
+    render(<HomeScreen />);
+    const answer = await screen.findByTestId("home-needs-answer");
+    expect(flat(answer.textContent)).toContain("A fill-in for Mia's missed lesson. Please answer by Saturday, November 14.");
+    expect(within(answer).getByRole("button", { name: "See Mia's fill-in" })).toBeInTheDocument();
+    cleanup();
+
+    render(<MessagesScreen />);
+    const card = await screen.findByTestId("school-fill-in");
+    expect(within(card).getByRole("heading", { name: "A fill-in for Mia" })).toBeInTheDocument();
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Yes, that works" })));
+    expect(flat((await within(screen.getByTestId("school-fill-in")).findByTestId("offer-status")).textContent)).toBe("You said yes. Mia's fill-in is on Sunday, November 15 at 11:00 am with Coach Dev.");
+    // The family's note was read by the person who sent the fill-in.
+    expect(within(screen.getByTestId("family-note")).getByTestId("note-status")).toHaveTextContent("Read by the school on");
+    cleanup();
+
+    render(<LessonDatesScreen />);
+    const missed = await screen.findByTestId("missing-day");
+    expect(flat(missed.textContent)).toContain("You sent a note that Mia will miss it. Mia's fill-in is just below.");
+    expect(flat(within(missed).getByTestId("fill-in-day").textContent)).toBe("Sunday, November 15 at 11:00 am, Coach DevFill-in");
+  });
+});
+
 describe("the approvals inbox, empty", () => {
   it("one plain line, no headed zeros", async () => {
     freshStore();
@@ -292,8 +335,9 @@ describe("staff page", () => {
     freshStore();
     render(<StaffScreen />);
     const built = LATER_ROOM_RULES.filter((r) => r.builtIn);
-    expect(built).toHaveLength(6);
-    expect(screen.getAllByText("Built")).toHaveLength(6);
+    // Six from rulings 1 to 3, and the fill-in rule from ruling 5.
+    expect(built).toHaveLength(7);
+    expect(screen.getAllByText("Built")).toHaveLength(7);
     for (const r of built) expect(screen.getByText(`In ${r.builtIn}.`)).toBeInTheDocument();
   });
 });

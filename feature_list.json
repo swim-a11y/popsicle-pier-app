@@ -1215,5 +1215,33 @@
     "description": "Walk-through 11: walk-through 1's family puts Mia on the waitlist for the full Wednesday 4:30 class through Add a child or a class, then takes her off it from Home after a confirm.",
     "test": "e2e/sign-up.spec.ts: walk-through 11",
     "passes": true
+  },
+  {
+    "id": "fill-ins-rule",
+    "area": "schedule",
+    "description": "Fill-ins (owner ruling 5): a family's own miss gets one fill-in only, with the same coach the week after. A person can offer one date from a \"We'll miss\" note (a class that fits or the coach's private time, in the seven days after the missed lesson, at least two days out) with the app's words; sending it marks the note read; it holds its place; the family answers by the day before; a no or no answer closes it with nothing more; no opening, or a week already past, means none.",
+    "test": "tests/unit/fillins.test.ts: fill-ins > a family's own miss can get one fill-in: the same coach, the week after / a person sends it with the app's words; the note is read; the family answers by the day before / a no, or no answer, closes it with nothing more; no opening or a past week means none to offer / a move or stop note has no fill-in, and reading a miss note without one is a person's choice",
+    "passes": true
+  },
+  {
+    "id": "fill-ins-screens",
+    "area": "family",
+    "description": "The inbox's note card offers the fill-in (pick one date or none, the drafted words, \"Send the fill-in (sample)\"); Home asks for the answer (\"See Mia's fill-in\"); Messages shows \"A fill-in for Mia\" with Yes or No; Lesson dates show a booked fill-in under the missed day.",
+    "test": "tests/unit/rooms-render.test.tsx: fill-ins > a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day; e2e/sign-up.spec.ts: walk-through 12",
+    "passes": true
+  },
+  {
+    "id": "missed-not-next",
+    "area": "schedule",
+    "description": "A lesson the family said they'll miss isn't shown as their next lesson; a booked fill-in counts as one when it comes first.",
+    "test": "tests/unit/fillins.test.ts: fill-ins > the missed day isn't the next lesson; a booked fill-in is, when it comes first",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-12",
+    "area": "walkthrough",
+    "description": "Walk-through 12: walk-through 1's family says Mia will miss a lesson; the owner offers one fill-in with the same coach the week after; the family says yes; Lesson dates show it under the missed day.",
+    "test": "e2e/sign-up.spec.ts: walk-through 12",
+    "passes": true
   }
 ]

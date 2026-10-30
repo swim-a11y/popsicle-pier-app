@@ -4,7 +4,7 @@ The finish line: a new parent books one child and signs on a phone in under 2 mi
 
 **Owner's stopwatch time for walk-through 5 (typing everything, on a phone): ________** (fill in by hand)
 
-All eleven run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
+All twelve run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
 
 Run them with `npm run e2e` (or `npx playwright test e2e/sign-up.spec.ts`).
 
@@ -54,6 +54,10 @@ Mia's family sees its note was read. Pretend the school cancelled a lesson: Mess
 
 Walk-through 1's family: Add a child or a class; Another class for Mia; the full Wednesday 4:30 class; Join the waitlist; Continue with the waitlist only; Join the waitlist. The done screen says "Mia is on the waitlist". On Home, Mia's card says so, with "Leave this waitlist"; it asks first, and "Leave the waitlist" takes her off it.
 
+## 12. A fill-in for a lesson the family will miss
+
+Walk-through 1's family sends "We'll miss Mia's lesson on ..." (the next date she isn't already missing). As the owner, the note's card in the inbox offers a fill-in: one date with Mia's coach for that class, the week after; pick it, see the drafted words, "Send the fill-in (sample)". As the family: Home asks for the answer ("See Mia's fill-in"); Messages shows the fill-in; Yes, that works; Lesson dates show the fill-in right under the missed day.
+
 ## Counts
 
 The latest counts per screen are in `docs/check-report.md`. Totals from the last full run:
@@ -71,5 +75,6 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 9. The owner's approvals inbox | 7 | 12 | 0 |
 | 10. A lesson the school cancels (and the other family in that class) | 17 | 24 | 0 |
 | 11. Join a waitlist, then leave it | 7 | 10 | 0 |
+| 12. A fill-in for a lesson the family will miss | 10 | 15 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

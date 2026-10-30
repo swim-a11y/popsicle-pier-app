@@ -149,7 +149,7 @@ export function FirstLessonScreen() {
               </p>
               {l.inPlaceOf ? (
                 <p className="pt-1" data-testid="lesson-in-place">
-                  In place of the lesson we cancelled on {longDate(l.inPlaceOf, today)}.
+                  {l.fillIn ? `A fill-in for the lesson on ${longDate(l.inPlaceOf, today)}.` : `In place of the lesson we cancelled on ${longDate(l.inPlaceOf, today)}.`}
                 </p>
               ) : null}
               <p className="pt-1">{LESSON_LENGTH_LINE}</p>

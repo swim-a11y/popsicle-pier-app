@@ -34,7 +34,7 @@ export interface LaterRoomRule {
 
 export const LATER_ROOM_RULES: readonly LaterRoomRule[] = [
   { room: "deck", text: "Being checked in at the pool is the attendance record. Families email absences (parent screens may say so)." },
-  { room: "schedule", text: "A family's own miss gets a fill-in only: same instructor, the week after." },
+  { room: "schedule", text: "A family's own miss gets a fill-in only: same instructor, the week after.", builtIn: "the inbox's notes from families, answered in Messages" },
   {
     room: "schedule",
     text: "A lesson the school cancels is made up with the child's own instructor within three weeks: one date offered, a week to answer, one more date, then it closes with no credit. A credit only when no opening exists, and only with the owner's approval.",
