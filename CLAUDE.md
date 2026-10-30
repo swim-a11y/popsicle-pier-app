@@ -86,6 +86,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 ## Next
 
 - What's left needs the owner first:
+  - Two readings to confirm: a family joining after the 19th has its first month drafted on the next 1st, with the following month's (DECISIONS.md 82); and Messages offers "a different time" and "stop lessons" notes beside the ruling's missed-lesson example (DECISIONS.md 73).
   - Fees on the bill: the yearly registration fee, the out-of-county fee and the founding marker need the owner's amounts.
   - Fill-ins for a family's own miss (same instructor, the week after) and the "second no-show" and "two missed in a row" notes need the Deck room's check-in, which isn't built; the inbox is where they'd land.
   - Any other staff screen (roster, deck, instructors) needs a new ruling: the inbox is the one exception.
