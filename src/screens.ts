@@ -47,6 +47,14 @@ export const SCREENS: readonly ScreenDef[] = [
   { id: "bills", path: "/more/bills", role: "parent", title: "Bills", state: "coming-next", shell: "tabs", tab: "more" },
   { id: "messages", path: "/more/messages", role: "parent", title: "Messages", state: "coming-next", shell: "tabs", tab: "more" },
 
+  { id: "add-start", path: "/family/add", role: "parent", title: "Add a child or a class", state: "filled", shell: "flow" },
+  { id: "add-child", path: "/family/add/child", role: "parent", title: "A brother or sister", state: "filled", shell: "flow" },
+  { id: "add-stage", path: "/family/add/stage", role: "parent", title: "Where they are today", state: "filled", shell: "flow" },
+  { id: "add-times", path: "/family/add/times", role: "parent", title: "Pick a time", state: "filled", shell: "flow" },
+  { id: "add-questions", path: "/family/add/questions", role: "parent", title: "A few things to know", state: "filled", shell: "flow" },
+  { id: "add-review", path: "/family/add/review", role: "parent", title: "Check and add", state: "filled", shell: "flow" },
+  { id: "add-done", path: "/family/add/done", role: "parent", title: "Added", state: "filled", shell: "flow" },
+
   // Family moving over
   { id: "move-over-welcome", path: "/move-over", role: "moving", title: "Welcome to the new app", state: "filled", shell: "flow" },
   { id: "move-over-details", path: "/move-over/details", role: "moving", title: "Your details", state: "filled", shell: "flow" },

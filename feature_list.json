@@ -859,5 +859,110 @@
     "description": "Lesson dates renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: lesson-dates renders, passes accessibility, and is captured",
     "passes": true
+  },
+  {
+    "id": "add-start",
+    "area": "add",
+    "description": "Home's \"Add a child or a class\" card opens a flow: \"A brother or sister\", or \"Another class for [name]\" for each child; an unfinished one offers \"Pick up where you left off\".",
+    "test": "e2e/sign-up.spec.ts: walk-through 7",
+    "passes": true
+  },
+  {
+    "id": "add-brother-sister",
+    "area": "add",
+    "description": "A brother or sister: first name and birth date, stage, times that fit at either pool with both prices and sibling marks, two yes or no questions and three unchecked choices, then check and add with the price they'll pay and \"Nothing is charged today.\"",
+    "test": "tests/unit/add.test.ts: adding a child or a class > marks times next to a brother's or sister's lesson; e2e/sign-up.spec.ts: walk-through 7",
+    "passes": true
+  },
+  {
+    "id": "add-coverage",
+    "area": "add",
+    "description": "A family on the current release adding a child signs nothing: a coverage row with the child's own yes or no answers and choices, each choice as a consent row, never an edit; a yes flags the child for a person.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > a brother or sister signs nothing: a coverage row with their own answers",
+    "passes": true
+  },
+  {
+    "id": "add-resign",
+    "area": "add",
+    "description": "A family on an older release adding a child signs the current version once for everyone, the new child included.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > a family on an older release signs the current one once for everyone",
+    "passes": true
+  },
+  {
+    "id": "add-class-other-pool",
+    "area": "add",
+    "description": "Another class for a child, at either pool, keeps one child ID across both pools.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > another class at the other pool keeps one ID; e2e/sign-up.spec.ts: walk-through 7",
+    "passes": true
+  },
+  {
+    "id": "add-no-clash",
+    "area": "add",
+    "description": "Another class never offers the child's own class or a time that runs into one of their lessons.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > another class never offers the child's own class or a time that runs into theirs",
+    "passes": true
+  },
+  {
+    "id": "add-once",
+    "area": "add",
+    "description": "Adding checks every answer first, shows \"Saving...\" and ignores double taps; the done screen has its own address, so a refresh adds nothing.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > checks every answer before adding, and adds once; e2e/sign-up.spec.ts: walk-through 7",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-7",
+    "area": "walkthrough",
+    "description": "Walk-through 7: add a brother or sister to walk-through 1's family (next to Mia's lesson, nothing new to sign), then another class for Mia at Buckhead (one ID across pools); Lesson dates shows all three classes.",
+    "test": "e2e/sign-up.spec.ts: walk-through 7",
+    "passes": true
+  },
+  {
+    "id": "screen-add-start",
+    "area": "screen",
+    "description": "Add a child or a class renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-start renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-child",
+    "area": "screen",
+    "description": "Add: a brother or sister renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-child renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-stage",
+    "area": "screen",
+    "description": "Add: stage renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-stage renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-times",
+    "area": "screen",
+    "description": "Add: pick a time renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-times renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-questions",
+    "area": "screen",
+    "description": "Add: a few things to know renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-questions renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-review",
+    "area": "screen",
+    "description": "Add: check and add renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-review renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-add-done",
+    "area": "screen",
+    "description": "Add: added renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: add-done renders, passes accessibility, and is captured",
+    "passes": true
   }
 ]

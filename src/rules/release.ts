@@ -10,7 +10,7 @@ import {
   RELEASE_TITLE,
 } from "@/content/release";
 import type { Transaction } from "@/data/store";
-import type { AppData, Coverage, ReleaseChoiceText, ReleaseGroup, ReleaseGroupKey, ReleaseSignature, ReleaseVersion } from "@/data/types";
+import type { AppData, Coverage, CoveredChildAnswers, ReleaseChoiceText, ReleaseGroup, ReleaseGroupKey, ReleaseSignature, ReleaseVersion } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
 
 export const EIGHT_GROUPS: readonly { key: ReleaseGroupKey; title: string }[] = [
@@ -146,7 +146,10 @@ export class NeedsCurrentReleaseError extends Error {
  * A family on the current version adding a child signs nothing: the child
  * gets a coverage row under that signature, never an edit to it.
  */
-export function addChildCoverage(tx: Transaction, input: { familyId: string; childRecordId: string; at: string; id: string }): Coverage | null {
+export function addChildCoverage(
+  tx: Transaction,
+  input: { familyId: string; childRecordId: string; at: string; id: string; answers?: CoveredChildAnswers | null },
+): Coverage | null {
   const data = tx.data();
   const latest = latestSignature(data, input.familyId);
   if (!latest || latest.versionId !== currentRelease(data).id) throw new NeedsCurrentReleaseError();
@@ -160,6 +163,7 @@ export function addChildCoverage(tx: Transaction, input: { familyId: string; chi
     signatureId: latest.id,
     versionId: latest.versionId,
     childRecordId: input.childRecordId,
+    answers: input.answers ?? null,
     addedAt: input.at,
   });
 }

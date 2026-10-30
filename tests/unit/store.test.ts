@@ -64,7 +64,7 @@ describe("store", () => {
       await expect(store.transaction((tx) => (tx as unknown as { remove: (n: string, i: string) => void }).remove(name, id))).rejects.toThrow(AppendOnlyError);
     }
     await store.transaction((tx) =>
-      tx.add("coverages", { id: "cov-1", familyId: "f", signatureId, versionId: "v2", childRecordId: "c", addedAt: "2026-10-30T00:00:00.000Z" }),
+      tx.add("coverages", { id: "cov-1", familyId: "f", signatureId, versionId: "v2", childRecordId: "c", answers: null, addedAt: "2026-10-30T00:00:00.000Z" }),
     );
     expect(await store.list("coverages")).toHaveLength(1);
     // The DataStore interface itself offers no delete; only the sandbox erase wipes.
@@ -92,7 +92,7 @@ describe("store", () => {
     ).rejects.toThrow(TypeError);
     // A row added in a transaction is sealed once it lands.
     await store.transaction((tx) =>
-      tx.add("coverages", { id: "cov-x", familyId: "f", signatureId: signature.id, versionId: "v2", childRecordId: "c", addedAt: "2026-10-30T00:00:00.000Z" }),
+      tx.add("coverages", { id: "cov-x", familyId: "f", signatureId: signature.id, versionId: "v2", childRecordId: "c", answers: null, addedAt: "2026-10-30T00:00:00.000Z" }),
     );
     const added = (await store.get("coverages", "cov-x"))!;
     expect(Object.isFrozen(added)).toBe(true);

@@ -18,7 +18,7 @@ type Release = SignUpDraft["release"];
 
 const NO_ANSWERS: DraftChildRelease = { custody: null, health: null, research: false, marketing: false, underwater: false };
 
-function CheckRow({ id, checked, onChange, invalid, children }: { id: string; checked: boolean; onChange: (v: boolean) => void; invalid?: boolean; children: ReactNode }) {
+export function CheckRow({ id, checked, onChange, invalid, children }: { id: string; checked: boolean; onChange: (v: boolean) => void; invalid?: boolean; children: ReactNode }) {
   return (
     <div className="flex min-h-tap items-start gap-3 py-1">
       <Checkbox id={id} checked={checked} aria-invalid={invalid ? true : undefined} onCheckedChange={(v) => onChange(v === true)} className="mt-0.5" />
@@ -29,7 +29,7 @@ function CheckRow({ id, checked, onChange, invalid, children }: { id: string; ch
   );
 }
 
-function YesNo({ id, question, value, onChange, invalid }: { id: string; question: string; value: "yes" | "no" | null; onChange: (v: "yes" | "no") => void; invalid?: boolean }) {
+export function YesNo({ id, question, value, onChange, invalid }: { id: string; question: string; value: "yes" | "no" | null; onChange: (v: "yes" | "no") => void; invalid?: boolean }) {
   return (
     <fieldset className="flex flex-col gap-2 rounded-control bg-page p-3" aria-invalid={invalid ? true : undefined}>
       <legend className="float-left mb-2 w-full">{question}</legend>

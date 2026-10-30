@@ -34,6 +34,10 @@ A new parent, one child at Madison, every field typed with no fill button, payin
 
 Your first lesson shows parking, door, arrival time, what to bring, "No drop-off" and you alone on deck. Pretend the first lesson happened: Home now leads with the "How it went" note; Progress shows the stage name, the coach's two lines, "On deck: you" and "Approved by Coach [name]"; no tier, no other child; pressing it again adds nothing. Then for walk-through 2's family: the Waiting grandmother is never named as the adult on deck.
 
+## 7. Add a brother or sister, then another class (the next phase)
+
+Continuing walk-through 1's family: "Add a child or a class" on Home; "A brother or sister"; Jules's first name and birth date; The Pier; Sundays at 9:30 am, marked next to Mia's lesson, with both prices; two no answers and the three choices left unchecked; Check and add shows the bank-draft price, "Nothing is charged today." and that the family release already covers Jules; Add Jules. Nothing new is signed (a coverage row instead), Jules gets the next child ID, and a refresh adds nothing. Then "Another class for Mia": her own Sunday class isn't offered; "See Buckhead times instead"; Wednesdays at 4:00 pm; Add this class; the done screen shows Buckhead's SAMPLE directions, and Mia keeps PP26-0042 across both pools. Lesson dates then lists all three classes.
+
 ## Counts
 
 The latest counts per screen are in `docs/check-report.md`. Totals from the last full run:
@@ -46,5 +50,6 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 4. The family moving over | 9 | 26 | 2 |
 | 5. Cold run, one child, typing everything, paying by card | 11 | 23 | 13 |
 | 6. The first Sunday | 10 | 13 | 0 |
+| 7. Add a brother or sister, then another class | 15 | 18 | 4 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

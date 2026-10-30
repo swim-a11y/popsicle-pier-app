@@ -310,13 +310,40 @@ export interface ReleaseSignature {
 }
 
 /** A child added under an existing signature. Add and list only. */
+/** The per-child answers a coverage row keeps for a child added after signing. */
+export interface CoveredChildAnswers {
+  custodyYes: boolean;
+  healthYes: boolean;
+  choices: Record<ChoiceKey, boolean>;
+}
+
 export interface Coverage {
   id: string;
   familyId: string;
   signatureId: string;
   versionId: string;
   childRecordId: string;
+  /** The child's yes or no answers and three choices, asked when they're added. null if not asked (data layer). */
+  answers: CoveredChildAnswers | null;
   addedAt: IsoTime;
+}
+
+/** Adding a brother or sister, or another class for a child: the parent's answers so far. */
+export interface AddDraft {
+  id: string;
+  familyId: string;
+  mode: "child" | "class";
+  /** Another class: the child it's for. */
+  childRecordId: string | null;
+  poolId: string;
+  /** A brother or sister: name, birth date, stage. Both: the time picked and any waitlist. */
+  kid: DraftChild;
+  /** A brother or sister: the two yes or no questions and three choices. */
+  answers: DraftChildRelease;
+  /** Only when the family signs the current release first, once for everyone. */
+  release: SignUpDraft["release"] | null;
+  lastPath: string;
+  updatedAt: IsoTime;
 }
 
 /** Add and list only. */
@@ -438,6 +465,7 @@ export interface Rows {
   counters: Counter;
   deviceStates: DeviceState;
   closures: Closure;
+  addDrafts: AddDraft;
 }
 
 export type CollectionName = keyof Rows;
@@ -467,6 +495,7 @@ export const COLLECTIONS: readonly CollectionName[] = [
   "counters",
   "deviceStates",
   "closures",
+  "addDrafts",
 ];
 
 /** Add and list only: no edit, no delete. Only the sandbox erase wipes them. */

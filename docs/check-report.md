@@ -6,7 +6,7 @@
 <!-- wt-1 -->
 ### Walk-through 1: New parent, one child (age 4) at Madison, with Fill in a sample family
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
 
 - One spot gone from Sundays at 10:00 am; one release signature and one bank-draft authorization saved.
 - Refreshing You're in booked nothing.
@@ -32,7 +32,7 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 13 screens,
 <!-- wt-2 -->
 ### Walk-through 2: Two children at Buckhead (ages 3 and 6) with a grandmother listed
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
 
 - Closed the tab at Your people; Pick up where you left off came back to Your people.
 - One release covers Leo and Ada; Ada is flagged for a person; no Buckhead date before Sunday, November 8, 2026.
@@ -59,7 +59,7 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 14 screens,
 <!-- wt-3 -->
 ### Walk-through 3: A 2-year-old at Buckhead (told when they can start), then at Madison (private, parent in the water, free evaluation only)
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -81,7 +81,7 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 12 screens,
 <!-- wt-4 -->
 ### Walk-through 4: The family moving over (two children at Madison)
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -100,7 +100,7 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 
 <!-- wt-5 -->
 ### Walk-through 5: Cold run: one child at Madison, every field typed (no fill button), paying by card
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -121,7 +121,7 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 11 screens,
 <!-- wt-6 -->
 ### Walk-through 6: The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)
 
-Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
 
 - Pressing Pretend the first lesson happened again added nothing.
 - Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.
@@ -140,6 +140,34 @@ Run 2026-10-30 18:23 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 | Progress for walk-through 2's family | 1 | 0 |
 | **Total** | **13** | **0** |
 <!-- /wt-6 -->
+
+<!-- wt-7 -->
+### Walk-through 7: Add a brother or sister to walk-through 1's family, then another class for Mia at the other pool
+
+Run 2026-10-30 18:33 UTC, Playwright at 375x667. Result: **passed**. 15 screens, 18 taps, 4 typed fields.
+
+- Jules was covered by the family's current release with a coverage row and three consent rows; nothing new was signed; a refresh added nothing.
+- Mia's second class is at Buckhead and she keeps PP26-0042 across both pools.
+
+| Screen | Taps | Typed fields |
+|---|---|---|
+| Sandbox: play as Mia's family | 2 | 0 |
+| Home | 1 | 0 |
+| Add a child or a class | 1 | 0 |
+| 1 A brother or sister | 1 | 4 |
+| 2 Stage | 1 | 0 |
+| 3 Pick a time | 1 | 0 |
+| 4 A few things about Jules | 3 | 0 |
+| 5 Check and add | 1 | 0 |
+| Added | 0 | 0 |
+| Home again | 2 | 0 |
+| Another class for Mia | 1 | 0 |
+| 1 Pick a time at the other pool | 2 | 0 |
+| 2 Check and add | 1 | 0 |
+| Added | 0 | 0 |
+| Lesson dates | 1 | 0 |
+| **Total** | **18** | **4** |
+<!-- /wt-7 -->
 <!-- walkthroughs:end -->
 
 ## Agent rounds

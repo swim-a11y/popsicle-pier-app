@@ -59,8 +59,8 @@ describe("parent screens", () => {
     expect(within(child).getByTestId("home-prices")).toHaveTextContent(/^Bank draft\s*\$34\.00 a lesson\s*Card\s*\$35\.00 a lesson$/);
     expect(screen.getByTestId("home-release")).toHaveTextContent("You signed version 2 on October 30, 2026.");
     expect(screen.getByTestId("home-pay")).toHaveTextContent("Bank draft, with a backup card");
-    expect(screen.getByTestId("add-child-card")).toHaveTextContent("Coming next");
-    expect(screen.getByTestId("add-child-card")).toHaveTextContent("Add a child or a class");
+    // Built now: the card opens the add flow (it was a coming-next card in the first build).
+    expect(within(screen.getByTestId("add-child-card")).getByRole("button", { name: "Add a child or a class" })).toBeInTheDocument();
     cleanup();
     await act(() => store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId })));
     render(<HomeScreen />);

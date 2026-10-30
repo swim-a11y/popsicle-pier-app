@@ -715,3 +715,114 @@ test("walk-through 6: the first Sunday, continuing walk-through 1", async () => 
   run!.notes.push("Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.");
   run!.passed = true;
 });
+
+test("walk-through 7: add a brother or sister, then another class at the other pool", async () => {
+  begin(7, "Add a brother or sister to walk-through 1's family, then another class for Mia at the other pool");
+  const familyOf = (data: { families: { id: string }[]; children: { familyId: string; firstName: string }[] }, name: string) =>
+    data.families.find((f) => data.children.some((c) => c.familyId === f.id && c.firstName === name))!.id;
+
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia's family/ }));
+  await expect(page).toHaveURL(/\/$/);
+
+  screen("Home");
+  await tap(page.getByTestId("add-child-card").getByRole("button", { name: "Add a child or a class" }));
+
+  screen("Add a child or a class");
+  await expect(page).toHaveURL(/\/family\/add$/);
+  await check("add-start");
+  await tap(page.getByRole("button", { name: /^A brother or sister/ }));
+
+  screen("1 A brother or sister");
+  const jules = datePartsYearsAgo(3, 4);
+  await type(page.getByLabel("First name"), "Jules");
+  await type(page.getByLabel("Month"), jules.m);
+  await type(page.getByLabel("Day"), jules.d);
+  await type(page.getByLabel("Year"), jules.y);
+  await expect(page.getByTestId("step-count")).toHaveText("Step 1 of 5");
+  await check("add-child");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("2 Stage");
+  await tap(page.getByRole("button", { name: /^The Pier/ }));
+
+  screen("3 Pick a time");
+  const option = page.getByTestId("time-mad-sun-0930-pier");
+  await expect(option).toContainText("Next to Mia's lesson");
+  await expect(option.getByTestId("prices")).toContainText(/Bank draft\s*\$34\.00/);
+  await check("add-times");
+  const before = await stored();
+  await tap(option);
+
+  screen("4 A few things about Jules");
+  await expect(page.getByRole("heading", { name: "A few things about Jules" })).toBeVisible();
+  await expect(page.getByText(/already covers Jules\. There's nothing new to sign\./)).toBeVisible();
+  await tap(page.getByRole("radio", { name: "No" }).nth(0));
+  await tap(page.getByRole("radio", { name: "No" }).nth(1));
+  await check("add-questions");
+  await tap(page.getByRole("button", { name: "Continue" }));
+
+  screen("5 Check and add");
+  await expect(page.getByTestId("add-price")).toHaveText("$34.00 a lesson by bank draft");
+  await expect(page.getByText("Nothing is charged today.")).toBeVisible();
+  await expect(page.getByText("Your family release, version 2, covers Jules too. Nothing new to sign.")).toBeVisible();
+  await check("add-review");
+  await tap(page.getByRole("button", { name: "Add Jules" }));
+
+  screen("Added");
+  await expect(page).toHaveURL(/\/family\/add\/done$/);
+  await expect(page.getByRole("heading", { name: "Jules is signed up" })).toBeVisible();
+  await expect(page.getByTestId("added-where")).toHaveText("Madison with Coach Dev");
+  await check("add-done");
+  const after = await stored();
+  const familyId = familyOf(after, "Mia");
+  const kids = after.children.filter((c: { familyId: string }) => c.familyId === familyId);
+  const julesRow = kids.find((c: { firstName: string }) => c.firstName === "Jules");
+  expect(julesRow.childId).toMatch(/^PP26-\d{4}$/);
+  expect(after.releaseSignatures.length).toBe(before.releaseSignatures.length);
+  expect(after.coverages.length).toBe(before.coverages.length + 1);
+  expect(after.coverages[after.coverages.length - 1].childRecordId).toBe(julesRow.id);
+  expect(after.consents.length).toBe(before.consents.length + 3);
+  // A refresh adds nothing.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Jules is signed up" })).toBeVisible();
+  expect((await stored()).children.length).toBe(after.children.length);
+  run!.notes.push("Jules was covered by the family's current release with a coverage row and three consent rows; nothing new was signed; a refresh added nothing.");
+
+  screen("Home again");
+  await tap(page.getByRole("button", { name: "Go to Home" }));
+  await tap(page.getByTestId("add-child-card").getByRole("button", { name: "Add a child or a class" }));
+  screen("Another class for Mia");
+  await tap(page.getByRole("button", { name: "Another class for Mia" }));
+
+  screen("1 Pick a time at the other pool");
+  await expect(page.getByTestId("step-count")).toHaveText("Step 1 of 2");
+  await expect(page.getByTestId("time-mad-sun-1000-shallows")).toHaveCount(0);
+  await tap(page.getByRole("button", { name: "See Buckhead times instead" }));
+  const wed = page.getByTestId("time-buc-wed-1600-shallows");
+  await expect(wed).toContainText(/Wednesdays at 4:00\spm/);
+  await check("add-class-times");
+  await tap(wed);
+
+  screen("2 Check and add");
+  await tap(page.getByRole("button", { name: "Add this class" }));
+
+  screen("Added");
+  await expect(page.getByRole("heading", { name: "Another class for Mia" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "First time at Buckhead?" })).toBeVisible();
+  await check("add-class-done");
+  const final = await stored();
+  const mia = final.children.find((c: { familyId: string; firstName: string }) => c.familyId === familyId && c.firstName === "Mia");
+  expect(mia.childId).toBe("PP26-0042");
+  const miaPools = final.enrollments.filter((e: { childRecordId: string }) => e.childRecordId === mia.id).map((e: { poolId: string }) => e.poolId).sort();
+  expect(miaPools).toEqual(["pool-buckhead", "pool-madison"]);
+  run!.notes.push("Mia's second class is at Buckhead and she keeps PP26-0042 across both pools.");
+
+  screen("Lesson dates");
+  await tap(page.getByRole("button", { name: "See lesson dates" }));
+  await expect(page.getByTestId("lesson-dates")).toHaveCount(3);
+  await check("lesson-dates");
+  run!.passed = true;
+});

@@ -19,7 +19,7 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.6";
+export const SEED_VERSION = "2026-10-30.7";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {
@@ -77,6 +77,7 @@ const classSeeds: Omit<SwimClass, "slotMinutes" | "lessonMinutes">[] = [
   { id: "buc-sun-0900-water", poolId: BUCKHEAD, lessonTypeId: "lt-buc-private", stageId: null, minAgeMonths: 30, maxAgeMonths: 35, weekday: 0, startTime: "09:00", instructorFirstName: "Ines", capacity: 1, openSpots: 1, parentInWater: true },
   { id: "buc-sun-0900-cove", poolId: BUCKHEAD, lessonTypeId: "lt-buc-semi", stageId: "cove", minAgeMonths: 60, maxAgeMonths: 107, weekday: 0, startTime: "09:00", instructorFirstName: "Wren", capacity: 2, openSpots: 0, parentInWater: false },
   { id: "buc-sun-0930-pier", poolId: BUCKHEAD, lessonTypeId: "lt-buc-semi", stageId: "pier", minAgeMonths: 36, maxAgeMonths: 71, weekday: 0, startTime: "09:30", instructorFirstName: "Wren", capacity: 2, openSpots: 2, parentInWater: false },
+  { id: "buc-wed-1600-shallows", poolId: BUCKHEAD, lessonTypeId: "lt-buc-semi", stageId: "shallows", minAgeMonths: 36, maxAgeMonths: 83, weekday: 3, startTime: "16:00", instructorFirstName: "Wren", capacity: 2, openSpots: 2, parentInWater: false },
   { id: "buc-sun-1000-cove", poolId: BUCKHEAD, lessonTypeId: "lt-buc-semi", stageId: "cove", minAgeMonths: 60, maxAgeMonths: 107, weekday: 0, startTime: "10:00", instructorFirstName: "Ines", capacity: 2, openSpots: 2, parentInWater: false },
 ];
 
