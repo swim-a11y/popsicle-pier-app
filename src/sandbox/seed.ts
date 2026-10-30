@@ -19,7 +19,7 @@ import { sha256Hex } from "@/lib/sha256";
 import { COACH_LINE_TEMPLATES } from "@/sandbox/coach-lines";
 import { buildReleaseView, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 
-export const SEED_VERSION = "2026-10-30.5";
+export const SEED_VERSION = "2026-10-30.6";
 
 /** Fingerprints of the published text. Pasted, not computed, so a text change breaks the fingerprint test. */
 export const PUBLISHED_FINGERPRINTS = {
@@ -209,6 +209,16 @@ export function buildSeed(): AppData {
     { id: "mad-eval-thu-1600", poolId: MADISON, weekday: 4, startTime: "16:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Tamsin", capacity: 1, openSpots: 1 },
     { id: "buc-eval-sun-1100", poolId: BUCKHEAD, weekday: 0, startTime: "11:00", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Ines", capacity: 1, openSpots: 1 },
     { id: "buc-eval-sun-1130", poolId: BUCKHEAD, weekday: 0, startTime: "11:30", slotMinutes: 30, lessonMinutes: 27, instructorFirstName: "Wren", capacity: 1, openSpots: 1 },
+  );
+
+  // SAMPLE closed days, set by a person. No lesson, and not billed.
+  data.closures.push(
+    { id: "closed-mad-2026-11-25", poolId: MADISON, date: "2026-11-25", reason: "Closed for the holiday (sample)" },
+    { id: "closed-mad-2026-11-29", poolId: MADISON, date: "2026-11-29", reason: "Closed for the holiday weekend (sample)" },
+    { id: "closed-buc-2026-11-29", poolId: BUCKHEAD, date: "2026-11-29", reason: "Closed for the holiday weekend (sample)" },
+    { id: "closed-mad-2026-12-27", poolId: MADISON, date: "2026-12-27", reason: "Closed for winter break (sample)" },
+    { id: "closed-mad-2026-12-30", poolId: MADISON, date: "2026-12-30", reason: "Closed for winter break (sample)" },
+    { id: "closed-buc-2026-12-27", poolId: BUCKHEAD, date: "2026-12-27", reason: "Closed for winter break (sample)" },
   );
 
   data.releaseVersions.push(...versions);

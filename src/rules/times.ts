@@ -4,7 +4,8 @@
 */
 import { cardPricing as defaultMode, type CardPricing } from "@/config";
 import type { AppData, DateOnly, StageId } from "@/data/types";
-import { addMonths, ageInMonths, compareDates, firstLessonDate, minutesOfDay } from "@/rules/dates";
+import { closedDates } from "@/rules/closures";
+import { addMonths, ageInMonths, compareDates, firstOpenLessonDate, minutesOfDay } from "@/rules/dates";
 import { cardPriceCents } from "@/rules/prices";
 
 export const UNDER_3_MONTHS = 36;
@@ -75,8 +76,9 @@ export function timesForChild(input: {
   const allTimes = new Map<string, { weekday: number; startTime: string; slotMinutes: number }>();
   for (const t of [...data.classes, ...data.evaluationTimes]) allTimes.set(t.id, t);
 
-  const firstDates = [...poolClasses, ...poolEvals].map((t) => firstLessonDate(t.weekday, today, pool.opensOn));
-  const soonest = firstDates.sort(compareDates)[0] ?? firstLessonDate(0, today, pool.opensOn);
+  const closed = closedDates(data, poolId);
+  const firstDates = [...poolClasses, ...poolEvals].map((t) => firstOpenLessonDate(t.weekday, today, pool.opensOn, closed));
+  const soonest = firstDates.sort(compareDates)[0] ?? firstOpenLessonDate(0, today, pool.opensOn, closed);
   const ageOnSoonest = ageInMonths(birthDate, soonest);
   const under3 = ageOnSoonest < UNDER_3_MONTHS;
 
@@ -87,7 +89,7 @@ export function timesForChild(input: {
   const classes: TimeOption[] = [];
   if (stage !== "evaluation") {
     for (const c of poolClasses) {
-      const first = firstLessonDate(c.weekday, today, pool.opensOn);
+      const first = firstOpenLessonDate(c.weekday, today, pool.opensOn, closed);
       const age = ageInMonths(birthDate, first);
       if (age < pool.youngestAgeMonths || age < c.minAgeMonths || age > c.maxAgeMonths) continue;
       const lt = data.lessonTypes.find((l) => l.id === c.lessonTypeId);
@@ -119,7 +121,7 @@ export function timesForChild(input: {
 
   const evaluations: TimeOption[] = [];
   for (const e of poolEvals) {
-    const first = firstLessonDate(e.weekday, today, pool.opensOn);
+    const first = firstOpenLessonDate(e.weekday, today, pool.opensOn, closed);
     const age = ageInMonths(birthDate, first);
     if (age < pool.youngestAgeMonths) continue;
     const picked = siblings.filter((s) => s.booking?.kind === "evaluation" && s.booking.timeId === e.id).length;

@@ -15,6 +15,7 @@ import {
   type ConsentRecord,
   type DateOnly,
   type DraftChildRelease,
+  type Enrollment,
   type IsoTime,
   type ReleaseGroupKey,
   type ReleaseSignature,
@@ -23,7 +24,8 @@ import {
 } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
 import { ensureChildId, nextProcessorRef } from "@/rules/child-id";
-import { firstLessonDate } from "@/rules/dates";
+import { closedDates } from "@/rules/closures";
+import { firstOpenLessonDate } from "@/rules/dates";
 import { buildReleaseView, currentRelease, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 import { draftBirthDate, emailProblem, nameProblem, needsPayment, phoneProblem, type StepKey } from "@/rules/sign-up";
 import { timesForChild } from "@/rules/times";
@@ -263,6 +265,70 @@ export function setCurrentFamily(tx: Transaction, familyId: string | null, role:
   else tx.add("deviceStates", { id: DEVICE_ID, role, currentFamilyId: familyId });
 }
 
+/**
+ * Books one child into one time: gives the child an ID if this is their
+ * first booking (the ID never changes after), adds the enrollment with its
+ * first open lesson date, and takes one spot. "alone" marks a semi-private
+ * time the child starts with no partner.
+ */
+export function bookTime(
+  tx: Transaction,
+  input: {
+    familyId: string;
+    childRecordId: string;
+    booking: { kind: "class" | "evaluation"; timeId: string };
+    poolId: string;
+    today: DateOnly;
+    now: IsoTime;
+    newId: () => string;
+    alone: boolean;
+  },
+): Enrollment {
+  const { familyId, childRecordId, booking, today, now, newId } = input;
+  const pool = tx.get("pools", input.poolId);
+  if (!pool) throw new Error("No such pool.");
+  const closed = closedDates(tx.data(), pool.id);
+  ensureChildId(tx, childRecordId, today);
+  if (booking.kind === "class") {
+    const cls = tx.get("classes", booking.timeId);
+    if (!cls || cls.poolId !== pool.id) throw new Error("No such class at that pool.");
+    if (cls.openSpots < 1) throw new TimeFilledError(tx.get("children", childRecordId)?.firstName ?? "your swimmer");
+    const lt = tx.get("lessonTypes", cls.lessonTypeId)!;
+    const first = firstOpenLessonDate(cls.weekday, today, pool.opensOn, closed);
+    const enrollment = tx.add("enrollments", {
+      id: newId(),
+      familyId,
+      childRecordId,
+      kind: "class",
+      poolId: pool.id,
+      timeId: cls.id,
+      lessonTypeId: lt.id,
+      firstLessonDate: first,
+      unpairedSince: lt.kind === "semi-private" && input.alone ? first : null,
+      createdAt: now,
+    });
+    tx.update("classes", cls.id, { openSpots: cls.openSpots - 1 });
+    return enrollment;
+  }
+  const ev = tx.get("evaluationTimes", booking.timeId);
+  if (!ev || ev.poolId !== pool.id) throw new Error("No such evaluation time at that pool.");
+  if (ev.openSpots < 1) throw new TimeFilledError(tx.get("children", childRecordId)?.firstName ?? "your swimmer");
+  const enrollment = tx.add("enrollments", {
+    id: newId(),
+    familyId,
+    childRecordId,
+    kind: "evaluation",
+    poolId: pool.id,
+    timeId: ev.id,
+    lessonTypeId: null,
+    firstLessonDate: firstOpenLessonDate(ev.weekday, today, pool.opensOn, closed),
+    unpairedSince: null,
+    createdAt: now,
+  });
+  tx.update("evaluationTimes", ev.id, { openSpots: ev.openSpots - 1 });
+  return enrollment;
+}
+
 export interface SignAndSaveInput {
   draft: SignUpDraft;
   today: DateOnly;
@@ -339,43 +405,12 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
       createdAt: now,
     });
     if (c.booking) {
-      ensureChildId(tx, child.id, today);
-      if (c.booking.kind === "class") {
-        const cls = tx.get("classes", c.booking.timeId)!;
-        const lt = tx.get("lessonTypes", cls.lessonTypeId)!;
-        const first = firstLessonDate(cls.weekday, today, pool.opensOn);
-        const nobodyYet = cls.openSpots + (spotsTaken.get(cls.id) ?? 0) === cls.capacity;
-        const alone = nobodyYet && countPicks("class", cls.id) === 1;
-        tx.add("enrollments", {
-          id: newId(),
-          familyId,
-          childRecordId: child.id,
-          kind: "class",
-          poolId: pool.id,
-          timeId: cls.id,
-          lessonTypeId: lt.id,
-          firstLessonDate: first,
-          unpairedSince: lt.kind === "semi-private" && alone ? first : null,
-          createdAt: now,
-        });
-        tx.update("classes", cls.id, { openSpots: cls.openSpots - 1 });
-        spotsTaken.set(cls.id, (spotsTaken.get(cls.id) ?? 0) + 1);
-      } else {
-        const ev = tx.get("evaluationTimes", c.booking.timeId)!;
-        tx.add("enrollments", {
-          id: newId(),
-          familyId,
-          childRecordId: child.id,
-          kind: "evaluation",
-          poolId: pool.id,
-          timeId: ev.id,
-          lessonTypeId: null,
-          firstLessonDate: firstLessonDate(ev.weekday, today, pool.opensOn),
-          unpairedSince: null,
-          createdAt: now,
-        });
-        tx.update("evaluationTimes", ev.id, { openSpots: ev.openSpots - 1 });
-      }
+      // A semi-private time two siblings book together gives each a partner.
+      const cls = c.booking.kind === "class" ? tx.get("classes", c.booking.timeId) : undefined;
+      const nobodyYet = cls ? cls.openSpots + (spotsTaken.get(cls.id) ?? 0) === cls.capacity : false;
+      const alone = Boolean(cls) && nobodyYet && countPicks("class", c.booking.timeId) === 1;
+      bookTime(tx, { familyId, childRecordId: child.id, booking: c.booking, poolId: pool.id, today, now, newId, alone });
+      if (cls) spotsTaken.set(cls.id, (spotsTaken.get(cls.id) ?? 0) + 1);
     }
     for (const classId of c.waitlistClassIds) {
       tx.add("waitlistEntries", { id: newId(), familyId, childRecordId: child.id, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, createdAt: now });

@@ -43,6 +43,7 @@ export const SCREENS: readonly ScreenDef[] = [
   { id: "first-lesson", path: "/first-lesson", role: "parent", title: "Your first lesson", state: "filled", shell: "tabs", tab: "first-lesson" },
   { id: "progress", path: "/progress", role: "parent", title: "Progress", state: "filled", shell: "tabs", tab: "progress" },
   { id: "more", path: "/more", role: "parent", title: "More", state: "filled", shell: "tabs", tab: "more" },
+  { id: "lesson-dates", path: "/more/lessons", role: "parent", title: "Lesson dates", state: "filled", shell: "tabs", tab: "more" },
   { id: "bills", path: "/more/bills", role: "parent", title: "Bills", state: "coming-next", shell: "tabs", tab: "more" },
   { id: "messages", path: "/more/messages", role: "parent", title: "Messages", state: "coming-next", shell: "tabs", tab: "more" },
 

@@ -14,3 +14,5 @@ First agent round done: design-critic (Who stays leads with Just me for now, You
 Next: check-in (b), then the final agent round on fresh screenshots (with phone-sized slices of long pages), fix blockers, final docs and summary.
 Final round done: design critic (blocker fixed: Home lists each child with their own time and coach; release goes to the first missing answer; prices in two rows; You are in button placement) and rules checker (no blockers; release name heading always shown; append-only rows frozen; error screens keep the banner; moving over signs once) handled; 96 unit and 33 e2e pass.
 Next: nothing left in this build. The next room to fill is Schedule; a second session runs /code-review and /security-review.
+Next phase: lesson dates with closed days done (Closure record and sample closed days; first and next lesson skip them; Lesson dates under More); 101 unit, 34 e2e.
+Next: Add a child or a class, the parent flow behind the Home card (coverage row, two yes or no questions, one ID across pools), then walk-through 7.

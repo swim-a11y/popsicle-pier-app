@@ -393,6 +393,14 @@ export interface CoachLineTemplate {
   next: string;
 }
 
+/** A day a pool is closed. No lesson that day, and it isn't billed. Set by a person (Schedule room). */
+export interface Closure {
+  id: string;
+  poolId: string;
+  date: DateOnly;
+  reason: string;
+}
+
 export interface Counter {
   id: "child-serial" | "processor-ref";
   next: number;
@@ -429,6 +437,7 @@ export interface Rows {
   coachLineTemplates: CoachLineTemplate;
   counters: Counter;
   deviceStates: DeviceState;
+  closures: Closure;
 }
 
 export type CollectionName = keyof Rows;
@@ -457,6 +466,7 @@ export const COLLECTIONS: readonly CollectionName[] = [
   "coachLineTemplates",
   "counters",
   "deviceStates",
+  "closures",
 ];
 
 /** Add and list only: no edit, no delete. Only the sandbox erase wipes them. */

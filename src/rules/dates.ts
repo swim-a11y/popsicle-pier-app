@@ -89,6 +89,13 @@ export function firstLessonDate(weekday: number, today: DateOnly, opensOn: DateO
   return addDays(start, offset);
 }
 
+/** The first lesson date that isn't a closed day: closed days are skipped, never booked. */
+export function firstOpenLessonDate(weekday: number, today: DateOnly, opensOn: DateOnly | null, closed: readonly DateOnly[]): DateOnly {
+  let d = firstLessonDate(weekday, today, opensOn);
+  while (closed.includes(d)) d = addDays(d, 7);
+  return d;
+}
+
 export function weekdayName(weekday: number): string {
   return WEEKDAYS[weekday];
 }

@@ -84,3 +84,10 @@ Where the brief left room, or a step needed a fix, the choice is written here: t
 50. **Append-only rows are frozen in memory** as well as guarded: signatures, coverage, consents and bank-draft authorizations can't be changed in place through a returned row, inside or outside a transaction.
 51. **Error screens keep the sample banner.** `src/app/error.tsx` renders inside the root layout; `src/app/global-error.tsx`, which replaces the layout, brings its own banner and noindex.
 52. **Moving over signs once.** Finishing again (say, by revisiting the steps) is refused, so there's never a second signature or authorization for the same move.
+
+## Next phase (after the first build)
+
+The owner asked to keep building with best judgement. The HARD RULES still hold (parent screens only, sandbox only, no staff screens), so this phase fills the parent's side of the next rooms.
+
+53. **Closed days, the parent's side of the Schedule room.** A `Closure` record (pool, date, reason) set by a person; the sample seeds a few holiday and winter-break days per pool, each marked "(sample)". A first lesson never lands on a closed day (`firstOpenLessonDate`), "Your next lesson" skips them, and Lesson dates (under More) lists each swimmer's next eight weeks with closed days marked "No lesson, and it isn't billed." Nothing is promised in their place: the rule that closed days aren't made up stays with the school. *Change:* the closure seeds in src/sandbox/seed.ts and src/rules/closures.ts.
+54. **One booking helper.** Sign-up and adding a child or a class both book through `bookTime` in src/rules/booking.ts (ID on first booking, first open lesson date, one spot taken).

@@ -824,5 +824,40 @@
     "description": "Each walk-through's taps and typed fields per step are written to docs/check-report.md, with a line in WALKTHROUGH.md for the owner's stopwatch time.",
     "test": "e2e/sign-up.spec.ts (writes docs/check-report.md)",
     "passes": true
+  },
+  {
+    "id": "closures-seeded",
+    "area": "schedule",
+    "description": "The parent's side of the Schedule room: SAMPLE closed days per pool, set by a person; a closed day has no lesson and isn't billed.",
+    "test": "tests/unit/closures.test.ts: closed days > are seeded for each pool and marked sample",
+    "passes": true
+  },
+  {
+    "id": "closures-first-lesson",
+    "area": "schedule",
+    "description": "A first lesson never lands on a closed day: the times list, sign-up and adding a child all skip it.",
+    "test": "tests/unit/closures.test.ts: closed days > a first lesson never lands on a closed day",
+    "passes": true
+  },
+  {
+    "id": "closures-next-lesson",
+    "area": "schedule",
+    "description": "\"Your next lesson\" on Home and the First lesson tab skip closed days.",
+    "test": "tests/unit/closures.test.ts: closed days > the next lesson skips a closed day",
+    "passes": true
+  },
+  {
+    "id": "lesson-dates-screen",
+    "area": "schedule",
+    "description": "Lesson dates (under More): each swimmer's next weeks with the time, closed days marked \"No lesson, and it isn't billed.\", and the email-us line for a miss.",
+    "test": "tests/unit/closures.test.ts: closed days > lesson dates list the weeks ahead with closed days marked; tests/unit/screens-render.test.tsx: lesson dates > each swimmer's weeks ahead, closed days marked and not billed",
+    "passes": true
+  },
+  {
+    "id": "screen-lesson-dates",
+    "area": "screen",
+    "description": "Lesson dates renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: lesson-dates renders, passes accessibility, and is captured",
+    "passes": true
   }
 ]

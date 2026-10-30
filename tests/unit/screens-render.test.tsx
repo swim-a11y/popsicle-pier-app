@@ -10,6 +10,7 @@ vi.mock("next/link", async () => (await import("./helpers")).linkMock());
 
 import { FirstLessonScreen } from "@/components/screens/first-lesson";
 import { HomeScreen } from "@/components/screens/home";
+import { LessonDatesScreen } from "@/components/screens/lesson-dates";
 import { MoveOverClasses, MoveOverDetails, MoveOverPeople } from "@/components/screens/move-over/checks";
 import { MoveOverEmail } from "@/components/screens/move-over/email";
 import { OwnerReleasesScreen } from "@/components/screens/owner-releases";
@@ -159,6 +160,22 @@ describe("parent screens", () => {
     await screen.findByTestId("note-not-yet");
     expect(screen.queryByText("A draft line from the coach.")).toBeNull();
     expect(screen.queryByTestId("how-it-went")).toBeNull();
+  });
+});
+
+describe("lesson dates", () => {
+  it("each swimmer's weeks ahead, closed days marked and not billed", async () => {
+    const store = freshStore();
+    await signUp(store);
+    render(<LessonDatesScreen />);
+    const section = await screen.findByTestId("lesson-dates");
+    expect(section).toHaveTextContent("Mia");
+    expect(section).toHaveTextContent("Sundays at 10:00 am, Madison, Coach Dev");
+    const closed = within(section).getAllByTestId("closed-day");
+    expect(closed[0]).toHaveTextContent("Sunday, November 29");
+    expect(closed[0]).toHaveTextContent("Closed for the holiday weekend (sample). No lesson, and it isn't billed.");
+    expect(within(section).getAllByTestId("lesson-day")[0]).toHaveTextContent("Sunday, November 1");
+    expect(screen.getByText("Need to miss, move or stop? Email us at madison.sample@example.com.")).toBeInTheDocument();
   });
 });
 
