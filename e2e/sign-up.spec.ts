@@ -956,7 +956,7 @@ test("walk-through 9: the owner's approvals inbox, a talk, a note and a waitlist
   await expect(open).toContainText(/A spot is open in the Sunday 9:00\sam class, with Coach Wren\./);
   await expect(open.getByTestId("draft")).toHaveCount(0);
   await tap(open.getByRole("button", { name: /^In place of the Sunday 10:00\sam class/ }));
-  await expect(open.getByTestId("draft-words")).toContainText(/Would you like Ada to move there from the Sunday 10:00\sam class at Buckhead, with Coach Ines\?/);
+  await expect(open.getByTestId("draft-words")).toContainText(/If you say yes, Ada moves there, and the Sunday 10:00\sam class ends the day you say yes\./);
   await check("inbox-draft", { family: false });
   await tap(open.getByRole("button", { name: "Send the offer (sample)" }));
   await expect(page.getByTestId("inbox-waitlist").filter({ hasText: "Ada" }).getByTestId("inbox-waiting")).toContainText("Offer sent.");
@@ -1237,7 +1237,7 @@ test("walk-through 13: a different time, from the family's note", async () => {
 
   screen("Inbox: nothing else fits yet, so the waitlist");
   const note = page.getByTestId("inbox-note").filter({ hasText: "a different lesson time for Mia" });
-  await expect(note).toContainText("No other time that fits Mia is open now.");
+  await expect(note).toContainText("No other time that fits Mia is open at Madison or Buckhead now.");
   await check("inbox-different-time", { family: false });
   await tap(note.getByRole("button", { name: "Put Mia on the Madison waitlist for any time that fits" }));
   await expect(page.getByTestId("inbox-note").filter({ hasText: "a different lesson time for Mia" })).toHaveCount(0);
@@ -1266,10 +1266,12 @@ test("walk-through 13: a different time, from the family's note", async () => {
 
   screen("Messages: say yes");
   const offer = page.getByTestId("school-offer").filter({ hasText: "A different time for Mia" }).first();
-  await expect(offer.getByTestId("now-and-new")).toContainText("Same price as now.");
+  await expect(offer.getByTestId("now-and-new")).toContainText("Same as now.");
   await check("messages-different-time");
   await tap(offer.getByRole("button", { name: "Yes, move Mia" }));
   await expect(offer.getByTestId("offer-status")).toContainText(/You said yes on .+\. Mia's first lesson in the Wednesday 4:30\spm class at Madison, with Coach Tamsin, is/);
+  await expect(page.getByTestId("family-note").filter({ hasText: "a different lesson time for Mia" })).toContainText("The school offered a different time, above.");
+  await check("messages-different-time-yes");
 
   screen("Home: Mia's new class");
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "Home" }));
@@ -1282,6 +1284,14 @@ test("walk-through 13: a different time, from the family's note", async () => {
   const active = data.enrollments.filter((e: { childRecordId: string; endedOn: string | null }) => e.childRecordId === miaRow.id && !e.endedOn).map((e: { timeId: string }) => e.timeId);
   expect(active).toContain("mad-wed-1630-shallows");
   expect(active).not.toContain("mad-sun-1000-shallows");
+
+  screen("Sandbox: play as the owner again");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+
+  screen("Inbox: Done");
+  await expect(page.getByTestId("inbox-done")).toContainText("Offered Mia the Wednesday 4:30");
+  await check("inbox-done-different-time", { family: false });
   run!.notes.push(
     "Mia's family asked for a different time; nothing else that fit was open at Madison, so a person put her on the Madison waitlist for any time that fits; when a family left the full Wednesday class, a person offered it in place of her Sunday class; the family said yes and the Sunday class ended.",
   );

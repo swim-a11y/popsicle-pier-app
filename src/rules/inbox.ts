@@ -8,7 +8,7 @@
 import type { Transaction } from "@/data/store";
 import type { AppData, Child, DateOnly, Family, FamilyNote, IsoTime, OwedLesson, TalkRecord } from "@/data/types";
 import { longDate, shownAtSchool } from "@/rules/dates";
-import { nextLessonPerChild } from "@/rules/family";
+import { lessonInfo, nextLessonPerChild } from "@/rules/family";
 import { hasHadFirstLesson } from "@/rules/first-sunday";
 import { BY_THE_SCHOOL, OfferProblemError, classWords, waitlistItems } from "@/rules/offers";
 import { owedState, type OwedState } from "@/rules/owed";
@@ -96,12 +96,26 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
   const family = (familyId: string) => data.families.find((f) => f.id === familyId)?.parentFullName ?? "a family";
   const items: DoneItem[] = [];
   for (const t of data.talkRecords) items.push({ at: t.talkedAt, line: `Talked with ${family(t.familyId)} about ${name(t.childRecordId)}, ${shownAtSchool(t.talkedAt)}.` });
-  for (const n of data.familyNotes) if (n.readAt) items.push({ at: n.readAt, line: `Read: "${n.words}" (${family(n.familyId)})` });
+  for (const n of data.familyNotes) {
+    if (!n.readAt) continue;
+    // A note answered with an offer or a fill-in shows as that offer's line, once.
+    if (data.waitlistOffers.some((o) => o.fromNoteId === n.id) || data.fillIns.some((f) => f.noteId === n.id)) continue;
+    const entry = data.waitlistEntries.find((w) => w.fromNoteId === n.id);
+    const pool = entry ? data.pools.find((p) => p.id === entry.poolId) : undefined;
+    items.push({
+      at: n.readAt,
+      line: pool ? `Put ${name(n.childRecordId)} on the ${pool.name} waitlist for any time that fits, after ${family(n.familyId)}'s note about a different time.` : `Read: "${n.words}" (${family(n.familyId)})`,
+    });
+  }
   for (const o of data.waitlistOffers) {
     const cls = data.classes.find((c) => c.id === o.classId);
-    const what = cls ? classWords(cls) : "a class";
+    const pool = data.pools.find((p) => p.id === o.poolId);
+    const was = o.inPlaceOfEnrollmentId ? data.enrollments.find((e) => e.id === o.inPlaceOfEnrollmentId) : undefined;
+    const wasInfo = was ? lessonInfo(data, was) : null;
+    const what = cls ? `${classWords(cls)}${pool ? ` at ${pool.name}` : ""}` : "a class";
+    const instead = wasInfo ? `, in place of ${classWords(wasInfo)}${wasInfo.pool.id !== o.poolId ? ` at ${wasInfo.pool.name}` : ""}` : "";
     const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
-    items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(o.childRecordId)} ${what}. ${answer}` });
+    items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(o.childRecordId)} ${what}${instead}. ${answer}` });
   }
   for (const owed of data.owedLessons) {
     const state = owedState(data, owed, today);

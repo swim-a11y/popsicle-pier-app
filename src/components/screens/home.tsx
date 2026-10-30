@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { NoteCard } from "@/components/parts/note-card";
 import { PriceRows } from "@/components/parts/price-rows";
 import { SkeletonRows } from "@/components/parts/skeleton";
+import { Tag } from "@/components/parts/tag";
 import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME } from "@/content/brand";
@@ -235,6 +236,7 @@ export function HomeScreen() {
                 const wasInfo = was ? lessonInfo(data, was) : null;
                 return (
                   <div key={l.enrollment.id} className={cn("flex flex-col gap-1", i > 0 && "mt-2 border-t border-line pt-3")} data-testid="home-class">
+                    {wasInfo ? <Tag tone="mark">New</Tag> : null}
                     <p className="font-strong">
                       {l.lessonKind === "evaluation" ? `Free evaluation, ${longDate(l.firstLessonDate, today)}` : `${weekdayName(l.weekday)}s at ${clockTime(l.startTime)}`}, {l.pool.name}, Coach{" "}
                       {l.instructorFirstName}

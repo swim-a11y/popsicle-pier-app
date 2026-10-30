@@ -136,10 +136,10 @@ describe("messages and notes", () => {
     render(<MessagesScreen />);
     const offer = await screen.findByTestId("school-offer");
     expect(flat(within(offer).getByTestId("offer-words").textContent)).toBe(
-      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead, with Coach Wren. Would you like Ada to move there from the Sunday 10:00 am class at Buckhead, with Coach Ines? If you say yes, that class ends for Ada the day you say yes; if you say no, nothing changes. Please answer by Friday, November 6.",
+      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead. If you say yes, Ada moves there, and the Sunday 10:00 am class ends the day you say yes. If you say no, nothing changes. Please answer by Friday, November 6.",
     );
     expect(flat(offer.textContent)).toContain("Bank draft$36.00 a lesson");
-    expect(flat(offer.textContent)).toContain("If you say yes, the first lesson there is Sunday, November 8.");
+    expect(flat(offer.textContent)).toContain("If you say yes today, the first lesson there is Sunday, November 8.");
     await act(async () => fireEvent.click(within(offer).getByRole("button", { name: "Yes, move Ada" })));
     expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe(
       "You said yes on Friday, October 30. Ada's first lesson in the Sunday 9:00 am class at Buckhead, with Coach Wren, is Sunday, November 8. Ada's Sunday 10:00 am class at Buckhead has ended.",
@@ -166,7 +166,7 @@ describe("messages and notes", () => {
       await store.transaction((tx) => sendOwedOffer(tx, { owedId, timeId: "mad-eval-sun-1100", date: "2026-11-08", today: TODAY, now: NOW }));
     });
     await act(async () => fireEvent.click(await within(screen.getByTestId("school-cancelled")).findByRole("button", { name: "Yes, that works" })));
-    expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said yes on Friday, October 30. Mia's lesson is on Sunday, November 8 at 11:00 am with Coach Dev.");
+    expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said yes on Friday, October 30. Mia's lesson is on Sunday, November 8 at 11:00 am at Madison, with Coach Dev.");
     cleanup();
     render(<LessonDatesScreen />);
     const cancelledDay = await screen.findByTestId("cancelled-day");
@@ -324,7 +324,7 @@ describe("the approvals inbox", () => {
     const wait = screen.getByTestId("inbox-waitlist");
     expect(within(wait).queryByTestId("draft")).toBeNull();
     await act(async () => fireEvent.click(within(wait).getByRole("button", { name: /^In place of the Sunday 10:00\sam class/ })));
-    expect(flat(within(wait).getByTestId("draft-words").textContent)).toContain("Would you like Ada to move there from the Sunday 10:00 am class at Buckhead, with Coach Ines?");
+    expect(flat(within(wait).getByTestId("draft-words").textContent)).toContain("If you say yes, Ada moves there, and the Sunday 10:00 am class ends the day you say yes.");
     await act(async () => fireEvent.click(within(wait).getByRole("button", { name: "Send the offer (sample)" })));
     expect(await within(screen.getByTestId("inbox-waitlist")).findByTestId("inbox-waiting")).toBeInTheDocument();
     expect((await store.snapshot()).waitlistOffers).toHaveLength(1);
@@ -333,7 +333,7 @@ describe("the approvals inbox", () => {
     const note = screen.getByTestId("inbox-note");
     expect(flat(within(note).getByTestId("inbox-note-words").textContent)).toBe("We'd like to talk about a different lesson time for Mia.");
     // A different-time note with nothing open at Mia's pool: the person chooses to read it and add no waitlist.
-    expect(flat(note.textContent)).toContain("No other time that fits Mia is open now.");
+    expect(flat(note.textContent)).toContain("No other time that fits Mia is open at Madison now.");
     await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Mark as read, no waitlist" })));
     expect(screen.queryByTestId("inbox-note")).toBeNull();
     expect(flat(screen.getByTestId("inbox-done").textContent)).toContain("Read: \"We'd like to talk about a different lesson time for Mia.\"");
@@ -371,7 +371,7 @@ describe("fill-ins", () => {
     const card = await screen.findByTestId("school-fill-in");
     expect(within(card).getByRole("heading", { name: "A fill-in for Mia" })).toBeInTheDocument();
     await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Yes, that works" })));
-    expect(flat((await within(screen.getByTestId("school-fill-in")).findByTestId("offer-status")).textContent)).toBe("You said yes on Friday, October 30. Mia's fill-in is on Sunday, November 15 at 11:00 am with Coach Dev, for the lesson on Sunday, November 8.");
+    expect(flat((await within(screen.getByTestId("school-fill-in")).findByTestId("offer-status")).textContent)).toBe("You said yes on Friday, October 30. Mia's fill-in is on Sunday, November 15 at 11:00 am at Madison, with Coach Dev, for the lesson on Sunday, November 8.");
     // The family's note was read by the person who sent the fill-in.
     expect(within(screen.getByTestId("family-note")).getByTestId("note-status")).toHaveTextContent("Read by the school on");
     cleanup();
@@ -403,9 +403,7 @@ describe("a different time, from the inbox", () => {
     expect(flat(note.textContent)).toContain("A different time: pick one to offer, or none.");
     expect(within(note).queryByTestId("draft")).toBeNull();
     await act(async () => fireEvent.click(within(note).getByTestId("different-time-mad-wed-1630-shallows")));
-    expect(flat(within(note).getByTestId("draft-words").textContent)).toContain(
-      "If you say yes, Mia moves there from the Sunday 10:00 am class at Madison, with Coach Dev, and that class ends for Mia the day you say yes.",
-    );
+    expect(flat(within(note).getByTestId("draft-words").textContent)).toContain("If you say yes, Mia moves there, and the Sunday 10:00 am class ends the day you say yes.");
     await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Send the offer (sample)" })));
     expect(screen.queryByTestId("inbox-note")).toBeNull();
     const wait = await screen.findByTestId("inbox-waitlist");
@@ -439,9 +437,9 @@ describe("a different time, from the inbox", () => {
     const offer = await screen.findByTestId("school-offer");
     expect(within(offer).getByRole("heading", { level: 3 })).toHaveTextContent("A different time for Mia");
     const both = flat(within(offer).getByTestId("now-and-new").textContent);
-    expect(both).toContain("NowSundays at 10:00 am, Madison, Coach Dev");
-    expect(both).toContain("Ends the day you say yes.");
-    expect(both).toContain("NewWednesdays at 4:30 pm, Madison, Coach TamsinSame price as now.");
+    // Same price: Now doesn't repeat it; New shows it once, with "Same as now."
+    expect(both).toContain("NowSundays at 10:00 am, Madison, Coach DevEnds the day you say yes.");
+    expect(both).toContain("NewWednesdays at 4:30 pm, Madison, Coach TamsinBank draft$34.00 a lessonCard$35.00 a lessonSame as now.");
     expect(within(offer).getByRole("button", { name: "No, keep Mia's class" })).toBeInTheDocument();
     await act(async () => fireEvent.click(within(offer).getByRole("button", { name: "Yes, move Mia" })));
     expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe(
@@ -478,10 +476,51 @@ describe("a different time, from the inbox", () => {
     render(<InboxScreen />);
     const note = await screen.findByTestId("inbox-note");
     expect(within(note).queryByTestId("in-place-of")).toBeNull();
-    await act(async () => fireEvent.click(within(note).getByTestId("different-time-mad-wed-1630-shallows")));
+    // The open Wednesday time is half an hour after Mia's Wednesday class at the other pool: the person sees that before choosing.
+    const time = within(note).getByTestId("different-time-mad-wed-1630-shallows");
+    expect(flat(time.textContent)).toContain("Starts 30 minutes after Mia's Wednesday 4:00 pm class at Buckhead.");
+    await act(async () => fireEvent.click(time));
     expect(within(note).queryByTestId("draft")).toBeNull();
     await act(async () => fireEvent.click(within(note).getByRole("button", { name: /^the Wednesday 4:00\spm class, Buckhead$/ })));
-    expect(flat(within(note).getByTestId("draft-words").textContent)).toContain("Mia moves there from the Wednesday 4:00 pm class at Buckhead, with Coach Wren, and that class ends for Mia");
+    expect(flat(within(note).getByTestId("draft-words").textContent)).toContain("Mia moves there, and the Wednesday 4:00 pm class at Buckhead ends the day you say yes.");
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Send the offer (sample)" })));
+    cleanup();
+    // The family's card says which class a yes leaves as it is.
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("others-stay")).textContent)).toBe("Mia's Sunday 10:00 am class at Madison stays as it is.");
+  });
+
+  it("the family's note says what the school did, the owner's Done says it once, and Home marks a new class", async () => {
+    const store = freshStore();
+    const familyId = await miaAsks(store);
+    // Nothing open after all: the Wednesday spot fills again before a person reads the note.
+    await act(async () => void (await store.transaction((tx) => tx.update("classes", "mad-wed-1630-shallows", { openSpots: 0 }))));
+    render(<InboxScreen />);
+    const note = await screen.findByTestId("inbox-note");
+    await act(async () => fireEvent.click(within(note).getByRole("button", { name: "Put Mia on the Madison waitlist for any time that fits" })));
+    const done = flat((await screen.findByTestId("inbox-done")).textContent);
+    expect(done).toContain("Put Mia on the Madison waitlist for any time that fits, after Jordan Sample's note about a different time.");
+    expect(done).not.toContain("Read: \"We'd like to talk about a different lesson time for Mia.\"");
+    cleanup();
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("note-status")).textContent)).toMatch(/^ReadRead by the school on .+\. Mia is on the Madison waitlist for any time that fits\.$/);
+    cleanup();
+    // A spot opens; a person offers it from that waitlist; the family says yes.
+    await act(async () => {
+      await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }));
+      const [item] = waitlistItems(await store.snapshot(), TODAY);
+      const offer = await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "mad-wed-1630-shallows", inPlaceOfEnrollmentId: item.ownClasses[0].enrollment.id, today: TODAY, now: NOW, newId: testId }));
+      await store.transaction((tx) => answerWaitlistOffer(tx, { offerId: offer.id, familyId, answer: "yes", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("note-status")).textContent)).toContain("The school offered a different time, above.");
+    cleanup();
+    render(<InboxScreen />);
+    expect(flat((await screen.findByTestId("inbox-done")).textContent)).toContain("Offered Mia the Wednesday 4:30 pm class at Madison, in place of the Sunday 10:00 am class. They said yes.");
+    cleanup();
+    render(<HomeScreen />);
+    const block = (await screen.findAllByTestId("home-class"))[0];
+    expect(within(block).getByText("New")).toBeInTheDocument();
   });
 
   it("an offer already waiting, or a family with no way to pay yet, is said before any time is offered", async () => {
@@ -580,6 +619,10 @@ describe("missed days and fill-ins on every screen", () => {
     cleanup();
     render(<MessagesScreen />);
     const card = await screen.findByTestId("school-fill-in");
+    // Each note says what the school did: newest first, the one with a fill-in, then the one read without.
+    const statuses = (await screen.findAllByTestId("note-status")).map((p) => flat(p.textContent));
+    expect(statuses[0]).toMatch(/\. The school offered a fill-in, above\.$/);
+    expect(statuses[1]).toMatch(/\. There's no fill-in for this one\.$/);
     await act(async () => fireEvent.click(within(card).getByRole("button", { name: "No, thanks" })));
     expect(flat((await within(screen.getByTestId("school-fill-in")).findByTestId("offer-status")).textContent)).toBe(
       "You said no, thanks on Friday, October 30, to a fill-in on Sunday, November 15. The lesson on Sunday, November 8 has no fill-in.",

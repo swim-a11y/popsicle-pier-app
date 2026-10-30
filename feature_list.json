@@ -1356,7 +1356,8 @@
     "area": "family",
     "description": "An offer to switch classes says what it is: \"A different time for Jules\" when it answers the family's note (\"A spot for Ada\" otherwise); its words name both classes in full and say what yes and no do; Now and New each show both prices (\"Same price as now.\" when they match); the buttons read \"Yes, move Jules\" and \"No, keep Jules's class\"; Home's answer card says \"A different time for Jules\" and \"See Jules's new time\".",
     "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson; messages and notes > a waitlist offer: words, both prices, and the family's yes books it; tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it",
-    "passes": true
+    "passes": true,
+    "supersededBy": "switch-words-short (design round, DECISIONS.md 130): a switch's words are short and no longer name each class in full; Now and New under them do, with both prices under New."
   },
   {
     "id": "answered-shows-outcome",
@@ -1453,6 +1454,48 @@
     "id": "walkthrough-13-waitlist",
     "area": "walkthrough",
     "description": "Walk-through 13: walk-through 1's family asks for a different time for Mia; nothing else fits at Madison yet, so the owner puts her on the Madison waitlist; a family leaves the full Wednesday class; the owner offers it in place of her Sunday class; the family says yes and the Sunday class ends.",
+    "test": "e2e/sign-up.spec.ts: walk-through 13",
+    "passes": true
+  },
+  {
+    "id": "switch-words-short",
+    "area": "family",
+    "description": "An offer to switch classes is titled for what it is (\"A different time for Mia\" after the family's note, \"A spot for Ada\" otherwise), and its words are short: the new class's day, time and pool, the class it replaces, what yes and no do, and the answer-by day. Under them, Now and New show each class in full (day, time, pool, coach): New is set off with the teal rule and shows both prices, with \"Same as now.\" when they match (Now shows its prices only when they differ); any other class of the child's \"stays as it is\"; then \"If you say yes today, the first lesson there is ...\" and the buttons \"Yes, move Mia\" and \"No, keep Mia's class\".",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson / with two classes, the person picks which one it replaces; messages and notes > a waitlist offer: words, both prices, and the family's yes books it; tests/unit/different-time.test.ts: a different time, after a family's note > a person offers one in place of the child's class; the family's yes moves them; the note is read; tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it",
+    "passes": true
+  },
+  {
+    "id": "pools-named",
+    "area": "family",
+    "description": "A time that could be read as the other pool's names its pool: answered new dates and fill-ins (\"at Buckhead, with Coach Wren\"), the owner's waitlist card (each of the child's classes, and each class an offer could replace), and the different-time card (the pools nothing is open at, with a waitlist button for each).",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; fill-ins > a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day; the approvals inbox > a person talks with a family, offers a spot and a date, and reads a note; the app only drafts; e2e/sign-up.spec.ts: walk-through 13",
+    "passes": true
+  },
+  {
+    "id": "near-other-class",
+    "area": "office",
+    "description": "An open time within an hour of another of the child's classes the same day says so on the owner's cards (\"Starts 30 minutes after Mia's Wednesday 4:00 pm class at Buckhead.\"); nothing is blocked, and the person decides.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > with two classes, the person picks which one it replaces",
+    "passes": true
+  },
+  {
+    "id": "note-says-outcome",
+    "area": "family",
+    "description": "A note the school has read says what the school did: \"The school offered a different time, above.\", \"The school offered a fill-in, above.\", \"Mia is on the Madison waitlist for any time that fits.\", or for a missed lesson read without one, \"There's no fill-in for this one.\" The owner's Done list shows a note answered with an offer or a fill-in once, as that offer; a waitlist chosen for a note as \"Put Mia on the Madison waitlist ...\"; and each offer with the class it would replace.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family's note says what the school did, the owner's Done says it once, and Home marks a new class; missed days and fill-ins on every screen > the inbox can read a miss with no fill-in; Messages can say no; Lesson dates say where each stands; tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it",
+    "passes": true
+  },
+  {
+    "id": "home-new-pill",
+    "area": "family",
+    "description": "On Home a class the family moved to carries a teal \"New\" pill above its line until its first lesson.",
+    "test": "tests/unit/rooms-render.test.tsx: a different time, from the inbox > the family's note says what the school did, the owner's Done says it once, and Home marks a new class",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-13-captures",
+    "area": "walkthrough",
+    "description": "Walk-through 13 also captures the switch's answered card in Messages (with the note saying what the school did) and the owner's Done list after the family's yes.",
     "test": "e2e/sign-up.spec.ts: walk-through 13",
     "passes": true
   }

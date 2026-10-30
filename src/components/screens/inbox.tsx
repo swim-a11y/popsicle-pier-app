@@ -22,6 +22,7 @@ import {
   BY_THE_SCHOOL,
   classWords,
   differentTimes,
+  nearOwnClassWords,
   offerDifferentTime,
   sendWaitlistOffer,
   waitForDifferentTime,
@@ -205,7 +206,7 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
         Waiting for {item.wanted ? classWords(item.wanted) : "any time that fits"} since {longDate(todayAtSchool(new Date(item.entry.createdAt)), today)}
         {item.entry.fromNoteId ? ", after the family asked for a different time" : ""}.
       </p>
-      {item.ownClasses.length > 0 ? <p>Has {item.ownClasses.map((l) => classWords(l)).join(" and ")}.</p> : null}
+      {item.ownClasses.length > 0 ? <p>Has {item.ownClasses.map((l) => `${classWords(l)} at ${l.pool.name}`).join(" and ")}.</p> : null}
       {item.pending ? (
         <p data-testid="inbox-waiting">
           {item.pending.waitlistEntryId === item.entry.id ? "Offer sent. Waiting" : `An offer for ${item.child.firstName} from another waitlist is waiting`} for the family&apos;s answer by{" "}
@@ -221,13 +222,27 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
             <div className="flex flex-col gap-2">
               <p className="font-strong text-heading">Pick the class to offer.</p>
               {item.open.map((o) => (
-                <ChoiceButton outlined key={o.cls.id} title={classWords(o.cls)} line={`Coach ${o.cls.instructorFirstName}`} selected={classId === o.cls.id} onClick={() => setClassId(o.cls.id)} />
+                <ChoiceButton
+                  outlined
+                  key={o.cls.id}
+                  title={classWords(o.cls)}
+                  line={`Coach ${o.cls.instructorFirstName}`}
+                  selected={classId === o.cls.id}
+                  onClick={() => setClassId(o.cls.id)}
+                >
+                  {nearOwnClassWords(o.cls, item.child.firstName, item.ownClasses)}
+                </ChoiceButton>
               ))}
             </div>
           ) : (
-            <p className="font-strong text-heading">
-              A spot is open in {classWords(item.open[0].cls)}, with Coach {item.open[0].cls.instructorFirstName}.
-            </p>
+            <>
+              <p className="font-strong text-heading">
+                A spot is open in {classWords(item.open[0].cls)}, with Coach {item.open[0].cls.instructorFirstName}.
+              </p>
+              {nearOwnClassWords(item.open[0].cls, item.child.firstName, item.ownClasses) ? (
+                <p data-testid="near-class">{nearOwnClassWords(item.open[0].cls, item.child.firstName, item.ownClasses)}</p>
+              ) : null}
+            </>
           )}
           {item.ownClasses.length > 0 ? (
             <div className="flex flex-col gap-2">
@@ -237,7 +252,7 @@ function WaitCard({ data, item, today }: { data: Readonly<AppData>; item: Waitli
                 <ChoiceButton
                 outlined
                   key={l.enrollment.id}
-                  title={`In place of ${classWords(l)}`}
+                  title={`In place of ${classWords(l)} at ${l.pool.name}`}
                   line="That class ends when they say yes."
                   selected={mode === l.enrollment.id}
                   onClick={() => setMode(l.enrollment.id)}
@@ -298,17 +313,20 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
   }
   const canPay = hasLessonPayment(data, family.id);
   if (times.length === 0 || !canPay) {
-    const pool = own[0].pool;
+    // The pools where the child has a class: a different time is offered there only.
+    const pools = [...new Map(own.map((l) => [l.pool.id, l.pool])).values()];
     return (
       <>
         <p>
           {times.length === 0
-            ? `No other time that fits ${child.firstName} is open now.`
+            ? `No other time that fits ${child.firstName} is open at ${pools.map((p) => p.name).join(" or ")} now.`
             : "This family hasn't set up how they'll pay for lessons. Talk with them before offering a time."}
         </p>
-        <Button size="block" disabled={busy} onClick={() => void act((tx, _t, now) => waitForDifferentTime(tx, { noteId: note.id, poolId: pool.id, now, newId }))}>
-          {busy ? "Saving..." : `Put ${child.firstName} on the ${pool.name} waitlist for any time that fits`}
-        </Button>
+        {pools.map((pool) => (
+          <Button key={pool.id} size="block" disabled={busy} onClick={() => void act((tx, _t, now) => waitForDifferentTime(tx, { noteId: note.id, poolId: pool.id, now, newId }))}>
+            {busy ? "Saving..." : `Put ${child.firstName} on the ${pool.name} waitlist for any time that fits`}
+          </Button>
+        ))}
         {markRead("Mark as read, no waitlist")}
       </>
     );
@@ -336,6 +354,7 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
               onClick={() => setPick(t.cls.id)}
             >
               {lt ? <PriceRows bankCents={lt.bankDraftCents} /> : null}
+              {nearOwnClassWords(t.cls, child.firstName, own)}
             </ChoiceButton>
           );
         })}

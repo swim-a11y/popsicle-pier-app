@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { MESSAGES_LINE } from "@/content/messages";
 import { getStore } from "@/data/app-store";
 import { newId } from "@/data/ids";
-import type { AppData, DateOnly, FillIn, OwedLesson, WaitlistOffer } from "@/data/types";
+import type { AppData, DateOnly, FamilyNote, FillIn, OwedLesson, WaitlistOffer } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
 import { firstWeeklyDate } from "@/rules/closures";
 import { clockTime, longDate, shownAtSchool, todayAtSchool, weekdayName } from "@/rules/dates";
-import { currentFamily, fillInOpen, lessonInfo, oneOffGone, type OneOffGone } from "@/rules/family";
+import { currentFamily, familyLessons, fillInOpen, lessonInfo, oneOffGone, type OneOffGone } from "@/rules/family";
 import { answerFillIn, fillInsForFamily } from "@/rules/fillins";
 import { offerOpen } from "@/rules/holds";
 import { notesForFamily } from "@/rules/notes";
@@ -60,6 +60,18 @@ function goneShort(gone: OneOffGone | null): string {
   return gone?.kind === "cancelled" ? "we cancelled that day, so it closed." : gone?.kind === "closed" ? "the pool is closed that day, so it closed." : "";
 }
 
+/** What the school did about a note it has read, if anything shows it: an offer above, a fill-in above, or a waitlist. */
+function noteOutcome(data: Readonly<AppData>, note: FamilyNote): string {
+  const name = data.children.find((c) => c.id === note.childRecordId)?.firstName ?? "";
+  if (data.waitlistOffers.some((o) => o.fromNoteId === note.id)) return "The school offered a different time, above.";
+  if (data.fillIns.some((f) => f.noteId === note.id)) return "The school offered a fill-in, above.";
+  const entry = data.waitlistEntries.find((w) => w.fromNoteId === note.id);
+  const pool = entry ? data.pools.find((p) => p.id === entry.poolId) : undefined;
+  if (pool) return `${name} is on the ${pool.name} waitlist for any time that fits.`;
+  if (note.kind === "miss") return "There's no fill-in for this one.";
+  return "";
+}
+
 /** "on Friday, October 30": when a family answered. */
 function answeredOn(at: string | null, today: DateOnly): string {
   return at ? ` on ${longDate(todayAtSchool(new Date(at)), today)}` : "";
@@ -81,6 +93,8 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
   if (!child || !cls || !pool) return null;
   const starts = firstWeeklyDate(data, cls, pool, today);
   const name = child.firstName;
+  // For a switch: the child's other classes, which a yes leaves as they are.
+  const staying = wasInfo ? familyLessons(data, offer.familyId).filter((l) => l.child.id === child.id && l.lessonKind !== "evaluation" && l.enrollment.id !== wasInfo.enrollment.id) : [];
   return (
     <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`offer-${offer.id}`} data-testid="school-offer">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -97,27 +111,34 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
               <div className="flex flex-col gap-1">
                 <dt className="font-strong text-heading">Now</dt>
                 <dd className="flex flex-col gap-1">
-                  <span>
+                  <span className="font-strong">
                     {weekdayName(wasInfo.weekday)}s at {clockTime(wasInfo.startTime)}, {wasInfo.pool.name}, Coach {wasInfo.instructorFirstName}
                   </span>
-                  {wasInfo.bankCents !== null ? <PriceRows bankCents={wasInfo.bankCents} /> : null}
+                  {/* Its prices show here only when New's differ; otherwise New says "Same as now." */}
+                  {wasInfo.bankCents !== null && wasInfo.bankCents !== lt.bankDraftCents ? <PriceRows bankCents={wasInfo.bankCents} /> : null}
                   <span>Ends the day you say yes.</span>
                 </dd>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 border-t border-line pt-3">
                 <dt className="font-strong text-heading">New</dt>
-                <dd className="flex flex-col gap-1">
-                  <span>
+                <dd className="flex flex-col gap-1 border-l-4 border-mark pl-4">
+                  <span className="font-strong">
                     {weekdayName(cls.weekday)}s at {clockTime(cls.startTime)}, {pool.name}, Coach {cls.instructorFirstName}
                   </span>
-                  {wasInfo.bankCents === lt.bankDraftCents ? <span>Same price as now.</span> : <PriceRows bankCents={lt.bankDraftCents} />}
+                  <PriceRows bankCents={lt.bankDraftCents} />
+                  {wasInfo.bankCents === lt.bankDraftCents ? <span>Same as now.</span> : null}
                 </dd>
               </div>
             </dl>
           ) : lt ? (
             <PriceRows bankCents={lt.bankDraftCents} />
           ) : null}
-          <p>If you say yes, the first lesson there is {longDate(starts, today)}.</p>
+          {staying.length > 0 ? (
+            <p data-testid="others-stay">
+              {staying.map((l) => `${name}'s ${weekdayName(l.weekday)} ${clockTime(l.startTime)} class at ${l.pool.name} stays as it is.`).join(" ")}
+            </p>
+          ) : null}
+          <p>If you say yes today, the first lesson there is {longDate(starts, today)}.</p>
           <AnswerButtons
             yes={wasInfo ? `Yes, move ${name}` : "Yes, book it"}
             no={wasInfo ? `No, keep ${name}'s class` : "No, thanks"}
@@ -190,8 +211,8 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
         </p>
       ) : state.kind === "booked" ? (
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
-          You said yes{answeredOn(state.offer.answeredAt, today)}. {child.firstName}&apos;s lesson is on {longDate(state.offer.date, today)} at {clockTime(timeOf(state.offer))} with Coach{" "}
-          {owed.instructorFirstName}.
+          You said yes{answeredOn(state.offer.answeredAt, today)}. {child.firstName}&apos;s lesson is on {longDate(state.offer.date, today)} at {clockTime(timeOf(state.offer))} at {pool.name},
+          with Coach {owed.instructorFirstName}.
         </p>
       ) : state.kind === "closed" ? (
         <p data-testid="offer-status">Neither date worked, so this one is closed. It stays on your bill.</p>
@@ -217,6 +238,7 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
   const open = fillInOpen(data, fillIn, today);
   // Its day cancelled or closed, or its class ended, after it was offered.
   const gone = oneOffGone(data, { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: o });
+  const poolName = data.pools.find((p) => p.id === fillIn.poolId)?.name ?? "";
   const stoodFor = data.enrollments.find((e) => e.id === fillIn.enrollmentId);
   const wasClass = stoodFor ? lessonInfo(data, stoodFor) : null;
   if (!child) return null;
@@ -247,8 +269,8 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
         </p>
       ) : o.answer === "yes" ? (
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
-          You said yes{answeredOn(o.answeredAt, today)}. {child.firstName}&apos;s fill-in is on {longDate(o.date, today)} at {clockTime(time)} with Coach {fillIn.instructorFirstName}, for
-          the lesson on {longDate(fillIn.missedDate, today)}.
+          You said yes{answeredOn(o.answeredAt, today)}. {child.firstName}&apos;s fill-in is on {longDate(o.date, today)} at {clockTime(time)} at {poolName}, with Coach{" "}
+          {fillIn.instructorFirstName}, for the lesson on {longDate(fillIn.missedDate, today)}.
         </p>
       ) : o.answer === "no" ? (
         <p data-testid="offer-status">
@@ -339,7 +361,9 @@ export function MessagesScreen() {
             {n.readAt ? (
               <p className="flex flex-wrap items-center gap-2" data-testid="note-status">
                 <Tag tone="mark">Read</Tag>
-                <span>Read by the school on {shownAtSchool(n.readAt)}.</span>
+                <span>
+                  Read by the school on {shownAtSchool(n.readAt)}.{noteOutcome(data, n) ? ` ${noteOutcome(data, n)}` : ""}
+                </span>
               </p>
             ) : (
               <p className="flex flex-wrap items-center gap-2" data-testid="note-status">

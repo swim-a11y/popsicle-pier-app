@@ -10,7 +10,7 @@ import type { Transaction } from "@/data/store";
 import type { AppData, Child, DateOnly, Family, FamilyNote, IsoTime, Pool, SwimClass, WaitlistEntry, WaitlistOffer } from "@/data/types";
 import { lessonPaymentNote } from "@/rules/add";
 import { bookTime } from "@/rules/booking";
-import { addDays, clockTime, longDate, weekdayName } from "@/rules/dates";
+import { addDays, clockTime, longDate, minutesOfDay, weekdayName } from "@/rules/dates";
 import { familyLessons, hasLessonPayment, isActive, lessonInfo, upcomingLessonDate, type LessonInfo } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { timesForChild } from "@/rules/times";
@@ -77,8 +77,10 @@ export function classFullWords(cls: Pick<SwimClass, "weekday" | "startTime" | "i
 
 /**
  * The words a person reviews before sending. Exactly these are stored and
- * shown to the family. A switch names both classes in full and says what yes
- * and no do; a reply to the family's "different time" note says so.
+ * shown to the family. A switch is short: the new class, the class it
+ * replaces, and what yes and no do; the family's card shows each class in
+ * full with its prices under the words. A reply to the family's "different
+ * time" note says so.
  */
 export function waitlistOfferWords(input: {
   child: Pick<Child, "firstName">;
@@ -91,14 +93,25 @@ export function waitlistOfferWords(input: {
 }): string {
   const { child, cls, pool, inPlaceOf, answerBy, today, asked } = input;
   const name = child.firstName;
-  const there = classFullWords(cls, pool.name);
   const by = `Please answer by ${longDate(answerBy, today)}.`;
-  if (!inPlaceOf) return `A spot opened for ${name} in ${there}. Would you like it? ${by}`;
-  const from = classFullWords(inPlaceOf, inPlaceOf.pool.name);
-  if (asked) {
-    return `You asked about a different time for ${name}. There's a place in ${there}. If you say yes, ${name} moves there from ${from}, and that class ends for ${name} the day you say yes. If you say no, or don't answer, ${name} keeps that class and stays on the ${pool.name} waitlist for another time that fits. ${by}`;
+  if (!inPlaceOf) return `A spot opened for ${name} in ${classFullWords(cls, pool.name)}. Would you like it? ${by}`;
+  const there = `${classWords(cls)} at ${pool.name}`;
+  // The pool is named again only when the class it replaces is at the other one.
+  const old = inPlaceOf.pool.name === pool.name ? classWords(inPlaceOf) : `${classWords(inPlaceOf)} at ${inPlaceOf.pool.name}`;
+  const yes = `If you say yes, ${name} moves there, and ${old} ends the day you say yes.`;
+  if (asked) return `You asked about a different time for ${name}. A place opened in ${there}. ${yes} If you say no, or don't answer, ${name} keeps ${old} and stays on the ${pool.name} waitlist. ${by}`;
+  return `A spot opened for ${name} in ${there}. ${yes} If you say no, nothing changes. ${by}`;
+}
+
+/** "Starts 30 minutes after Mia's Wednesday 4:00 pm class at Buckhead.": a time within an hour of another of the child's classes that day. A person decides. */
+export function nearOwnClassWords(cls: Pick<SwimClass, "id" | "weekday" | "startTime">, childFirstName: string, own: LessonInfo[]): string | null {
+  for (const l of own) {
+    if (l.weekday !== cls.weekday || l.enrollment.timeId === cls.id) continue;
+    const gap = minutesOfDay(cls.startTime) - minutesOfDay(l.startTime);
+    if (gap === 0 || Math.abs(gap) > 60) continue;
+    return `Starts ${Math.abs(gap)} minutes ${gap > 0 ? "after" : "before"} ${childFirstName}'s ${weekdayName(l.weekday)} ${clockTime(l.startTime)} class at ${l.pool.name}.`;
   }
-  return `A spot opened for ${name} in ${there}. Would you like ${name} to move there from ${from}? If you say yes, that class ends for ${name} the day you say yes; if you say no, nothing changes. ${by}`;
+  return null;
 }
 
 /** A person sends the drafted offer. The spot is held for the family until they answer or the week is up. */

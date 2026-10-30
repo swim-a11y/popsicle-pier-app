@@ -47,7 +47,7 @@ describe("a different time, after a family's note", () => {
     const own = familyLessons(await store.snapshot(), familyId)[0];
     const offer = await store.transaction((tx) => offerDifferentTime(tx, { noteId: note.id, classId: "mad-wed-1630-shallows", inPlaceOfEnrollmentId: own.enrollment.id, today: TODAY, now: NOW, newId: testId }));
     expect(flat(offer.words)).toBe(
-      "You asked about a different time for Mia. There's a place in the Wednesday 4:30 pm class at Madison, with Coach Tamsin. If you say yes, Mia moves there from the Sunday 10:00 am class at Madison, with Coach Dev, and that class ends for Mia the day you say yes. If you say no, or don't answer, Mia keeps that class and stays on the Madison waitlist for another time that fits. Please answer by Friday, November 6.",
+      "You asked about a different time for Mia. A place opened in the Wednesday 4:30 pm class at Madison. If you say yes, Mia moves there, and the Sunday 10:00 am class ends the day you say yes. If you say no, or don't answer, Mia keeps the Sunday 10:00 am class and stays on the Madison waitlist. Please answer by Friday, November 6.",
     );
     expect(offer.fromNoteId).toBe(note.id);
     let data = await store.snapshot();
@@ -113,7 +113,7 @@ describe("a different time, after a family's note", () => {
     const own = familyLessons(await store.snapshot(), familyId)[0];
     const offer = await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "mad-wed-1630-shallows", inPlaceOfEnrollmentId: own.enrollment.id, today: TODAY, now: NOW, newId: testId }));
     expect(offer.fromNoteId).toBe(note.id);
-    expect(flat(offer.words)).toContain("You asked about a different time for Mia. There's a place in the Wednesday 4:30 pm class at Madison, with Coach Tamsin.");
+    expect(flat(offer.words)).toContain("You asked about a different time for Mia. A place opened in the Wednesday 4:30 pm class at Madison.");
   });
 
   it("only for a different-time note", async () => {

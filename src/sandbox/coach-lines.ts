@@ -13,7 +13,7 @@ const lines: [CoachLineTemplate["stageId"], string, string][] = [
   ["pier", "Today [name] walked a toy boat along the step and reached for it.", "Next we'll work on a short glide to the coach."],
   ["pier", "Today [name] dipped their hands in and waved hello to the water.", "Next we'll work on sitting on the step a little longer."],
   ["shallows", "Today [name] put their face in and blew bubbles for a count of three.", "Next we'll work on a back float with the coach's hand under them."],
-  ["shallows", "Today [name] kicked to the coach holding a noodle.", "Next we'll work on kicking with their face in."],
+  ["shallows", "Today [name] kicked to the coach holding a noodle.", "Next we'll work on kicking with their face in the water."],
   ["shallows", "Today [name] floated on their back with support.", "Next we'll work on rolling from front to back."],
   ["shallows", "Today [name] jumped in from the edge to the coach.", "Next we'll work on turning back to the wall."],
   ["shallows", "Today [name] picked a ring up from the step.", "Next we'll work on going under for a moment."],

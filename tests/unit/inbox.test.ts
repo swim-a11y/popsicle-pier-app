@@ -50,7 +50,7 @@ describe("the approvals inbox: waitlist offers", () => {
     const tenOClock = item.ownClasses[0].enrollment;
     const offer = await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: tenOClock.id, today: TODAY, now: NOW, newId: testId }));
     expect(flat(offer.words)).toBe(
-      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead, with Coach Wren. Would you like Ada to move there from the Sunday 10:00 am class at Buckhead, with Coach Ines? If you say yes, that class ends for Ada the day you say yes; if you say no, nothing changes. Please answer by Friday, November 6.",
+      "A spot opened for Ada in the Sunday 9:00 am class at Buckhead. If you say yes, Ada moves there, and the Sunday 10:00 am class ends the day you say yes. If you say no, nothing changes. Please answer by Friday, November 6.",
     );
     // The spot is held for Ada while the family answers: nobody else can book it, and no second offer goes out.
     data = await store.snapshot();
@@ -68,7 +68,7 @@ describe("the approvals inbox: waitlist offers", () => {
     expect(data.waitlistEntries.filter((w) => w.familyId === familyId)).toEqual([]);
     expect(data.classes.find((c) => c.id === "buc-sun-0900-cove")!.openSpots).toBe(0);
     expect(data.classes.find((c) => c.id === "buc-sun-1000-cove")!.openSpots).toBe(2);
-    expect(flat(doneItems(data, TODAY)[0].line)).toBe("Offered Ada the Sunday 9:00 am class. They said yes.");
+    expect(flat(doneItems(data, TODAY)[0].line)).toBe("Offered Ada the Sunday 9:00 am class at Buckhead, in place of the Sunday 10:00 am class. They said yes.");
   });
 
   it("a no keeps the child on the waitlist; an offer not answered in a week closes", async () => {
