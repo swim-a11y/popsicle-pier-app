@@ -1,6 +1,6 @@
 # Popsicle Pier sample app
 
-A phone-first sample app for Popsicle Pier Swim School. This first version fills ONE parent's whole path, end to end: sign up, the family release (the waiver) and bank draft, "Your first lesson", and a sample "How it went" note after that first lesson. The staff side is one "Staff side, coming later" page plus the owner's read-only release versions.
+A phone-first sample app for Popsicle Pier Swim School. This first version fills ONE parent's whole path, end to end: sign up, the family release (the waiver) and bank draft, "Your first lesson", and a sample "How it went" note after that first lesson. The staff side is one "Staff side, coming later" page plus the owner's read-only release versions. After the owner's rulings (below) it also has Lesson dates, adding a child or a class, Bills (lessons only), Messages with ready-made notes, and the owner's approvals inbox.
 
 Everything is sandbox: made-up families, classes and prices, stored only in the phone's localStorage. Nothing leaves the device.
 
@@ -30,7 +30,7 @@ These three build parts of the RULES FOR LATER ROOMS that the brief said not to 
 - `npm run dev` for local work, `npm run build && npm run start` for the real build.
 - `npm test` runs Vitest (unit and render tests in `tests/`).
 - `npm run typecheck` runs `tsc --noEmit`. `npm run lint` runs ESLint.
-- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the seven walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
+- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the ten walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
 - Deploy: any Node host that runs `next build` and `next start`. No vercel.json, no Vercel CLI. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ## Where things are
@@ -42,7 +42,8 @@ These three build parts of the RULES FOR LATER ROOMS that the brief said not to 
 - `src/content/`: family words (release text, bank-draft authorization text, Path stage lines, consent wording).
 - `src/sandbox/`: everything sandbox-only behind the one `SANDBOX` switch: seeds, role switcher, erase, sample fill, the sample code, "Pretend the first lesson happened".
 - `src/config.ts`: payment settings (cardPricing, evaluationAsksForCard).
-- `src/rules/add.ts`: adding a brother or sister, or another class (times, checks, the one transaction). `src/rules/closures.ts`: closed days. Screens in `src/components/screens/add/` and `src/components/screens/lesson-dates.tsx`.
+- `src/rules/add.ts`: adding a brother or sister, or another class (times, checks, the one transaction). `src/rules/closures.ts`: closed days and cancelled class dates. Screens in `src/components/screens/add/` and `src/components/screens/lesson-dates.tsx`.
+- From the owner's rulings: `src/rules/bills.ts` (monthly bills, worked out, never stored), `src/rules/notes.ts` (the three ready-made notes), `src/rules/offers.ts` (waitlist offers, leaving a class), `src/rules/owed.ts` (lessons the school cancels), `src/rules/holds.ts` (places an open offer holds), `src/rules/inbox.ts` (the inbox's lists and the Done list). Screens: `bills.tsx`, `messages.tsx`, `send-note.tsx` and the owner's `inbox.tsx` in `src/components/screens/`. Sandbox: `src/sandbox/pretend-school.ts`.
 
 ## The app: six rooms plus two later wings
 
@@ -59,11 +60,13 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 
 ## Records the later rooms will need (not in code yet)
 
-- Schedule: OwedLesson (offered date, answer by, second date, closed), FillIn (same instructor, the week after), WaitlistOffer (a person's choice). (Closure is in code now, for the parent's Lesson dates.)
+In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, WaitlistOffer, FamilyNote and TalkRecord (the owner's rulings). Bills are worked out from lesson dates, not stored. The inbox's items are worked out from those records, so there's no ApprovalItem record yet.
+
+- Schedule: FillIn (same instructor, the week after).
 - Deck: RosterDay (a person builds it), CheckIn (the attendance record), Incident (holds that lesson's video), HoldFlag (health or custody yes, no details).
 - Money: Bill, BillLine (both prices), Charge (scheduled, pending, settled, returned, refunded, disputed), Credit (owner approves), RegistrationFee, CountyFee, FoundingMarker, FacilityShareReport, Deposit and DepositLine, PaymentCostMonth.
 - Progress and Video: StageChange (staff choose), MonthlyNote, Clip (released only after its mark is confirmed), LibraryItem, SeasonReel.
-- Office and Owner: ApprovalItem, StaffMember, InstructorCredential (lifeguard, CPR, background check), RecordingAcknowledgment, AgentLogEntry, ParticipantCount, TalkFlag, CheckInDraft.
+- Office and Owner: ApprovalItem (if the inbox ever needs stored items), StaffMember, InstructorCredential (lifeguard, CPR, background check), RecordingAcknowledgment, AgentLogEntry, ParticipantCount, CheckInDraft.
 - Wings: Workout, SwimTeamMember.
 
 ## Done
@@ -78,23 +81,26 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 - Every entry in feature_list.json passes.
 - Two agent rounds (after step 4 and at the end) are logged in docs/check-report.md with what was fixed.
 - Next phase (the owner said to keep building with best judgement, inside the HARD RULES): Lesson dates with closed days, the parent's side of the Schedule room (a Closure record, sample closed days, first and next lessons skip them, Lesson dates under More); and Add a child or a class behind Home's card (a brother or sister gets a coverage row with their own answers, nothing new to sign; another class at either pool keeps one ID). Walk-through 7 covers it.
+- The owner's rulings (October 30, 2026): Bills for lessons only (both prices on every line, closed days not billed, billed by the 19th and drafted on the 1st, or 10 days after a later bill); Messages with three ready-made notes and the school's offers to answer; the approvals inbox (talks about a custody or health yes, owed lessons offered with the same coach, waitlist offers a person chooses and sends, notes to read, Done), as the owner's first tab; two sandbox shortcuts (the school cancels a lesson, a family leaves a full class). Walk-throughs 8, 9 and 10 cover it.
 
 ## Next
 
-- The parent's sides of Family and Schedule are filled. What's left needs the owner first, because the HARD RULES allow only parent screens:
-  - Staff-side Schedule (owed lessons, fill-ins, waitlist offers a person makes) needs staff screens, or the planned approvals inbox; ask the owner before building any.
-  - Bills (Money room) needs the fee rules and amounts the owner hasn't set (registration, county fee, founding marker).
-  - Messages needs a ruling on the message-box idea (listed under "Ideas not ruled"), and a free-text box can invite health details the HARD RULES keep out.
+- What's left needs the owner first:
+  - Fees on the bill: the yearly registration fee, the out-of-county fee and the founding marker need the owner's amounts.
+  - Fill-ins for a family's own miss (same instructor, the week after) and the "second no-show" and "two missed in a row" notes need the Deck room's check-in, which isn't built; the inbox is where they'd land.
+  - Any other staff screen (roster, deck, instructors) needs a new ruling: the inbox is the one exception.
 - A second session runs /code-review and /security-review.
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 107 unit tests and 42 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 138 unit tests and 47 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone, Your swimmers' Continue button sits just below the first screen, and the family release runs about twelve screens by design (every line visible, never folded).
 - The sample banner wraps to four lines at 375px, not the three planned (DECISIONS.md 32).
 - Times stay in time order, so a Full time can come first in the list (DECISIONS.md 47).
+- Home's next lesson follows the weekly classes; a date booked in place of a cancelled lesson shows on Lesson dates and in Messages (DECISIONS.md 76).
+- "Pretend the first lesson happened" doesn't wait for a talk about a custody or health yes; the inbox records the talk (DECISIONS.md 78).
 - Screenshots are made by `npm run e2e` into `screenshots/` and aren't committed.
 
 ## Keep for later (from the owner's handoff notes)
@@ -107,7 +113,7 @@ Nothing is failing: every entry in feature_list.json passes, with 107 unit tests
 - Before any real family moves over: ask Jackrabbit in writing whether stored bank details and cards can move. If not, each family relinks its bank and signs the current release in a move-over walkthrough (walk-through 4 is its sandbox draft). Run one billing cycle side by side before any family switches, and never move in December or January.
 - The real app: autofill back on, the phone's contact picker for emergency contacts, real email codes, passkeys.
 - The staff side, later: one approvals inbox plus a Claude connector to the app's data, instead of a screen per role.
-- Ideas not ruled: a cap color on the attendance mark to tell two semi-private children apart in clips; a message box where a parent's sentence becomes a drafted task a person approves.
+- Ideas not ruled: a cap color on the attendance mark to tell two semi-private children apart in clips; a message box where a parent's sentence becomes a drafted task a person approves. (On October 30, 2026 the owner chose ready-made notes for Messages instead of a sentence box; see "Owner rulings after the brief".)
 - Never import sandbox data into the real app. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ---
