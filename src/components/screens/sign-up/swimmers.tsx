@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PinnedBar } from "@/components/parts/pinned-bar";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -51,20 +52,22 @@ export function SwimmersStep() {
     setProblems(found);
     if (Object.keys(found).length > 0) {
       const first = kids.find((k) => found[k.key]);
-      document.getElementById(`${first?.key}-${found[first!.key].name ? "name" : "month"}`)?.focus();
+      // Bring that swimmer's box up under the banner, so its messages show above the pinned bar, then focus the field.
+      document.getElementById(`${first?.key}-title`)?.closest('[role="group"]')?.scrollIntoView?.({ block: "start" });
+      document.getElementById(`${first?.key}-${found[first!.key].name ? "name" : "month"}`)?.focus({ preventScroll: true });
       return;
     }
     void step.advance((d) => merge(d, kids.map((k) => ({ ...k, firstName: k.firstName.trim() }))));
   };
 
   return (
-    <StepScreen step={step} stepKey="swimmers">
+    <StepScreen step={step} stepKey="swimmers" pinned>
       <StepTitle>Your swimmers</StepTitle>
       {kids.map((kid, i) => {
         const p = problems[kid.key] ?? {};
         return (
           <div key={kid.key} role="group" aria-labelledby={`${kid.key}-title`} className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card">
-            <h2 id={`${kid.key}-title`} className="font-heading text-body text-heading">
+            <h2 id={`${kid.key}-title`} className={kids.length === 1 ? "sr-only" : "font-heading text-body text-heading"}>
               {kids.length > 1 ? `Swimmer ${i + 1}` : "Your swimmer"}
             </h2>
             <Field>
@@ -131,11 +134,11 @@ export function SwimmersStep() {
       </Button>
       <p className="rounded-card bg-surface px-4 py-3 shadow-card">{SWIM_DIAPER_LINE}</p>
       {/* Continue stays in reach on the first screen of a phone, above the boxes still to scroll past. */}
-      <div className="sticky bottom-0 z-10 -mx-gutter bg-page px-gutter pt-3 pb-3 shadow-bar" data-testid="continue-bar">
+      <PinnedBar testId="continue-bar">
         <Button size="block" onClick={onContinue}>
           Continue
         </Button>
-      </div>
+      </PinnedBar>
     </StepScreen>
   );
 }

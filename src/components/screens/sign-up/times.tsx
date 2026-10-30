@@ -3,6 +3,7 @@
 import { CheckIcon } from "lucide-react";
 
 import { Tag } from "@/components/parts/tag";
+import { PinnedBar } from "@/components/parts/pinned-bar";
 import { ageWords, TimeDetails, timeTitle } from "@/components/parts/time-card";
 import { Button } from "@/components/ui/button";
 import { ANY_TIME, type DraftChild, type SignUpDraft } from "@/data/types";
@@ -73,7 +74,7 @@ export function TimesStep() {
   );
 
   return (
-    <StepScreen step={step} stepKey="times">
+    <StepScreen step={step} stepKey="times" pinned={!kid.booking && kid.waitlistClassIds.length > 0}>
       <div className="flex flex-col gap-2">
         <StepTitle>{kid.stage === "evaluation" ? `Pick a time for ${name}'s free evaluation` : `Pick a time for ${name}`}</StepTitle>
         {!t.tooYoung && (t.classes.length > 0 || kid.stage === "evaluation") ? (
@@ -181,9 +182,11 @@ export function TimesStep() {
       ) : null}
 
       {!kid.booking && kid.waitlistClassIds.length > 0 ? (
-        <Button size="block" onClick={() => void step.advance()}>
-          Continue with the waitlist only
-        </Button>
+        <PinnedBar>
+          <Button size="block" onClick={() => void step.advance()}>
+            Continue with the waitlist only
+          </Button>
+        </PinnedBar>
       ) : null}
       {chosen ? (
         <Button variant="secondary" size="block" onClick={() => void step.advance()}>

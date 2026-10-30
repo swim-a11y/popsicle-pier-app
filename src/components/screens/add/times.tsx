@@ -3,6 +3,7 @@
 import { CheckIcon } from "lucide-react";
 
 import { Tag } from "@/components/parts/tag";
+import { PinnedBar } from "@/components/parts/pinned-bar";
 import { ageWords, TimeDetails, timeTitle } from "@/components/parts/time-card";
 import { PageTitle } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ export function AddTimesStep() {
   );
 
   return (
-    <AddScreen stepKey="times" step={step}>
+    <AddScreen stepKey="times" step={step} pinned={!kid.booking && kid.waitlistClassIds.length > 0}>
       <div className="flex flex-col gap-2">
         <PageTitle>{draft.mode === "class" ? `Another class for ${name}` : `Pick a time for ${name}`}</PageTitle>
         {t && !t.tooYoung && (t.classes.length > 0 || t.evaluations.length > 0) ? (
@@ -123,8 +124,15 @@ export function AddTimesStep() {
               <p className="font-strong text-heading">
                 Nothing open fits {name} at {pool.name} right now.
               </p>
-              <p>Try the other pool, or join the waitlist and someone from the school will reach out when a time opens.</p>
-              {waitlistButton(ANY_TIME, "Join the waitlist")}
+              {/* With a full time listed, its own waitlist button is the one to tap: no second one here. */}
+              {t.classes.some((c) => c.full) ? (
+                <p>Join a full time&apos;s waitlist above, or try the other pool. If a spot opens, someone from the school will reach out.</p>
+              ) : (
+                <>
+                  <p>Try the other pool, or join the waitlist and someone from the school will reach out when a time opens.</p>
+                  {waitlistButton(ANY_TIME, "Join the waitlist")}
+                </>
+              )}
             </div>
           ) : null}
           {t.nothingFits && draft.mode === "child" && kid.stage !== "evaluation" ? (
@@ -149,9 +157,11 @@ export function AddTimesStep() {
       ) : null}
 
       {!kid.booking && kid.waitlistClassIds.length > 0 ? (
-        <Button size="block" onClick={() => void step.advance()}>
-          Continue with the waitlist only
-        </Button>
+        <PinnedBar>
+          <Button size="block" onClick={() => void step.advance()}>
+            Continue with the waitlist only
+          </Button>
+        </PinnedBar>
       ) : null}
     </AddScreen>
   );

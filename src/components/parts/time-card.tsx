@@ -17,7 +17,8 @@ function kindWords(o: TimeOption): string {
 export function TimeDetails({ o, today }: { o: TimeOption; today: string }) {
   return (
     <>
-      {o.kind === "class" ? <span className="block">First lesson {longDate(o.firstLessonDate, today)}</span> : null}
+      {/* A full time has no first lesson to give: only its waitlist. */}
+      {o.kind === "class" && !o.full ? <span className="block">First lesson {longDate(o.firstLessonDate, today)}</span> : null}
       <span className="block">{kindWords(o)}</span>
       {o.parentInWater ? <span className="block">You&apos;re in the water too.</span> : null}
       {o.bankCents !== null ? <PriceRows bankCents={o.bankCents} testId="prices" /> : <span className="block font-strong">Never charged</span>}

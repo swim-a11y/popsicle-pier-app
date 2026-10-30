@@ -1045,8 +1045,7 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
   await tap(page.getByRole("link", { name: /^Lesson dates/ }));
   const cancelledDay = page.getByTestId("lesson-dates").filter({ hasText: who }).getByTestId("cancelled-day").first();
-  await expect(cancelledDay).toContainText(/Its new date is \w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev\./);
-  await expect(cancelledDay.getByTestId("owed-day")).toContainText("New date");
+  await expect(cancelledDay.getByTestId("owed-day")).toContainText(/New date\s*\w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev/);
   await check("lesson-dates-owed");
 
   screen("Bills");
@@ -1080,10 +1079,17 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
   await tap(page.getByRole("link", { name: /^Lesson dates/ }));
   const noaDay = page.getByTestId("cancelled-day").first();
-  await expect(noaDay).toContainText(/Its new date is \w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev\./);
-  await expect(noaDay.getByTestId("owed-day")).toContainText("New date");
+  await expect(noaDay.getByTestId("owed-day")).toContainText(/New date\s*\w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev/);
   await check("lesson-dates-noa");
-  run!.notes.push("Walk-through 5's Noa, in the same cancelled class, was owed the lesson too; a person offered her a date and she said yes. Home still shows her next weekly lesson, which comes first.");
+  // Home and Your first lesson list the same lessons for Noa's next day (a new date the same day shows on both).
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "Home" }));
+  const homeHasNewDate = /in place of the lesson we cancelled/i.test(await page.getByTestId("home-lead").innerText());
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "First lesson" }));
+  await expect(page.getByTestId("lesson-ticket").first()).toBeVisible();
+  expect((await page.getByTestId("lesson-in-place").count()) > 0).toBe(homeHasNewDate);
+  run!.notes.push(
+    `Walk-through 5's Noa, in the same cancelled class, was owed the lesson too; a person offered her a date and she said yes. Home and Your first lesson agree on her next day${homeHasNewDate ? ", new date included" : ""}.`,
+  );
   run!.passed = true;
 });
 
@@ -1102,12 +1108,19 @@ test("walk-through 11: join a waitlist for another class, then leave it", async 
   screen("1 Pick a time");
   const full = page.getByTestId("time-mad-wed-1630-shallows");
   await expect(full).toContainText("Full");
+  // A full time has no first lesson to give, and its own waitlist button is the only one.
+  await expect(full).not.toContainText("First lesson");
   await tap(full.getByRole("button", { name: "Join the waitlist" }));
+  await expect(page.getByRole("button", { name: /Join the waitlist|On the waitlist/ })).toHaveCount(1);
+  // Continue with the waitlist only is on the first screen.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const cont = await page.getByRole("button", { name: "Continue with the waitlist only" }).boundingBox();
+  expect(cont && cont.y + cont.height).toBeLessThanOrEqual(667);
   await check("add-waitlist-times");
   await tap(page.getByRole("button", { name: "Continue with the waitlist only" }));
 
   screen("2 Check and join");
-  await expect(page.getByText(/On the waitlist for Wednesdays at 4:30\spm/)).toBeVisible();
+  await expect(page.getByText(/On the waitlist for Wednesdays at 4:30\spm at Madison/)).toBeVisible();
   await check("add-waitlist-review");
   await tap(page.getByRole("button", { name: "Join the waitlist" }));
 
@@ -1120,9 +1133,11 @@ test("walk-through 11: join a waitlist for another class, then leave it", async 
   screen("Home: leave the waitlist");
   const mia = page.getByTestId("home-child").filter({ hasText: "Mia" });
   const line = mia.getByTestId("home-waitlist");
-  await expect(line).toContainText(/On the waitlist for Wednesdays at 4:30\spm\./);
+  await expect(line).toContainText(/On the waitlist for Wednesdays at 4:30\spm at Madison\./);
+  await check("home-waitlist");
   await tap(line.getByRole("button", { name: "Leave this waitlist" }));
-  await expect(line).toContainText(/Take Mia off the waitlist for Wednesdays at 4:30\spm\?/);
+  await expect(line).toContainText(/Take Mia off the waitlist for Wednesdays at 4:30\spm at Madison\?/);
+  await expect(line.getByRole("button", { name: "Stay on it" })).toBeFocused();
   await check("home-leave-waitlist");
   await tap(line.getByRole("button", { name: "Leave the waitlist" }));
   await expect(mia.getByTestId("home-waitlist")).toHaveCount(0);
@@ -1186,8 +1201,8 @@ test("walk-through 12: a fill-in for a lesson the family will miss", async () =>
   await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
   await tap(page.getByRole("link", { name: /^Lesson dates/ }));
   const missed = page.getByTestId("missing-day").filter({ hasText: pickedDate });
-  await expect(missed).toContainText("Mia's fill-in is just below.");
-  await expect(missed.getByTestId("fill-in-day")).toContainText("Fill-in");
+  await expect(missed).toContainText("You sent a note that Mia will miss it.");
+  await expect(missed.getByTestId("fill-in-day")).toContainText(/Fill-in\s*\w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach \w+/);
   await check("lesson-dates-fill-in");
   const data = await stored();
   expect(data.fillIns.filter((f: { offer: { answer: string | null } }) => f.offer.answer === "yes")).toHaveLength(1);

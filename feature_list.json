@@ -1243,5 +1243,61 @@
     "description": "Walk-through 12: walk-through 1's family says Mia will miss a lesson; the owner offers one fill-in with the same coach the week after; the family says yes; Lesson dates show it under the missed day.",
     "test": "e2e/sign-up.spec.ts: walk-through 12",
     "passes": true
+  },
+  {
+    "id": "same-day-lessons",
+    "area": "schedule",
+    "description": "Home and Your first lesson list the same lessons for a child's next day: a weekly lesson and a new date or fill-in the same day each show with their own time (and pool, when the day mixes pools); Lesson dates show each one's time on such a day.",
+    "test": "tests/unit/rooms-render.test.tsx: a lesson and a new date on the same day > Home and Your first lesson list both, each with its own time; e2e/sign-up.spec.ts: walk-through 10",
+    "passes": true
+  },
+  {
+    "id": "pretend-first-lesson-next",
+    "area": "sandbox",
+    "description": "The sandbox's \"Pretend the first lesson happened\" marks the lesson the screens call the first: past a day the family said they'll miss, or a cancelled lesson's new date, in its own slot, coach and pool; that lesson then isn't shown as next.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: owed lessons > the sandbox's first lesson is the one the screens show, in its own slot",
+    "passes": true
+  },
+  {
+    "id": "replacement-under-3",
+    "area": "schedule",
+    "description": "An under-3's new date, when it comes first, still has a parent in the water; a new date later than the next weekly lesson leaves the weekly one next.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: owed lessons > an under-3's new date, first in line, keeps a parent in the water / a yes books the date the person offered",
+    "passes": true
+  },
+  {
+    "id": "waitlist-words",
+    "area": "schedule",
+    "description": "Every waitlist line names its pool (Home and its confirm, You're in, the add flow's review and done screens); Messages says a child stays on the waitlist only while they do; while an offer waits, Home points to Messages instead of Leave; a family can leave once an offer's week has passed.",
+    "test": "tests/unit/rooms-render.test.tsx: leaving a waitlist > Home asks first, then takes the swimmer off it; leaving a waitlist while an offer waits, and after > Home points to Messages instead; once the family leaves, Messages stops saying the child stays on it; tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a family can leave once an offer's week has passed with no answer",
+    "passes": true
+  },
+  {
+    "id": "leave-confirm-safe",
+    "area": "schedule",
+    "description": "Leaving a waitlist asks with the safe answer first: \"Stay on it\" filled and focused above \"Leave the waitlist\", scrolled above the tab bar.",
+    "test": "tests/unit/rooms-render.test.tsx: leaving a waitlist > Home asks first, then takes the swimmer off it; e2e/sign-up.spec.ts: walk-through 11",
+    "passes": true
+  },
+  {
+    "id": "full-time-waitlist",
+    "area": "add",
+    "description": "A full time shows its waitlist, never a first lesson date; in the add flow a full time's own waitlist button is the only one; \"Continue with the waitlist only\" is pinned on the first screen, in sign-up too.",
+    "test": "e2e/sign-up.spec.ts: walk-through 11",
+    "passes": true
+  },
+  {
+    "id": "swimmers-errors-in-view",
+    "area": "signup",
+    "description": "After a failed Continue on Your swimmers, the first swimmer with something to fix comes up under the banner and every message shows above the pinned bar; with one swimmer the box has no caption; focus never lands behind the banner or a bar.",
+    "test": "e2e/states.spec.ts: missing answers, a wrong code, nothing open and an unfinished release",
+    "passes": true
+  },
+  {
+    "id": "lesson-dates-stand-in",
+    "area": "schedule",
+    "description": "On Lesson dates a new date or a fill-in shows once, as a block right under the day it stands in for: its pill, then when and with whom.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; fill-ins > a person picks one date from the family's note; the family says yes; Lesson dates show it under the missed day",
+    "passes": true
   }
 ]

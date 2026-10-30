@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { NoteCard } from "@/components/parts/note-card";
 import { PriceRows } from "@/components/parts/price-rows";
@@ -24,20 +24,29 @@ import { answersWaiting } from "@/rules/owed";
 import { latestSignature } from "@/rules/release";
 
 /** "On the waitlist for Sundays at 9:00 am." The family can leave it themselves, after a confirm. */
-function WaitlistLine({ data, entry, childFirstName, today }: { data: Readonly<AppData>; entry: WaitlistEntry; childFirstName: string; today: DateOnly }) {
+function WaitlistLine({ data, familyId, entry, childFirstName, today }: { data: Readonly<AppData>; familyId: string; entry: WaitlistEntry; childFirstName: string; today: DateOnly }) {
   const go = useGo();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const stay = useRef<HTMLButtonElement>(null);
   const cls = entry.classId ? data.classes.find((c) => c.id === entry.classId) : null;
-  const what = cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits";
+  const pool = data.pools.find((p) => p.id === entry.poolId);
+  const what = `${cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits"}${pool ? ` at ${pool.name}` : ""}`;
+  // The question comes into view above the tab bar, with the answer that changes nothing ready.
+  useEffect(() => {
+    if (!asking) return;
+    panel.current?.scrollIntoView?.({ block: "nearest" });
+    stay.current?.focus({ preventScroll: true });
+  }, [asking]);
   const offered = data.waitlistOffers.some((o) => o.waitlistEntryId === entry.id && offerOpen(o, today));
   const leave = async () => {
     if (busy) return;
     setBusy(true);
     setProblem(null);
     try {
-      await getStore().transaction((tx) => leaveWaitlist(tx, { entryId: entry.id, familyId: entry.familyId, today: todayAtSchool(new Date()) }));
+      await getStore().transaction((tx) => leaveWaitlist(tx, { entryId: entry.id, familyId, today: todayAtSchool(new Date()) }));
     } catch (e) {
       setProblem(e instanceof Error ? e.message : "That didn't save. Please try again.");
       setBusy(false);
@@ -47,17 +56,17 @@ function WaitlistLine({ data, entry, childFirstName, today }: { data: Readonly<A
     <div className="flex flex-col gap-2 border-t-2 border-line pt-3" data-testid="home-waitlist">
       <p>On the waitlist for {what}.</p>
       {offered ? (
-        <Button variant="quiet" size="small" className="self-start" onClick={() => go("/more/messages")}>
+        <Button variant="quiet" size="small" className="h-auto self-start px-0 text-left whitespace-normal" onClick={() => go("/more/messages")}>
           The school offered a spot. Answer it in Messages.
         </Button>
       ) : asking ? (
-        <div className="flex flex-col gap-2 rounded-control bg-page px-3 py-3">
+        <div ref={panel} className="flex flex-col gap-3 rounded-control bg-page px-3 py-3" data-testid="leave-confirm">
           <p className="font-strong">Take {childFirstName} off the waitlist for {what}?</p>
+          <Button ref={stay} size="block" disabled={busy} onClick={() => setAsking(false)}>
+            Stay on it
+          </Button>
           <Button variant="secondary" size="block" disabled={busy} onClick={() => void leave()}>
             {busy ? "Saving..." : "Leave the waitlist"}
-          </Button>
-          <Button variant="quiet" size="block" disabled={busy} onClick={() => setAsking(false)}>
-            Stay on it
           </Button>
         </div>
       ) : (
@@ -108,6 +117,7 @@ export function HomeScreen() {
   const upcoming = upcomingLessons(data, family.id, today);
   const next = upcoming[0];
   const sameDay = next ? upcoming.filter((l) => l.date === next.date) : [];
+  const mixedPools = new Set(sameDay.map((l) => l.pool.id)).size > 1;
   const waiting = answersWaiting(data, family.id, today);
   const firstTitle = family.source === "moving-over" || data.attendanceMarks.some((m) => m.familyId === family.id) ? "Your next lesson" : "Your first lesson";
 
@@ -175,7 +185,7 @@ export function HomeScreen() {
               </p>
               {next.inPlaceOf ? (
                 <p data-testid="home-in-place">
-                  {next.fillIn ? "A fill-in for the lesson on" : "In place of the lesson on"} {longDate(next.inPlaceOf, today)}.
+                  {next.fillIn ? "A fill-in for the lesson on" : "In place of the lesson we cancelled on"} {longDate(next.inPlaceOf, today)}.
                 </p>
               ) : null}
             </>
@@ -186,11 +196,12 @@ export function HomeScreen() {
                 {sameDay.map((l) => (
                   <li key={`${l.enrollment.id}-${l.startTime}`}>
                     <span className="font-strong">{l.child.firstName}</span>, {clockTime(l.startTime)} with Coach {l.instructorFirstName}
-                    {l.inPlaceOf ? `, ${l.fillIn ? "a fill-in for" : "in place of"} ${longDate(l.inPlaceOf, today)}` : ""}
+                    {mixedPools ? ` at ${l.pool.name}` : ""}
+                    {l.inPlaceOf ? `, ${l.fillIn ? "a fill-in for the lesson on" : "in place of the lesson we cancelled on"} ${longDate(l.inPlaceOf, today)}` : ""}
                   </li>
                 ))}
               </ul>
-              <p>At {next.pool.name}</p>
+              {mixedPools ? null : <p>At {next.pool.name}</p>}
             </>
           )}
           <Button size="block" variant={waiting.length > 0 ? "secondary" : "primary"} onClick={() => go("/first-lesson")}>
@@ -232,7 +243,7 @@ export function HomeScreen() {
                 </p>
               ) : null}
               {waits.map((w) => (
-                <WaitlistLine key={w.id} data={data} entry={w} childFirstName={k.firstName} today={today} />
+                <WaitlistLine key={w.id} data={data} familyId={family.id} entry={w} childFirstName={k.firstName} today={today} />
               ))}
             </article>
           );

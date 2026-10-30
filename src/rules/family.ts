@@ -144,7 +144,8 @@ export function movingFamily(data: Readonly<AppData>): Family | null {
  */
 export function upcomingLessonDate(data: Readonly<AppData>, info: LessonInfo, today: DateOnly, opts: { skipMissed?: boolean } = {}): DateOnly {
   if (info.lessonKind === "evaluation") return info.firstLessonDate;
-  const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
+  // Held: that class's lesson on that day was marked (another lesson the same day, like a replacement, isn't this one).
+  const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id && m.slot === info.startTime).map((m) => m.lessonDate));
   const skipped = [...closedDates(data, info.pool.id), ...cancelledDates(data, info.enrollment.timeId)];
   // A lesson the family told us they'll miss isn't the next one they'll come to.
   const missed = opts.skipMissed ? new Set(data.familyNotes.filter((n) => n.kind === "miss" && n.enrollmentId === info.enrollment.id).map((n) => n.lessonDate)) : new Set<string | null>();
@@ -207,6 +208,8 @@ export function replacementLessons(data: Readonly<AppData>, familyId: string, to
     const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
     const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
     if (!info || !time || !pool) continue;
+    // Already marked held: it's happened.
+    if (data.attendanceMarks.some((m) => m.childRecordId === info.child.id && m.lessonDate === offer.date && m.slot === time.startTime)) continue;
     out.push({
       ...info,
       pool,
@@ -241,6 +244,18 @@ export function nextLessonPerChild(data: Readonly<AppData>, familyId: string, to
   const byChild = new Map<string, NextLesson>();
   for (const l of upcomingLessons(data, familyId, today)) if (!byChild.has(l.child.id)) byChild.set(l.child.id, l);
   return [...byChild.values()].sort(bySoonest);
+}
+
+/**
+ * Every lesson on each child's next lesson day, soonest first: a weekly
+ * lesson and a replacement or fill-in the same day both show, so Home and
+ * Your first lesson list the same lessons.
+ */
+export function nextDayLessonsPerChild(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
+  const all = upcomingLessons(data, familyId, today);
+  const first = new Map<string, DateOnly>();
+  for (const l of all) if (!first.has(l.child.id)) first.set(l.child.id, l.date);
+  return all.filter((l) => l.date === first.get(l.child.id));
 }
 
 /** Pools where one of the family's classes hasn't had its first lesson yet: a first visit to come. */

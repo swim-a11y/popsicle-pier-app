@@ -49,7 +49,7 @@ export function AddReviewStep() {
   const waits = draft.kid.waitlistClassIds.map((id) => {
     if (id === ANY_TIME) return `any time that fits at ${pool.name}`;
     const cls = data.classes.find((c) => c.id === id);
-    return cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "a full class";
+    return cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)} at ${pool.name}` : `a full class at ${pool.name}`;
   });
   const label =
     draft.mode === "class" ? (draft.kid.booking ? "Add this class" : "Join the waitlist") : needsSign ? `Sign and add ${who.firstName}` : `Add ${who.firstName}`;
@@ -87,7 +87,7 @@ export function AddReviewStep() {
 
   return (
     <AddScreen stepKey="review" step={step}>
-      <PageTitle>Check and add</PageTitle>
+      <PageTitle>{draft.mode === "class" && !draft.kid.booking ? "Check and join" : "Check and add"}</PageTitle>
       <section className="flex flex-col gap-1 rounded-card bg-surface p-5 shadow-card" aria-label={`${who.firstName}'s new lesson`} data-testid="add-review">
         <p className="font-heading text-big text-heading">{who.firstName}</p>
         {chosen ? (

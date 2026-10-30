@@ -22,7 +22,15 @@ export function canStayOnDeck(adult: OnDeckAdult | null | undefined, listed?: Pi
 
 export function markLessonHeld(
   tx: Transaction,
-  input: { enrollmentId: string; adult: OnDeckAdult | null; now: IsoTime; id: string; lessonDate?: string },
+  input: {
+    enrollmentId: string;
+    adult: OnDeckAdult | null;
+    now: IsoTime;
+    id: string;
+    lessonDate?: string;
+    /** A replacement or fill-in: the slot, coach and pool it was in, when not the class's own. */
+    slot?: { startTime: string; instructorFirstName: string; poolId: string };
+  },
 ): AttendanceMark {
   const enrollment = tx.get("enrollments", input.enrollmentId);
   if (!enrollment) throw new Error("No such enrollment.");
@@ -36,21 +44,22 @@ export function markLessonHeld(
       input.adult ? "A listed adult who is still Waiting can't be the adult on deck." : "A lesson can't be marked held without an adult on deck.",
     );
   }
-  const existing = tx
-    .list("attendanceMarks")
-    .find((m) => m.childRecordId === enrollment.childRecordId && m.lessonDate === lessonDate);
-  if (existing) return existing;
   const time = enrollment.kind === "class" ? tx.get("classes", enrollment.timeId) : tx.get("evaluationTimes", enrollment.timeId);
   if (!time) throw new Error("No such time.");
+  const slot = input.slot ?? { startTime: time.startTime, instructorFirstName: time.instructorFirstName, poolId: enrollment.poolId };
+  const existing = tx
+    .list("attendanceMarks")
+    .find((m) => m.childRecordId === enrollment.childRecordId && m.lessonDate === lessonDate && m.slot === slot.startTime);
+  if (existing) return existing;
   return tx.add("attendanceMarks", {
     id: input.id,
     familyId: enrollment.familyId,
     childRecordId: enrollment.childRecordId,
     enrollmentId: enrollment.id,
-    poolId: enrollment.poolId,
+    poolId: slot.poolId,
     lessonDate,
-    slot: time.startTime,
-    instructorFirstName: time.instructorFirstName,
+    slot: slot.startTime,
+    instructorFirstName: slot.instructorFirstName,
     adult: input.adult!,
     held: true,
     markedAt: input.now,

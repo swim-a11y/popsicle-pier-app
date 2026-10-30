@@ -30,7 +30,7 @@ import {
 } from "@/rules/dates";
 import {
   currentFamily,
-  nextLessonPerChild,
+  nextDayLessonsPerChild,
   poolsWithFirstVisitAhead,
 } from "@/rules/family";
 import { namesList } from "@/rules/release";
@@ -64,7 +64,8 @@ export function FirstLessonScreen() {
   }
   const { data, today } = loaded;
   const family = currentFamily(data);
-  const lessons = family ? nextLessonPerChild(data, family.id, today) : [];
+  // Every lesson on each child's next lesson day, as Home lists them (a replacement the same day too).
+  const lessons = family ? nextDayLessonsPerChild(data, family.id, today) : [];
   if (!family || lessons.length === 0) {
     return (
       <ScreenShell id="first-lesson">
@@ -99,6 +100,7 @@ export function FirstLessonScreen() {
     shown
       .filter((l) => l.pool.id === poolId)
       .map((l) => ({
+        id: l.child.id,
         name: l.child.firstName,
         months: ageInMonths(l.child.birthDate, l.date),
         inWater: l.parentInWater,
@@ -111,7 +113,7 @@ export function FirstLessonScreen() {
       (a) => a.inWater && a.months < UNDER_3_MONTHS,
     );
     if (inWaterHere.length > 0)
-      return `You, in the water with ${namesList(inWaterHere.map((a) => a.name))}. No drop-off.`;
+      return `You, in the water with ${namesList([...new Map(inWaterHere.map((a) => [a.id, a.name])).values()])}. No drop-off.`;
     return adults.length > 0
       ? "You or a signed listed adult, the whole lesson. No drop-off."
       : "You, the whole lesson. No drop-off.";
@@ -124,15 +126,15 @@ export function FirstLessonScreen() {
         <PageTitle>{title}</PageTitle>
         {shown.map((l) => (
           <section
-            key={l.child.id}
+            key={`${l.child.id}-${l.startTime}`}
             className="flex flex-col overflow-hidden rounded-card bg-surface shadow-card"
-            aria-labelledby={`lesson-${l.child.id}`}
+            aria-labelledby={`lesson-${l.child.id}-${l.startTime.replace(":", "")}`}
             data-testid="lesson-ticket"
           >
             <LaneLine />
             <div className="flex flex-col px-5 pt-3 pb-4">
               <p className="flex items-baseline justify-between gap-3 font-heading text-big text-heading">
-                <span id={`lesson-${l.child.id}`}>{l.child.firstName}</span>
+                <span id={`lesson-${l.child.id}-${l.startTime.replace(":", "")}`}>{l.child.firstName}</span>
                 <span data-testid="lesson-time">{clockTime(l.startTime)}</span>
               </p>
               <p

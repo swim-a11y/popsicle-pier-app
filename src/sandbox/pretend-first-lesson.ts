@@ -2,15 +2,16 @@
   "Pretend the first lesson happened" (sandbox only). For each child of the
   current family: an attendance mark naming the parent on deck, then an
   approved note from a coach-line template for the child's stage, dated on
-  that child's first lesson date (the week after, if the school cancelled
-  it). A child with a custody or health yes is held until a person records
-  the talk in the inbox. A second press adds nothing new.
+  that child's first lesson: the one Home and Your first lesson show (past a
+  day the family said they'll miss, or a cancelled lesson's replacement if
+  that comes first). A child with a custody or health yes is held until a
+  person records the talk in the inbox. A second press adds nothing new.
 */
 import type { Transaction } from "@/data/store";
 import type { IsoTime } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
-import { cancelledDates } from "@/rules/closures";
-import { addDays } from "@/rules/dates";
+import { todayAtSchool } from "@/rules/dates";
+import { nextLessonPerChild } from "@/rules/family";
 import { markLessonHeld } from "@/rules/first-sunday";
 
 export function pretendFirstLesson(tx: Transaction, input: { familyId: string; now: IsoTime; newId: () => string }): { added: number; held: string[] } {
@@ -18,28 +19,27 @@ export function pretendFirstLesson(tx: Transaction, input: { familyId: string; n
   if (!family) return { added: 0, held: [] };
   let added = 0;
   const held: string[] = [];
+  // The first lesson is the one Home and Your first lesson show: past any day the family said they'll miss,
+  // a cancelled one's replacement if that comes first, in its own slot.
+  const next = nextLessonPerChild(tx.data(), family.id, todayAtSchool(new Date(input.now)));
   for (const child of tx.list("children").filter((c) => c.familyId === family.id)) {
-    const enrollment = tx
-      .list("enrollments")
-      .filter((e) => e.childRecordId === child.id && !e.endedOn)
-      .sort((a, b) => (a.firstLessonDate < b.firstLessonDate ? -1 : 1))[0];
-    if (!enrollment) continue;
-    // A first lesson the school cancelled moves to the next week's.
-    const cancelled = enrollment.kind === "class" ? cancelledDates(tx.data(), enrollment.timeId) : [];
-    let lessonDate = enrollment.firstLessonDate;
-    while (cancelled.includes(lessonDate)) lessonDate = addDays(lessonDate, 7);
-    if (tx.list("attendanceMarks").some((m) => m.childRecordId === child.id && m.lessonDate === lessonDate)) continue;
+    // Only the first lesson: once any lesson is marked, a second press adds nothing.
+    if (tx.list("attendanceMarks").some((m) => m.childRecordId === child.id)) continue;
+    const lesson = next.find((l) => l.child.id === child.id);
+    if (!lesson) continue;
     // A custody or health yes holds the first lesson until a person has talked with the family (the inbox records it).
     if (child.flaggedForPerson) {
       held.push(child.firstName);
       continue;
     }
+    const enrollment = lesson.enrollment;
     const mark = markLessonHeld(tx, {
       enrollmentId: enrollment.id,
       adult: { kind: "parent", name: family.parentFullName },
       now: input.now,
       id: input.newId(),
-      lessonDate,
+      lessonDate: lesson.date,
+      slot: { startTime: lesson.startTime, instructorFirstName: lesson.instructorFirstName, poolId: lesson.pool.id },
     });
     const stage = enrollment.kind === "evaluation" ? "evaluation" : (child.stageId ?? "evaluation");
     const templates = tx.list("coachLineTemplates").filter((t) => t.stageId === stage);

@@ -9,12 +9,25 @@ import type { AppData, DateOnly } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { clockTime, longDate, weekdayName } from "@/rules/dates";
-import { currentFamily, familyLessons, lessonDaysAhead, lessonKindWords } from "@/rules/family";
+import { currentFamily, familyLessons, lessonDaysAhead, lessonKindWords, upcomingLessons } from "@/rules/family";
 import { missNoted } from "@/rules/notes";
 import { offerOpen } from "@/rules/holds";
 import { bookedOwedDates, owedState } from "@/rules/owed";
 
 const WEEKS = 6;
+
+/** A lesson standing in for the day above it: the pill first, then when and with whom, set in with the teal rule. */
+function StandInBlock({ label, date, time, coach, today, testId }: { label: string; date: DateOnly; time: string | undefined; coach: string; today: DateOnly; testId: string }) {
+  return (
+    <span className="mt-1 mb-2 flex flex-col items-start gap-1 border-l-4 border-mark pl-4" data-testid={testId}>
+      <Tag tone="mark">{label}</Tag>
+      <span className="font-strong">
+        {longDate(date, today)}
+        {time ? ` at ${clockTime(time)}` : ""} with Coach {coach}
+      </span>
+    </span>
+  );
+}
 
 /** A missed lesson's fill-in, if one was offered. */
 function fillInFor(data: Readonly<AppData>, enrollmentId: string, date: DateOnly) {
@@ -24,7 +37,6 @@ function fillInFor(data: Readonly<AppData>, enrollmentId: string, date: DateOnly
 /** What a day the family said they'll miss means now: the note, and where its fill-in stands. */
 function missLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, name: string, today: DateOnly): string {
   const f = fillInFor(data, enrollmentId, date);
-  if (f?.offer.answer === "yes") return `You sent a note that ${name} will miss it. ${name}'s fill-in is just below.`;
   if (f && f.offer.answer === null && offerOpen(f.offer, today)) return `You sent a note that ${name} will miss it. Messages has a fill-in for you to answer.`;
   return `You sent a note that ${name} will miss it.`;
 }
@@ -34,15 +46,7 @@ function fillInRow(data: Readonly<AppData>, enrollmentId: string, date: DateOnly
   const f = fillInFor(data, enrollmentId, date);
   if (!f || f.offer.answer !== "yes" || f.offer.date < today) return null;
   const time = (f.offer.timeKind === "class" ? data.classes.find((c) => c.id === f.offer.timeId) : data.evaluationTimes.find((e) => e.id === f.offer.timeId))?.startTime;
-  return (
-    <span className="flex flex-wrap items-center gap-2" data-testid="fill-in-day">
-      <span className="font-strong">
-        {longDate(f.offer.date, today)}
-        {time ? ` at ${clockTime(time)}` : ""}, Coach {f.instructorFirstName}
-      </span>
-      <Tag tone="mark">Fill-in</Tag>
-    </span>
-  );
+  return <StandInBlock label="Fill-in" date={f.offer.date} time={time} coach={f.instructorFirstName} today={today} testId="fill-in-day" />;
 }
 
 /** Where the lesson owed for a cancelled date stands, in a family's words. */
@@ -50,10 +54,7 @@ function owedLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly,
   const owed = data.owedLessons.find((o) => o.enrollmentId === enrollmentId && o.cancelledDate === date);
   const state = owed ? owedState(data, owed, today) : null;
   if (state?.kind === "waiting") return "Messages has another date for you to answer.";
-  if (state?.kind === "booked") {
-    const time = (state.offer.timeKind === "class" ? data.classes.find((c) => c.id === state.offer.timeId) : data.evaluationTimes.find((e) => e.id === state.offer.timeId))?.startTime;
-    return `Its new date is ${longDate(state.offer.date, today)}${time ? ` at ${clockTime(time)}` : ""} with Coach ${owed!.instructorFirstName}.`;
-  }
+  if (state?.kind === "booked") return "";
   if (state?.kind === "credited") return "It's credited on your bill.";
   if (state?.kind === "closed") return "Neither date we offered worked.";
   if (state?.kind === "no-opening") return "A person at the school is checking what's open.";
@@ -96,13 +97,10 @@ export function LessonDatesScreen() {
         // Dates booked in place of this class's cancelled lessons, still to come.
         const newDates = bookedOwedDates(data, l.child.id).filter((x) => x.owed.enrollmentId === l.enrollment.id && x.offer.date >= today);
         const newDateRow = (x: (typeof newDates)[number]) => (
-          <span key={`${x.owed.id}-${x.offer.date}`} className="flex flex-wrap items-center gap-2" data-testid="owed-day">
-            <span className="font-strong">
-              {longDate(x.offer.date, today)} at {clockTime(x.time.startTime)}
-            </span>
-            <Tag tone="mark">New date</Tag>
-          </span>
+          <StandInBlock key={`${x.owed.id}-${x.offer.date}`} label="New date" date={x.offer.date} time={x.time.startTime} coach={x.time.instructorFirstName} today={today} testId="owed-day" />
         );
+        // A day with another lesson for this swimmer too (a new date or a fill-in) shows each one's time.
+        const otherLessonDays = new Set(upcomingLessons(data, family.id, today).filter((x) => x.child.id === l.child.id && x.inPlaceOf).map((x) => x.date));
         return (
           <section key={l.enrollment.id} className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`dates-${l.enrollment.id}`} data-testid="lesson-dates">
             <div className="flex flex-col gap-1">
@@ -131,7 +129,7 @@ export function LessonDatesScreen() {
                       <Tag>Cancelled</Tag>
                     </span>
                     <span>
-                      We cancelled this lesson. {d.cancelledReason}. {owedLine(data, l.enrollment.id, d.date, today)}
+                      We cancelled this lesson. {d.cancelledReason}.{owedLine(data, l.enrollment.id, d.date, today) ? ` ${owedLine(data, l.enrollment.id, d.date, today)}` : ""}
                     </span>
                     {newDates.filter((x) => x.owed.cancelledDate === d.date).map((x) => newDateRow(x))}
                   </li>
@@ -147,6 +145,7 @@ export function LessonDatesScreen() {
                 ) : (
                   <li key={d.date} className="font-strong" data-testid="lesson-day">
                     {longDate(d.date, today)}
+                    {otherLessonDays.has(d.date) ? ` at ${clockTime(l.startTime)}` : ""}
                   </li>
                 ),
               )}

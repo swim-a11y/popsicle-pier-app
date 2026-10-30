@@ -18,16 +18,18 @@ export interface ScreenShellProps {
   backHref?: string | null;
   /** "Step 3 of 9" */
   step?: { n: number; total: number } | null;
+  /** The screen ends with a PinnedBar: no spare space under it. */
+  pinned?: boolean;
   children: ReactNode;
 }
 
-export function ScreenShell({ id, backHref, step, children }: ScreenShellProps) {
+export function ScreenShell({ id, backHref, step, pinned, children }: ScreenShellProps) {
   const screen = screenById(id);
   const go = useGo();
   const withTabs = screen.shell === "tabs" || screen.shell === "owner";
   return (
     <>
-      <main className={cn("mx-auto flex w-full max-w-page flex-col px-gutter", withTabs ? "pb-[calc(var(--spacing-tab-bar)+2.5rem)]" : "pb-12")}>
+      <main className={cn("mx-auto flex w-full max-w-page flex-col px-gutter", withTabs ? "pb-[calc(var(--spacing-tab-bar)+2.5rem)]" : pinned ? "pb-0" : "pb-12")}>
         <div className="flex min-h-tap-big items-center gap-2 pt-2">
           {screen.shell === "flow" && backHref ? (
             <button

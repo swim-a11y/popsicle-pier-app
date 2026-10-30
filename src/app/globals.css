@@ -56,6 +56,9 @@
   html {
     background: var(--color-page);
     -webkit-text-size-adjust: 100%;
+    /* A focused field or a card scrolled into view never lands behind the banner, the tab bar or a pinned bar. */
+    scroll-padding-top: var(--spacing-scroll-top);
+    scroll-padding-bottom: var(--spacing-scroll-bottom);
   }
   body {
     background: var(--color-page);

@@ -76,10 +76,11 @@ export function AddDoneScreen() {
       ) : null}
       {waits.map((w) => {
         const cls = w.classId ? data.classes.find((c) => c.id === w.classId) : null;
+        const at = data.pools.find((p) => p.id === w.poolId)?.name;
         return (
           <p key={w.id}>
-            {child.firstName} is on the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits"}. If a spot opens,
-            someone from the school will reach out.
+            {child.firstName} is on the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits"}
+            {at ? ` at ${at}` : ""}. If a spot opens, someone from the school will reach out.
           </p>
         );
       })}
@@ -103,9 +104,12 @@ export function AddDoneScreen() {
       <Button size="block" onClick={() => go("/")}>
         Go to Home
       </Button>
-      <Button variant="secondary" size="block" onClick={() => go("/more/lessons")}>
-        See lesson dates
-      </Button>
+      {/* A waitlist adds nothing to Lesson dates yet. */}
+      {waitlistOnly ? null : (
+        <Button variant="secondary" size="block" onClick={() => go("/more/lessons")}>
+          See lesson dates
+        </Button>
+      )}
     </ScreenShell>
   );
 }

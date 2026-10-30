@@ -20,7 +20,7 @@ import type { SignUpDraft } from "@/data/types";
 import { setCurrentFamily, signAndSave } from "@/rules/booking";
 import { LATER_ROOM_RULES } from "@/rules/later-rooms";
 import { markNoteRead, sendNote } from "@/rules/notes";
-import { sendWaitlistOffer, waitlistItems } from "@/rules/offers";
+import { answerWaitlistOffer, leaveWaitlist, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
 import { answerOwedOffer, cancelClassDate, sendOwedOffer } from "@/rules/owed";
 import { pretendFamilyLeft, pretendSchoolCancelled } from "@/sandbox/pretend-school";
 
@@ -165,11 +165,12 @@ describe("messages and notes", () => {
     cleanup();
     render(<LessonDatesScreen />);
     const cancelledDay = await screen.findByTestId("cancelled-day");
-    expect(flat(cancelledDay.textContent)).toContain(
-      "Sunday, November 1CancelledWe cancelled this lesson. Coach Dev is away that day (sample). Its new date is Sunday, November 8 at 11:00 am with Coach Dev.",
-    );
-    // The new date sits right under the cancelled one, in Mia's own card.
-    expect(flat(within(cancelledDay).getByTestId("owed-day").textContent)).toBe("Sunday, November 8 at 11:00 amNew date");
+    expect(flat(cancelledDay.textContent)).toContain("Sunday, November 1CancelledWe cancelled this lesson. Coach Dev is away that day (sample).");
+    // The new date sits right under the cancelled one, in Mia's own card, said once.
+    expect(flat(within(cancelledDay).getByTestId("owed-day").textContent)).toBe("New dateSunday, November 8 at 11:00 am with Coach Dev");
+    expect(flat(cancelledDay.textContent)).not.toContain("Its new date is");
+    // Mia's weekly lesson that day shows its own time, so the two don't mix up.
+    expect(screen.getAllByTestId("lesson-day").map((li) => flat(li.textContent))).toContain("Sunday, November 8 at 10:00 am");
     cleanup();
     render(<BillsScreen />);
     expect(flat((await screen.findAllByTestId("cancelled-billed"))[0].textContent)).toBe("November 1: we cancelled this lesson. Its new date is Sunday, November 8.");
@@ -182,15 +183,69 @@ describe("leaving a waitlist", () => {
     const { familyId } = await signUp(store, adaDraft());
     render(<HomeScreen />);
     const line = await screen.findByTestId("home-waitlist");
-    expect(flat(line.textContent)).toContain("On the waitlist for Sundays at 9:00 am.");
+    expect(flat(line.textContent)).toContain("On the waitlist for Sundays at 9:00 am at Buckhead.");
     await act(async () => fireEvent.click(within(line).getByRole("button", { name: "Leave this waitlist" })));
-    expect(flat(screen.getByTestId("home-waitlist").textContent)).toContain("Take Ada off the waitlist for Sundays at 9:00 am?");
+    expect(flat(screen.getByTestId("home-waitlist").textContent)).toContain("Take Ada off the waitlist for Sundays at 9:00 am at Buckhead?");
+    // The answer that changes nothing comes first, filled, and has the focus.
+    const confirm = within(screen.getByTestId("leave-confirm")).getAllByRole("button");
+    expect(confirm.map((b) => b.textContent)).toEqual(["Stay on it", "Leave the waitlist"]);
+    expect(document.activeElement).toBe(confirm[0]);
     await act(async () => fireEvent.click(within(screen.getByTestId("home-waitlist")).getByRole("button", { name: "Stay on it" })));
     expect((await store.snapshot()).waitlistEntries.filter((w) => w.familyId === familyId)).toHaveLength(1);
     await act(async () => fireEvent.click(within(screen.getByTestId("home-waitlist")).getByRole("button", { name: "Leave this waitlist" })));
     await act(async () => fireEvent.click(within(screen.getByTestId("home-waitlist")).getByRole("button", { name: "Leave the waitlist" })));
     expect((await store.snapshot()).waitlistEntries.filter((w) => w.familyId === familyId)).toEqual([]);
     expect(screen.queryByTestId("home-waitlist")).toBeNull();
+  });
+});
+
+describe("leaving a waitlist while an offer waits, and after", () => {
+  it("Home points to Messages instead; once the family leaves, Messages stops saying the child stays on it", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store, adaDraft());
+    let offerId = "";
+    await act(async () => {
+      await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }));
+      const [item] = waitlistItems(await store.snapshot(), TODAY);
+      offerId = (await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: null, today: TODAY, now: NOW, newId: testId }))).id;
+    });
+    render(<HomeScreen />);
+    const line = await screen.findByTestId("home-waitlist");
+    expect(within(line).queryByRole("button", { name: "Leave this waitlist" })).toBeNull();
+    await act(async () => fireEvent.click(within(line).getByRole("button", { name: "The school offered a spot. Answer it in Messages." })));
+    expect(pushes[pushes.length - 1]).toBe("/more/messages");
+    cleanup();
+    await act(async () => {
+      await store.transaction((tx) => answerWaitlistOffer(tx, { offerId, familyId, answer: "no", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said no, thanks. Ada stays on the waitlist.");
+    await act(async () => {
+      const entry = (await store.snapshot()).waitlistEntries.find((w) => w.familyId === familyId)!;
+      await store.transaction((tx) => leaveWaitlist(tx, { entryId: entry.id, familyId, today: TODAY }));
+    });
+    expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("You said no, thanks.");
+  });
+});
+
+describe("a lesson and a new date on the same day", () => {
+  it("Home and Your first lesson list both, each with its own time", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      await store.transaction((tx) => pretendSchoolCancelled(tx, { familyId, today: TODAY, now: NOW, newId: testId }));
+      const owedId = (await store.snapshot()).owedLessons[0].id;
+      await store.transaction((tx) => sendOwedOffer(tx, { owedId, timeId: "mad-eval-sun-1100", date: "2026-11-08", today: TODAY, now: NOW }));
+      await store.transaction((tx) => answerOwedOffer(tx, { owedId, familyId, answer: "yes", today: TODAY, now: NOW }));
+    });
+    render(<HomeScreen />);
+    const rows = within(await screen.findByTestId("home-lead-children")).getAllByRole("listitem").map((li) => flat(li.textContent));
+    expect(rows).toEqual(["Mia, 10:00 am with Coach Dev", "Mia, 11:00 am with Coach Dev, in place of the lesson we cancelled on Sunday, November 1"]);
+    cleanup();
+    render(<FirstLessonScreen />);
+    const tickets = await screen.findAllByTestId("lesson-ticket");
+    expect(tickets.map((t) => flat(within(t).getByTestId("lesson-time").textContent))).toEqual(["10:00 am", "11:00 am"]);
+    expect(within(tickets[1]).getByTestId("lesson-in-place")).toHaveTextContent("In place of the lesson we cancelled on Sunday, November 1.");
   });
 });
 
@@ -210,11 +265,13 @@ describe("a replacement date as the next lesson", () => {
     const lead = await screen.findByTestId("home-lead");
     expect(flat(lead.textContent)).toContain("Sunday, November 15, 11:30 am");
     expect(flat(lead.textContent)).toContain("Remy at Buckhead with Coach Wren");
-    expect(flat(within(lead).getByTestId("home-in-place").textContent)).toBe("In place of the lesson on Wednesday, November 11.");
+    expect(flat(within(lead).getByTestId("home-in-place").textContent)).toBe("In place of the lesson we cancelled on Wednesday, November 11.");
     cleanup();
     render(<FirstLessonScreen />);
     const ticket = await screen.findByTestId("lesson-ticket");
     expect(flat(ticket.textContent)).toContain("Sunday, November 15");
+    expect(flat(ticket.textContent)).toContain("11:30 am");
+    expect(flat(ticket.textContent)).toContain("Buckhead, Coach Wren");
     expect(flat(within(ticket).getByTestId("lesson-in-place").textContent)).toBe("In place of the lesson we cancelled on Wednesday, November 11.");
   });
 });
@@ -314,8 +371,8 @@ describe("fill-ins", () => {
 
     render(<LessonDatesScreen />);
     const missed = await screen.findByTestId("missing-day");
-    expect(flat(missed.textContent)).toContain("You sent a note that Mia will miss it. Mia's fill-in is just below.");
-    expect(flat(within(missed).getByTestId("fill-in-day").textContent)).toBe("Sunday, November 15 at 11:00 am, Coach DevFill-in");
+    expect(flat(missed.textContent)).toContain("You sent a note that Mia will miss it.");
+    expect(flat(within(missed).getByTestId("fill-in-day").textContent)).toBe("Fill-inSunday, November 15 at 11:00 am with Coach Dev");
   });
 });
 

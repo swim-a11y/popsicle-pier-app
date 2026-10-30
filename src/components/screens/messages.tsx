@@ -62,6 +62,8 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
   const pool = data.pools.find((p) => p.id === offer.poolId);
   const lt = cls ? data.lessonTypes.find((l) => l.id === cls.lessonTypeId) : undefined;
   const booked = offer.enrollmentId ? data.enrollments.find((e) => e.id === offer.enrollmentId) : undefined;
+  // Only while the family hasn't left that waitlist themselves.
+  const stays = data.waitlistEntries.some((w) => w.id === offer.waitlistEntryId) ? ` ${child?.firstName} stays on the waitlist.` : "";
   const open = offerOpen(offer, today);
   if (!child || !cls || !pool) return null;
   const starts = firstOpenLessonDate(cls.weekday, today, pool.opensOn, skippedDates(data, cls, today));
@@ -91,10 +93,10 @@ function WaitlistOfferCard({ data, offer, today, first }: { data: Readonly<AppDa
           You said yes. {child.firstName}&apos;s first lesson there is {booked ? longDate(booked.firstLessonDate, today) : "coming up"}.
         </p>
       ) : offer.answer === "no" ? (
-        <p data-testid="offer-status">You said no, thanks. {child.firstName} stays on the waitlist.</p>
+        <p data-testid="offer-status">You said no, thanks.{stays}</p>
       ) : (
         <p data-testid="offer-status">
-          No answer by {longDate(offer.answerBy, today)}, so this offer closed. {child.firstName} stays on the waitlist.
+          No answer by {longDate(offer.answerBy, today)}, so this offer closed.{stays}
         </p>
       )}
       {problem ? <p className="rounded-control bg-notice px-3 py-2">{problem}</p> : null}

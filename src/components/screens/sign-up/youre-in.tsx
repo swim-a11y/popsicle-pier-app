@@ -84,7 +84,7 @@ export function YoureInScreen() {
               const cls = w.classId ? data.classes.find((c) => c.id === w.classId) : null;
               return (
                 <p key={w.id}>
-                  On the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : `any time that fits at ${pool?.name}`}. If a spot
+                  On the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)} at ${pool?.name}` : `any time that fits at ${pool?.name}`}. If a spot
                   opens, someone from the school will reach out.
                 </p>
               );

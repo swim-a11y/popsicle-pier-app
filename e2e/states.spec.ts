@@ -7,7 +7,9 @@ import AxeBuilder from "@axe-core/playwright";
   sent with boxes unchecked. Each one is captured and checked with axe.
 */
 
-async function capture(page: Page, name: string) {
+async function capture(page: Page, name: string, opts: { asSeen?: boolean } = {}) {
+  // What the parent sees right then, before scrolling: one phone screen.
+  if (opts.asSeen) await page.screenshot({ path: `screenshots/state-${name}-as-seen.png` });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `screenshots/state-${name}.png`, fullPage: true });
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
@@ -24,7 +26,13 @@ test("missing answers, a wrong code, nothing open and an unfinished release", as
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Please type a first name.")).toBeVisible();
   await expect(page.getByText("Please type the month, day and year.")).toBeVisible();
-  await capture(page, "swimmers-missing");
+  // Both messages show above the pinned Continue bar, without scrolling.
+  const bar = await page.getByTestId("continue-bar").boundingBox();
+  for (const text of ["Please type a first name.", "Please type the month, day and year."]) {
+    const box = await page.getByText(text).boundingBox();
+    expect(box && bar && box.y >= 0 && box.y + box.height <= bar.y).toBe(true);
+  }
+  await capture(page, "swimmers-missing", { asSeen: true });
 
   const d = new Date();
   d.setFullYear(d.getFullYear() - 8);

@@ -56,6 +56,8 @@
   --spacing-tap: 2.75rem; /* 44px: smallest tap target */
   --spacing-tap-big: 3.25rem; /* 52px: primary buttons and choice rows */
   --spacing-tab-bar: 4rem; /* bottom tab bar height */
+  --spacing-scroll-top: 7rem; /* room for the sticky sample banner when a field or card scrolls into view */
+  --spacing-scroll-bottom: 6rem; /* room for the tab bar or a pinned button bar when something scrolls into view */
   --container-page: 30rem; /* widest the reading column gets */
   --focus-width: 3px;
   --focus-offset: 2px;

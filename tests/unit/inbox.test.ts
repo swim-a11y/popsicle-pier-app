@@ -107,6 +107,15 @@ describe("the approvals inbox: waitlist offers", () => {
     expect(familyLessons(data, familyId).map((l) => l.enrollment.timeId)).toEqual(["buc-sun-1000-cove"]);
   });
 
+  it("a family can leave once an offer's week has passed with no answer", async () => {
+    const { store, familyId } = await signedUp(adaDraft());
+    await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }));
+    const [item] = waitlistItems(await store.snapshot(), TODAY);
+    await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: null, today: TODAY, now: NOW, newId: testId }));
+    await store.transaction((tx) => leaveWaitlist(tx, { entryId: item.entry.id, familyId, today: "2026-11-07" }));
+    expect((await store.snapshot()).waitlistEntries.filter((w) => w.familyId === familyId)).toEqual([]);
+  });
+
   it("a family with no way to pay for lessons sets that up with a person before an offer", async () => {
     const { store } = await signedUp(adaDraft("none", false));
     await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }));
@@ -179,6 +188,8 @@ describe("the approvals inbox: owed lessons", () => {
     const data = await store.snapshot();
     expect(owedState(data, data.owedLessons[0], TODAY).kind).toBe("booked");
     expect(bookedOwedDates(data, owed.childRecordId).map((b) => [b.offer.date, b.time.startTime])).toEqual([["2026-11-15", "11:00"]]);
+    // A new date later than the next weekly lesson leaves the weekly one next.
+    expect(nextLessonPerChild(data, familyId, TODAY)[0]).toMatchObject({ date: "2026-11-08", inPlaceOf: null });
     await expect(store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "no", today: TODAY, now: NOW }))).rejects.toThrow("This offer has closed.");
   });
 
@@ -234,6 +245,35 @@ describe("the approvals inbox: owed lessons", () => {
     expect(nextLessonPerChild(data, familyId, TODAY)[0]).toMatchObject({ date: "2026-11-15", startTime: "11:30", instructorFirstName: "Wren", inPlaceOf: "2026-11-11", parentInWater: false });
     // The sandbox's cancel still picks a weekly lesson, never the replacement date.
     expect(await store.transaction((tx) => pretendSchoolCancelled(tx, { familyId, today: TODAY, now: NOW, newId: testId }))).toEqual({ childFirstName: "Remy", date: "2026-11-18" });
+  });
+
+  it("an under-3's new date, first in line, keeps a parent in the water", async () => {
+    // Buckhead's private time for under-3s, Sundays at 9:00 with Coach Ines: the first lesson, November 8, is cancelled.
+    const { store, familyId } = await signedUp(
+      completeDraft({ poolId: "pool-buckhead", kids: [{ firstName: "Bea", birth: "2023-12-01", stage: "pier", booking: { kind: "class", timeId: "buc-sun-0900-water" } }] }),
+    );
+    const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "buc-sun-0900-water", date: "2026-11-08", reason: "Coach Ines is away that day (sample)", now: NOW, newId: testId }));
+    await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "buc-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW }));
+    await store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+    // The weekly November 15 is cancelled too, so the new date comes first.
+    await store.transaction((tx) => cancelClassDate(tx, { classId: "buc-sun-0900-water", date: "2026-11-15", reason: "Coach Ines is away that day (sample)", now: NOW, newId: testId }));
+    expect(nextLessonPerChild(await store.snapshot(), familyId, TODAY)[0]).toMatchObject({ date: "2026-11-15", startTime: "11:00", instructorFirstName: "Ines", parentInWater: true, inPlaceOf: "2026-11-08" });
+  });
+
+  it("the sandbox's first lesson is the one the screens show, in its own slot", async () => {
+    const { store, familyId } = await signedUp(
+      completeDraft({ poolId: "pool-buckhead", kids: [{ firstName: "Remy", birth: "2021-06-01", stage: "shallows", booking: { kind: "class", timeId: "buc-wed-1600-shallows" } }] }),
+    );
+    const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "buc-wed-1600-shallows", date: "2026-11-11", reason: "Coach Wren is away that day (sample)", now: NOW, newId: testId }));
+    await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "buc-eval-sun-1130", date: "2026-11-15", today: TODAY, now: NOW }));
+    await store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+    expect(await store.transaction((tx) => pretendFirstLesson(tx, { familyId, now: NOW, newId: testId }))).toEqual({ added: 1, held: [] });
+    const data = await store.snapshot();
+    const mark = data.attendanceMarks.find((m) => m.familyId === familyId)!;
+    expect([mark.lessonDate, mark.slot, mark.instructorFirstName, mark.poolId]).toEqual(["2026-11-15", "11:30", "Wren", "pool-buckhead"]);
+    expect(data.lessonNotes.find((n) => n.familyId === familyId)!.lessonDate).toBe("2026-11-15");
+    // That lesson has happened now, so the next is the weekly one.
+    expect(nextLessonPerChild(data, familyId, TODAY)[0]).toMatchObject({ date: "2026-11-18", inPlaceOf: null });
   });
 
   it("cancelling the same date twice adds nothing", async () => {

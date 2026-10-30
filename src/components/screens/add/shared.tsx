@@ -72,7 +72,7 @@ export function useAddStep(key: AddStepKey): AddStepState {
   };
 }
 
-export function AddScreen({ stepKey, step, children }: { stepKey: AddStepKey; step: AddStepState; children?: ReactNode }) {
+export function AddScreen({ stepKey, step, pinned, children }: { stepKey: AddStepKey; step: AddStepState; pinned?: boolean; children?: ReactNode }) {
   const go = useGo();
   const id = ADD_SCREEN[stepKey];
   if (step === "loading") {
@@ -94,7 +94,7 @@ export function AddScreen({ stepKey, step, children }: { stepKey: AddStepKey; st
     );
   }
   return (
-    <ScreenShell id={id} backHref={step.backHref} step={step.position}>
+    <ScreenShell id={id} backHref={step.backHref} step={step.position} pinned={pinned}>
       {children}
     </ScreenShell>
   );
