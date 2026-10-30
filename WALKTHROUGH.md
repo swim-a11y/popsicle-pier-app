@@ -73,7 +73,7 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 7. Add a brother or sister, then another class | 15 | 18 | 4 |
 | 8. Bills and a note | 10 | 12 | 0 |
 | 9. The owner's approvals inbox | 7 | 12 | 0 |
-| 10. A lesson the school cancels (and the other family in that class) | 17 | 24 | 0 |
+| 10. A lesson the school cancels (and the other family in that class) | 17 | 26 | 0 |
 | 11. Join a waitlist, then leave it | 7 | 10 | 0 |
 | 12. A fill-in for a lesson the family will miss | 10 | 15 | 0 |
 
