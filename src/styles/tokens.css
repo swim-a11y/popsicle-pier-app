@@ -1,0 +1,62 @@
+/*
+  Popsicle Pier design tokens.
+  Every color, font, size and shadow the app uses lives here, named by its job.
+  Nothing else in the app may write a raw color or font. Light theme only.
+  The defaults Tailwind ships are cleared so only these names exist.
+*/
+@theme static {
+  /* Color */
+  --color-*: initial;
+  --color-top-bar: #163a5c; /* navy: top bar */
+  --color-on-top-bar: #ffffff; /* white text on navy */
+  --color-heading: #163a5c; /* navy: headings */
+  --color-text: #152b44; /* ink: all reading text, never pure black */
+  --color-page: #f7f6ef; /* cream: page background */
+  --color-surface: #ffffff; /* white: cards */
+  --color-action: #275681; /* primary buttons and links */
+  --color-on-action: #ffffff; /* white text on action */
+  --color-mark: #00a8a0; /* teal: accent and success marks, dark text only */
+  --color-on-mark: #152b44; /* ink on teal */
+  --color-highlight: #f2b300; /* sun: one highlight per screen at most, dark text only */
+  --color-on-highlight: #152b44; /* ink on sun */
+  --color-notice: #fcefc7; /* pale sun: errors and things to fix */
+  --color-success: #dcf1ef; /* pale teal: done and confirmed */
+  --color-line: #647a8f; /* form borders and dividers, 3:1 on every background */
+  --color-focus: #163a5c; /* navy focus ring */
+  --color-scrim: rgb(21 43 68 / 0.5); /* ink veil behind sheets and dialogs */
+
+  /* Type */
+  --font-*: initial;
+  --font-heading: "Questrial", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-text: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-weight-*: initial;
+  --font-weight-regular: 400;
+  --font-weight-strong: 600;
+  --text-*: initial;
+  --text-small: 0.875rem; /* 14px: the sample banner and tab labels only */
+  --text-small--line-height: 1.35;
+  --text-body: 1.0625rem; /* 17px: everything people read and type */
+  --text-body--line-height: 1.5;
+  --text-big: 1.75rem; /* 28px: page titles and what matters most: child, day, time */
+  --text-big--line-height: 1.2;
+
+  /* Shape */
+  --radius-*: initial;
+  --radius-box: 0.375rem; /* checkboxes */
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-pill: 9999px;
+  --shadow-*: initial;
+  --shadow-card: 0 1px 0 rgb(22 58 92 / 0.06), 0 12px 24px -16px rgb(22 58 92 / 0.28);
+  --shadow-bar: 0 -1px 0 rgb(22 58 92 / 0.14);
+  --shadow-sheet: 0 -12px 32px -12px rgb(22 58 92 / 0.3);
+
+  /* Space and size */
+  --spacing-gutter: 1rem; /* side gutter at phone width */
+  --spacing-tap: 2.75rem; /* 44px: smallest tap target */
+  --spacing-tap-big: 3.25rem; /* 52px: primary buttons and choice rows */
+  --spacing-tab-bar: 4rem; /* bottom tab bar height */
+  --container-page: 30rem; /* widest the reading column gets */
+  --focus-width: 3px;
+  --focus-offset: 2px;
+}

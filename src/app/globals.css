@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/tokens.css";
+
+/*
+  shadcn/ui reads these names. Each one points at a token in tokens.css;
+  there is no other palette and no dark theme.
+*/
+:root {
+  --radius: var(--radius-control);
+  --background: var(--color-page);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-action);
+  --primary-foreground: var(--color-on-action);
+  --secondary: var(--color-surface);
+  --secondary-foreground: var(--color-action);
+  --muted: var(--color-page);
+  --muted-foreground: var(--color-text);
+  --accent: var(--color-success);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-notice);
+  --destructive-foreground: var(--color-text);
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-focus);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  html {
+    background: var(--color-page);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-page);
+    color: var(--color-text);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: var(--font-weight-regular);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: var(--font-weight-regular);
+    color: var(--color-heading);
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a {
+    color: var(--color-action);
+  }
+  strong,
+  b {
+    font-weight: var(--font-weight-strong);
+  }
+  :focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+  input,
+  button,
+  select,
+  textarea {
+    font: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

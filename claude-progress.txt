@@ -1,0 +1,2 @@
+Setup done: Next 16.4.3, nine shadcn parts to write by hand (registry blocked), tokens, fonts, Vitest, Playwright 1.63.0 with axe, hooks, agents, design skill, CLAUDE.md, DECISIONS.md, feature_list.json (118 entries).
+Next: step 1, the shell (banner, Sandbox pill, tab bars), the ui parts and every screen as a thin page from src/screens.ts.
