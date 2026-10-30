@@ -62,6 +62,13 @@ export function compareDates(a: DateOnly, b: DateOnly): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** "Every child 3 and under" wears a swim diaper: under 4 on the first lesson date. */
+export const THREE_AND_UNDER_MONTHS = 48;
+
+export function isThreeAndUnder(ageMonths: number): boolean {
+  return ageMonths < THREE_AND_UNDER_MONTHS;
+}
+
 /** Whole months of age on a given day. */
 export function ageInMonths(birth: DateOnly, on: DateOnly): number {
   const b = parseDate(birth);

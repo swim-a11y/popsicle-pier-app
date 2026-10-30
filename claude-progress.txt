@@ -2,3 +2,5 @@ Setup done: Next 16.4.3, nine shadcn parts to write by hand (registry blocked), 
 Next: step 1, the shell (banner, Sandbox pill, tab bars), the ui parts and every screen as a thin page from src/screens.ts.
 Step 1 done: tokens and contrast test, sample banner, Sandbox pill and sheet, parent and owner tab bars, shared coming-next component, 26 thin pages from src/screens.ts (static), Bills, Messages and the staff page.
 Next: step 2, tests for the data layer (store, append-only), seeds and rules (ages, dates, times, prices, child IDs, release, signature).
+Step 2 done: DataStore interface and localStorage store (one key, reseed on version change, memory fallback, append-only collections), seeds (2 pools, 9 classes, evaluations, v1 and v2 releases with pasted fingerprints, moving-over family, 4 signed sample families, coach lines), rules (dates, ages, times, prices, child IDs, release, sign and save, first Sunday) with 79 unit tests.
+Next: step 3, the sign-up screens from the start screen through You are in, then walk-throughs 1 and 5 in e2e/sign-up.spec.ts with counts in docs/check-report.md.

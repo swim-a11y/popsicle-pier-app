@@ -263,21 +263,21 @@
     "area": "data",
     "description": "One async DataStore interface (src/data/store.ts) a Postgres adapter can implement later; localStorage holds one key {seedVersion, data}; a changed seedVersion wipes and reseeds; storage errors fall back to memory; a failed transaction changes nothing.",
     "test": "tests/unit/store.test.ts: store > one key holds {seedVersion, data} / a changed seedVersion wipes and reseeds / falls back to memory when storage throws / a failed transaction changes nothing",
-    "passes": false
+    "passes": true
   },
   {
     "id": "data-append-only",
     "area": "data",
     "description": "Release signatures, coverage, consents and bank-draft authorizations are add and list only, with no edit or delete; only the sandbox erase wipes them.",
     "test": "tests/unit/store.test.ts: store > signatures, coverage, consents and bank-draft authorizations are add and list only",
-    "passes": false
+    "passes": true
   },
   {
     "id": "data-times-and-ids",
     "area": "data",
     "description": "Times are stored as UTC ISO strings and shown in America/New_York; lesson dates are YYYY-MM-DD; ids come from crypto.randomUUID() at save time (with a fallback) and seeds use fixed ids; rule functions take today as an argument.",
     "test": "tests/unit/dates-ages.test.ts: dates > stored times are UTC and shown in New York",
-    "passes": false
+    "passes": true
   },
   {
     "id": "data-sandbox-switch",
@@ -291,84 +291,84 @@
     "area": "seed",
     "description": "Two pools: Madison (youngest 2; 1 or 2 swimmers per lesson) and Buckhead (youngest 2 and a half; 1 or 2 per lesson), each with SAMPLE first-lesson notes (parking, door, how early, where to wait, what to bring) and a SAMPLE school email.",
     "test": "tests/unit/seeds.test.ts: seeds > two pools with youngest ages and SAMPLE first-lesson notes",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-classes",
     "area": "seed",
     "description": "About 8 sample classes across both pools with Path stage, age range, day, time, instructor first name, open spots and two SAMPLE prices (bank draft and card); lessons are 27 minutes in a 30-minute slot.",
     "test": "tests/unit/seeds.test.ts: seeds > about 8 classes with stage, ages, day, time, coach, spots and both prices",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-full-and-semi",
     "area": "seed",
     "description": "One full class and one semi-private class with one child and one open spot.",
     "test": "tests/unit/seeds.test.ts: seeds > one full class and one semi-private class with one child and one open spot",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-under-3",
     "area": "seed",
     "description": "Private times for under 3 with a parent in the water; never an under-3 in a shared class.",
     "test": "tests/unit/seeds.test.ts: seeds > under-3 private times with a parent in the water, never in a shared class",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-evaluations",
     "area": "seed",
     "description": "A few free evaluation times per pool.",
     "test": "tests/unit/seeds.test.ts: seeds > free evaluation times at each pool",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-contacts",
     "area": "seed",
     "description": "Every sample email ends in @example.com and every sample phone uses 555; no real names, addresses, emails or numbers.",
     "test": "tests/unit/seeds.test.ts: seeds > sample emails end in @example.com and phones use 555",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-release-versions",
     "area": "seed",
     "description": "Release versions v1 and v2, v2 current, each with 2 or 3 What changed lines; published text never changes.",
     "test": "tests/unit/release.test.ts: release > v1 and v2 each have What changed lines and v2 is current",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-moving-family",
     "area": "seed",
     "description": "One family moving over, seeded directly: one parent with both emergency contacts, two children enrolled at Madison in their current classes and prices, one listed adult Waiting, nothing signed and no bank linked.",
     "test": "tests/unit/seeds.test.ts: seeds > moving-over family: one parent, two contacts, two Madison children, one Waiting adult, nothing signed, no bank",
-    "passes": false
+    "passes": true
   },
   {
     "id": "seed-coach-lines",
     "area": "seed",
     "description": "About 6 SAMPLE coach-line templates per Path stage, two lines each (today, next), no promises, ranking or comparing.",
     "test": "tests/unit/seeds.test.ts: seeds > about 6 coach-line templates per stage, two lines each",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-age-first-lesson",
     "area": "age",
     "description": "Age is figured on the first lesson date.",
     "test": "tests/unit/dates-ages.test.ts: ages > age is figured on the first lesson date",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-age-youngest",
     "area": "age",
     "description": "Youngest age: Madison 2, Buckhead 2 and a half; below it the times step says when the child can start.",
     "test": "tests/unit/dates-ages.test.ts: ages > youngest age: Madison 2, Buckhead 2 and a half, and the start date when too young",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-age-under-3",
     "area": "age",
     "description": "Under 3 is a private lesson with a parent in the water: private times only.",
     "test": "tests/unit/dates-ages.test.ts: ages > under 3 means private with a parent in the water",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-age-diaper",
@@ -382,112 +382,112 @@
     "area": "age",
     "description": "The first lesson is the first class day at least 2 days after today.",
     "test": "tests/unit/dates-ages.test.ts: dates > first lesson is the first class day at least 2 days out",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-date-buckhead",
     "area": "age",
     "description": "No Buckhead lesson date before Sunday, November 8, 2026.",
     "test": "tests/unit/dates-ages.test.ts: dates > no Buckhead lesson before Sunday, November 8, 2026",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-stages",
     "area": "age",
     "description": "Path stages in order: The Pier, The Shallows, The Cove, Open Water; families see the stage name only.",
     "test": "tests/unit/dates-ages.test.ts: stages > Path stages in order",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-times-fit",
     "area": "times",
     "description": "Times that fit each child at that pool: age on the first lesson date and stage (private times fit any stage).",
     "test": "tests/unit/times.test.ts: times > only times that fit the child's age and stage at that pool",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-times-full",
     "area": "times",
     "description": "Full times say Full and can't be tapped; they offer the waitlist.",
     "test": "tests/unit/times.test.ts: times > full times are marked Full and can't be booked",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-times-sibling",
     "area": "times",
     "description": "Times next to a sibling's are marked.",
     "test": "tests/unit/times.test.ts: times > times next to a sibling's are marked",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-times-no-fit",
     "area": "times",
     "description": "If nothing fits: join the waitlist or book the free evaluation.",
     "test": "tests/unit/times.test.ts: times > nothing fits offers the waitlist and the free evaluation",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-times-no-partner",
     "area": "times",
     "description": "A semi-private time with no partner yet shows the exact no-partner words.",
     "test": "tests/unit/times.test.ts: times > a semi-private time with no partner yet carries the no-partner words",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-prices",
     "area": "payment",
     "description": "Each time shows both prices, bank draft first; with cardPricing \"card price\" the card price is about 3 percent more, rounded to a quarter.",
     "test": "tests/unit/prices.test.ts: prices > bank draft first, card about 3 percent more rounded to a quarter",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-card-words",
     "area": "payment",
     "description": "While cardPricing is \"card price\", no fee or surcharge wording beside the card price.",
     "test": "tests/unit/prices.test.ts: prices > card price wording has no fee or surcharge",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-lesson-type",
     "area": "payment",
     "description": "A lesson's price comes from the lesson type booked and never changes when a partner joins or leaves.",
     "test": "tests/unit/prices.test.ts: prices > price comes from the lesson type and never changes when a partner joins or leaves",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-settings",
     "area": "payment",
     "description": "src/config.ts holds cardPricing (\"card price\" or \"card fee\", never both) and evaluationAsksForCard (true), each in DECISIONS.md.",
     "test": "tests/unit/prices.test.ts: prices > payment settings",
-    "passes": false
+    "passes": true
   },
   {
     "id": "childid-format",
     "area": "child-id",
     "description": "Child ID is PP, the two-digit year of first booking, a hyphen and a four-digit serial (PP26-0042); it says nothing about the child.",
     "test": "tests/unit/child-id.test.ts: child IDs > format PP, two-digit year, hyphen, four-digit serial",
-    "passes": false
+    "passes": true
   },
   {
     "id": "childid-one-counter",
     "area": "child-id",
     "description": "One counter shared by both pools, set the first time a child is booked (the free evaluation included).",
     "test": "tests/unit/child-id.test.ts: child IDs > one counter across both pools, first new child is PP26-0042",
-    "passes": false
+    "passes": true
   },
   {
     "id": "childid-never-reused",
     "area": "child-id",
     "description": "A child ID is never reused and never changes when the child changes pool or stage.",
     "test": "tests/unit/child-id.test.ts: child IDs > never reused, even after a child leaves",
-    "passes": false
+    "passes": true
   },
   {
     "id": "childid-other-pool",
     "area": "child-id",
     "description": "A child added at the other pool keeps one ID across both pools.",
     "test": "tests/unit/child-id.test.ts: child IDs > a child booked at the other pool keeps one ID",
-    "passes": false
+    "passes": true
   },
   {
     "id": "childid-staff-only",
@@ -501,14 +501,14 @@
     "area": "release",
     "description": "Each version's fingerprint is the SHA-256 of its exact text; a test fails if text and fingerprint stop matching.",
     "test": "tests/unit/release.test.ts: release > each version's text matches its fingerprint",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-eight-groups",
     "area": "release",
     "description": "The current release holds all eight groups (staying at the pool; recording; AI review and our tools; who can watch; keeping and your family library; other families; signing for my children; release of claims); a test fails if one is missing.",
     "test": "tests/unit/release.test.ts: release > the current version holds all eight groups",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-text-shown",
@@ -536,21 +536,21 @@
     "area": "release",
     "description": "A family on an older version signs the current version once for everyone (data layer).",
     "test": "tests/unit/release.test.ts: release > a family on an older version signs the current version once for everyone",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-coverage",
     "area": "release",
     "description": "A family on the current version adding a child signs nothing and gets a new coverage row, never an edit (data layer).",
     "test": "tests/unit/release.test.ts: release > a family on the current version adding a child gets a coverage row, never an edit",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signature-row",
     "area": "signature",
     "description": "The signature row holds family, typed name, each group's yes, each child's choices and yes or no answers, child IDs, version, SHA-256 of the exact text shown, time, how signed (online or paper at the desk), the confirmed email, the browser name, and each consent with its exact words and wording version.",
     "test": "tests/unit/signature.test.ts: signature > the row holds every field the brief lists / each consent keeps its exact words and wording version",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signature-flags",
@@ -697,14 +697,14 @@
     "area": "first-sunday",
     "description": "An attendance mark names the parent or a Signed listed adult, never a Waiting one; a lesson can't be marked held without that adult.",
     "test": "tests/unit/first-sunday.test.ts: first Sunday > an attendance mark names the parent or a Signed adult, never a Waiting one",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-pretend",
     "area": "first-sunday",
     "description": "\"Pretend the first lesson happened\" adds, for each child of the current family, one attendance mark and one approved note from the child's stage templates, dated on the first lesson date; a second press adds nothing.",
     "test": "tests/unit/first-sunday.test.ts: first Sunday > pretend the first lesson happened adds marks and approved notes once",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-approved-only",

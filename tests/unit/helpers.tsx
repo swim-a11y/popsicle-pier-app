@@ -57,3 +57,93 @@ export function freshStore(edit?: (data: AppData) => void): LocalStore {
 
 let n = 0;
 export const testId = () => `test-id-${++n}`;
+
+import type { DateOnly, SignUpDraft, StageId, Relationship } from "@/data/types";
+import { emptyDraft, emptyDraftChild } from "@/rules/sign-up";
+import { parseDate } from "@/rules/dates";
+import { EIGHT_GROUPS } from "@/rules/release";
+import { SAMPLE_CODE } from "@/sandbox/sample-code";
+
+export const TODAY = "2026-10-30";
+export const NOW = "2026-10-30T15:00:00.000Z";
+
+export interface DraftKid {
+  firstName: string;
+  birth: DateOnly;
+  stage: StageId | "evaluation";
+  booking?: { kind: "class" | "evaluation"; timeId: string } | null;
+  waitlist?: string[];
+  custodyYes?: boolean;
+  healthYes?: boolean;
+  research?: boolean;
+}
+
+/** A sign-up draft with every step done, ready for signAndSave. */
+export function completeDraft(opts: {
+  poolId?: string;
+  kids?: DraftKid[];
+  payment?: "bank" | "card" | "hold" | "none";
+  listed?: { firstName: string; relationship: Relationship }[];
+  id?: string;
+}): SignUpDraft {
+  const d = emptyDraft(opts.id ?? "sign-up:this-phone", NOW);
+  const kids = opts.kids ?? [{ firstName: "Mia", birth: "2022-07-30", stage: "shallows", booking: { kind: "class", timeId: "mad-sun-1000-shallows" } }];
+  d.poolId = opts.poolId ?? "pool-madison";
+  d.children = kids.map((k, i) => {
+    const b = parseDate(k.birth);
+    return {
+      ...emptyDraftChild(`kid-${i + 1}`),
+      firstName: k.firstName,
+      birthMonth: String(b.m),
+      birthDay: String(b.d),
+      birthYear: String(b.y),
+      stage: k.stage,
+      booking: k.booking === undefined ? null : k.booking,
+      waitlistClassIds: k.waitlist ?? [],
+    };
+  });
+  d.fullName = "Jordan Sample";
+  d.email = "jordan.sample@example.com";
+  d.phone = "404-555-0123";
+  d.codeSent = true;
+  d.code = SAMPLE_CODE;
+  d.confirmedEmail = d.email;
+  d.heardFrom = "friend";
+  d.contacts = [
+    { name: "Casey Sample", phone: "404-555-0188" },
+    { name: "Riley Sample", phone: "404-555-0199" },
+  ];
+  d.peopleDone = true;
+  d.listedAdults = (opts.listed ?? []).map((a, i) => ({ key: `adult-${i}`, ...a }));
+  d.justMe = (opts.listed ?? []).length === 0;
+  const pay = opts.payment ?? "bank";
+  d.payment =
+    pay === "bank"
+      ? { main: "bank", authorized: true, backupCard: true, holdCard: false }
+      : pay === "card"
+        ? { main: "card", authorized: false, backupCard: false, holdCard: false }
+        : pay === "hold"
+          ? { main: null, authorized: false, backupCard: false, holdCard: true }
+          : { main: null, authorized: false, backupCard: false, holdCard: false };
+  d.release = {
+    groups: Object.fromEntries(EIGHT_GROUPS.map((g) => [g.key, true])),
+    perChild: Object.fromEntries(
+      d.children.map((c, i) => [
+        c.key,
+        {
+          custody: kids[i].custodyYes ? "yes" : "no",
+          health: kids[i].healthYes ? "yes" : "no",
+          research: Boolean(kids[i].research),
+          marketing: false,
+          underwater: false,
+        },
+      ]),
+    ),
+    texts: false,
+    newsletter: false,
+    marketingEmails: false,
+    typedName: "Jordan Sample",
+    agreeElectronic: true,
+  };
+  return d;
+}

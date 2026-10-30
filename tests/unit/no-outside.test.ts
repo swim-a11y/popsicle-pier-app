@@ -56,7 +56,7 @@ describe("nothing leaves the device", () => {
     // The sample code and the seeds are only written in the sandbox folder.
     for (const f of source.filter((f) => !f.startsWith("src/sandbox/"))) {
       expect(read(f), f).not.toContain("246810");
-      expect(read(f), f).not.toMatch(/from "@\/sandbox\/seed"/.source === "" ? /$^/ : /buildSeed\(/);
+      expect(read(f), f).not.toMatch(/buildSeed\(/);
     }
   });
 });

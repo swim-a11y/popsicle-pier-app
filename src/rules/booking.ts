@@ -39,6 +39,14 @@ export class SignUpIncompleteError extends Error {
   }
 }
 
+/** The draft is gone once saved, so a second tap or a refresh can't book twice. */
+export class AlreadySavedError extends Error {
+  constructor() {
+    super("This sign-up was already saved.");
+    this.name = "AlreadySavedError";
+  }
+}
+
 export class TimeFilledError extends Error {
   constructor(public readonly childName: string) {
     super(`The time picked for ${childName} just filled up. Please pick another time.`);
@@ -252,6 +260,7 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
   const { draft, today, now, newId } = input;
   const evalAsks = input.evaluationAsksForCard ?? defaultEvalAsksForCard;
   const data = tx.data();
+  if (!tx.get("signUpDrafts", draft.id)) throw new AlreadySavedError();
   const missing = firstMissingStep(data, draft, evalAsks);
   if (missing) throw new SignUpIncompleteError(missing.step, missing.child, missing.message);
 
