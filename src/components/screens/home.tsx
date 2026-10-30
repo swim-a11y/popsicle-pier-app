@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { NoteCard } from "@/components/parts/note-card";
 import { PriceRows } from "@/components/parts/price-rows";
 import { SkeletonRows } from "@/components/parts/skeleton";
@@ -9,13 +11,64 @@ import { SCHOOL_NAME } from "@/content/brand";
 import { CLIPS_LATER_LINE } from "@/content/first-lesson";
 import { SOMEONE_WILL_TALK } from "@/content/sign-up";
 import { stageName } from "@/content/path";
+import { getStore } from "@/data/app-store";
+import type { AppData, DateOnly, WaitlistEntry } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
-import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, upcomingLessonDate } from "@/rules/family";
+import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, upcomingLessons } from "@/rules/family";
+import { offerOpen } from "@/rules/holds";
+import { leaveWaitlist } from "@/rules/offers";
 import { answersWaiting } from "@/rules/owed";
 import { latestSignature } from "@/rules/release";
+
+/** "On the waitlist for Sundays at 9:00 am." The family can leave it themselves, after a confirm. */
+function WaitlistLine({ data, entry, childFirstName, today }: { data: Readonly<AppData>; entry: WaitlistEntry; childFirstName: string; today: DateOnly }) {
+  const go = useGo();
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const cls = entry.classId ? data.classes.find((c) => c.id === entry.classId) : null;
+  const what = cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits";
+  const offered = data.waitlistOffers.some((o) => o.waitlistEntryId === entry.id && offerOpen(o, today));
+  const leave = async () => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      await getStore().transaction((tx) => leaveWaitlist(tx, { entryId: entry.id, familyId: entry.familyId, today: todayAtSchool(new Date()) }));
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : "That didn't save. Please try again.");
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-2 border-t-2 border-line pt-3" data-testid="home-waitlist">
+      <p>On the waitlist for {what}.</p>
+      {offered ? (
+        <Button variant="quiet" size="small" className="self-start" onClick={() => go("/more/messages")}>
+          The school offered a spot. Answer it in Messages.
+        </Button>
+      ) : asking ? (
+        <div className="flex flex-col gap-2 rounded-control bg-page px-3 py-3">
+          <p className="font-strong">Take {childFirstName} off the waitlist for {what}?</p>
+          <Button variant="secondary" size="block" disabled={busy} onClick={() => void leave()}>
+            {busy ? "Saving..." : "Leave the waitlist"}
+          </Button>
+          <Button variant="quiet" size="block" disabled={busy} onClick={() => setAsking(false)}>
+            Stay on it
+          </Button>
+        </div>
+      ) : (
+        <Button variant="quiet" size="small" className="self-start" onClick={() => setAsking(true)}>
+          Leave this waitlist
+        </Button>
+      )}
+      {problem ? <p className="rounded-control bg-notice px-3 py-2">{problem}</p> : null}
+    </div>
+  );
+}
 
 export function HomeScreen() {
   const loaded = useAppData();
@@ -51,9 +104,8 @@ export function HomeScreen() {
   const { main } = familyPayment(data, family.id);
   const movingNotDone = family.source === "moving-over" && !family.movedOverAt;
   // Soonest first, and by time on the same day, so each child keeps their own time and coach.
-  const upcoming = lessons
-    .map((l) => ({ ...l, date: upcomingLessonDate(data, l, today) }))
-    .sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
+  // A date booked in place of a cancelled lesson counts too.
+  const upcoming = upcomingLessons(data, family.id, today);
   const next = upcoming[0];
   const sameDay = next ? upcoming.filter((l) => l.date === next.date) : [];
   const waiting = answersWaiting(data, family.id, today);
@@ -110,14 +162,16 @@ export function HomeScreen() {
               <p>
                 {next.child.firstName} at {next.pool.name} with Coach {next.instructorFirstName}
               </p>
+              {next.inPlaceOf ? <p data-testid="home-in-place">In place of the lesson on {longDate(next.inPlaceOf, today)}.</p> : null}
             </>
           ) : (
             <>
               <p className="font-heading text-big text-heading">{longDate(next.date, today)}</p>
               <ul className="flex flex-col gap-1" data-testid="home-lead-children">
                 {sameDay.map((l) => (
-                  <li key={l.child.id}>
+                  <li key={`${l.enrollment.id}-${l.startTime}`}>
                     <span className="font-strong">{l.child.firstName}</span>, {clockTime(l.startTime)} with Coach {l.instructorFirstName}
+                    {l.inPlaceOf ? `, in place of ${longDate(l.inPlaceOf, today)}` : ""}
                   </li>
                 ))}
               </ul>
@@ -162,10 +216,9 @@ export function HomeScreen() {
                   {SOMEONE_WILL_TALK}
                 </p>
               ) : null}
-              {waits.map((w) => {
-                const cls = w.classId ? data.classes.find((c) => c.id === w.classId) : null;
-                return <p key={w.id}>On the waitlist for {cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "any time that fits"}.</p>;
-              })}
+              {waits.map((w) => (
+                <WaitlistLine key={w.id} data={data} entry={w} childFirstName={k.firstName} today={today} />
+              ))}
             </article>
           );
         })}

@@ -1180,5 +1180,26 @@
     "description": "On Lesson dates, a cancelled lesson's new date and time sit right under it in the child's own card.",
     "test": "tests/unit/rooms-render.test.tsx: messages and notes > a lesson the school cancels: the notice, the date offered, and the family's answer; e2e/sign-up.spec.ts: walk-through 10",
     "passes": true
+  },
+  {
+    "id": "replacement-next-lesson",
+    "area": "schedule",
+    "description": "A date booked in place of a cancelled lesson counts as the child's next lesson when it comes first: Home's lead and Your first lesson show its own time, coach and pool with \"In place of the lesson on ...\"; the sandbox's cancel still picks a weekly lesson.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: owed lessons > a date booked in place of a cancelled lesson is the child's next lesson when it comes first; tests/unit/rooms-render.test.tsx: a replacement date as the next lesson > Home and Your first lesson show it, with the lesson it replaces",
+    "passes": true
+  },
+  {
+    "id": "leave-waitlist",
+    "area": "schedule",
+    "description": "A family can take a swimmer off a waitlist from Home, after a confirm (\"Stay on it\" keeps it); not while an offer from that waitlist waits for an answer, which Home points to in Messages.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a family can leave a waitlist on its own, but not while an offer from it waits for an answer; tests/unit/rooms-render.test.tsx: leaving a waitlist > Home asks first, then takes the swimmer off it",
+    "passes": true
+  },
+  {
+    "id": "swimmers-continue",
+    "area": "signup",
+    "description": "On Your swimmers, Continue stays on the first screen of a 375x667 phone (a bar pinned at the bottom), above the boxes still to scroll past.",
+    "test": "e2e/sign-up.spec.ts: walk-through 5",
+    "passes": true
   }
 ]

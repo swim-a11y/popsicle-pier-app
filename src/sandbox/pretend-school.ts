@@ -6,7 +6,7 @@
 */
 import type { Transaction } from "@/data/store";
 import type { DateOnly, IsoTime } from "@/data/types";
-import { nextLessonPerChild } from "@/rules/family";
+import { upcomingLessons } from "@/rules/family";
 import { leaveClass } from "@/rules/offers";
 import { cancelClassDate } from "@/rules/owed";
 
@@ -31,7 +31,8 @@ export function pretendSchoolCancelled(
   tx: Transaction,
   input: { familyId: string; today: DateOnly; now: IsoTime; newId: () => string },
 ): { childFirstName: string; date: DateOnly } | null {
-  const next = nextLessonPerChild(tx.data(), input.familyId, input.today).find((l) => l.lessonKind !== "evaluation");
+  // A weekly class's lesson; a date booked in place of a cancelled one isn't a class date to cancel.
+  const next = upcomingLessons(tx.data(), input.familyId, input.today).find((l) => l.lessonKind !== "evaluation" && !l.inPlaceOf);
   if (!next) return null;
   const owed = cancelClassDate(tx, {
     classId: next.enrollment.timeId,

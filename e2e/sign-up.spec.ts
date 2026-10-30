@@ -567,6 +567,10 @@ test("walk-through 5: cold run, one child at Madison, every field typed, paying 
   await type(page.getByLabel("Month"), birth.m);
   await type(page.getByLabel("Day"), birth.d);
   await type(page.getByLabel("Year"), birth.y);
+  // Continue is on the first screen of a phone, without scrolling.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const cont = await page.getByRole("button", { name: "Continue" }).boundingBox();
+  expect(cont && cont.y + cont.height).toBeLessThanOrEqual(667);
   await check("swimmers");
   await tap(page.getByRole("button", { name: "Continue" }));
 

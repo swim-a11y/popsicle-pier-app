@@ -130,9 +130,12 @@ export function SwimmersStep() {
         Add another swimmer
       </Button>
       <p className="rounded-card bg-surface px-4 py-3 shadow-card">{SWIM_DIAPER_LINE}</p>
-      <Button size="block" onClick={onContinue}>
-        Continue
-      </Button>
+      {/* Continue stays in reach on the first screen of a phone, above the boxes still to scroll past. */}
+      <div className="sticky bottom-0 z-10 -mx-gutter bg-page px-gutter pt-3 pb-3 shadow-bar" data-testid="continue-bar">
+        <Button size="block" onClick={onContinue}>
+          Continue
+        </Button>
+      </div>
     </StepScreen>
   );
 }

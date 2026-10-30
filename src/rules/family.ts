@@ -178,15 +178,63 @@ export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today
   return days;
 }
 
-/** Each child's next lesson across all their classes (the soonest upcoming date), soonest first. */
-export function nextLessonPerChild(data: Readonly<AppData>, familyId: string, today: DateOnly): (LessonInfo & { date: DateOnly })[] {
-  const byChild = new Map<string, LessonInfo & { date: DateOnly }>();
-  for (const l of familyLessons(data, familyId)) {
-    const date = upcomingLessonDate(data, l, today);
-    const current = byChild.get(l.child.id);
-    if (!current || date < current.date || (date === current.date && l.startTime < current.startTime)) byChild.set(l.child.id, { ...l, date });
+/** One lesson to come: a weekly class's next date, or a date booked in place of a lesson the school cancelled. */
+export interface NextLesson extends LessonInfo {
+  date: DateOnly;
+  /** For a date booked in place of a cancelled lesson: the cancelled lesson's date. */
+  inPlaceOf: DateOnly | null;
+}
+
+/**
+ * Dates booked in place of a lesson the school cancelled, still to come, as
+ * lessons in their own slot: its time, coach and pool. The price is the
+ * cancelled class's, already on the bill.
+ */
+export function replacementLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
+  const out: NextLesson[] = [];
+  for (const owed of data.owedLessons.filter((o) => o.familyId === familyId)) {
+    const enrollment = data.enrollments.find((e) => e.id === owed.enrollmentId);
+    const info = enrollment ? lessonInfo(data, enrollment) : null;
+    if (!info) continue;
+    for (const offer of owed.offers) {
+      if (offer.answer !== "yes" || offer.date < today) continue;
+      const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
+      const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
+      if (!time || !pool) continue;
+      out.push({
+        ...info,
+        pool,
+        weekday: time.weekday,
+        startTime: time.startTime,
+        instructorFirstName: time.instructorFirstName,
+        // Under 3 is always a private lesson with a parent in the water.
+        parentInWater: ageInMonths(info.child.birthDate, offer.date) < 36,
+        date: offer.date,
+        inPlaceOf: owed.cancelledDate,
+      });
+    }
   }
-  return [...byChild.values()].sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
+  return out;
+}
+
+/** Soonest first, and by time on the same day. */
+function bySoonest(a: NextLesson, b: NextLesson): number {
+  return a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1;
+}
+
+/** Every lesson to come for the family, one per weekly class plus any replacement dates, soonest first. */
+export function upcomingLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
+  return [
+    ...familyLessons(data, familyId).map((l) => ({ ...l, date: upcomingLessonDate(data, l, today), inPlaceOf: null })),
+    ...replacementLessons(data, familyId, today),
+  ].sort(bySoonest);
+}
+
+/** Each child's next lesson across all their classes and replacement dates (the soonest), soonest first. */
+export function nextLessonPerChild(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
+  const byChild = new Map<string, NextLesson>();
+  for (const l of upcomingLessons(data, familyId, today)) if (!byChild.has(l.child.id)) byChild.set(l.child.id, l);
+  return [...byChild.values()].sort(bySoonest);
 }
 
 /** Pools where one of the family's classes hasn't had its first lesson yet: a first visit to come. */

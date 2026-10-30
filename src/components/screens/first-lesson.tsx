@@ -147,6 +147,11 @@ export function FirstLessonScreen() {
               >
                 {l.pool.name}, Coach {l.instructorFirstName}
               </p>
+              {l.inPlaceOf ? (
+                <p className="pt-1" data-testid="lesson-in-place">
+                  In place of the lesson we cancelled on {longDate(l.inPlaceOf, today)}.
+                </p>
+              ) : null}
               <p className="pt-1">{LESSON_LENGTH_LINE}</p>
             </div>
           </section>

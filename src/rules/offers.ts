@@ -164,6 +164,19 @@ export function answerWaitlistOffer(
   return tx.update("waitlistOffers", offer.id, { answer: "yes", answeredAt: input.now, enrollmentId: enrollment.id });
 }
 
+/**
+ * The family leaves a waitlist: their own choice, no person needed. Not while
+ * an offer for it waits for their answer; they answer that first.
+ */
+export function leaveWaitlist(tx: Transaction, input: { entryId: string; familyId: string; today: DateOnly }): void {
+  const entry = tx.get("waitlistEntries", input.entryId);
+  if (!entry || entry.familyId !== input.familyId) throw new OfferProblemError("That waitlist isn't here anymore.");
+  if (tx.list("waitlistOffers").some((o) => o.waitlistEntryId === entry.id && offerOpen(o, input.today))) {
+    throw new OfferProblemError("The school offered a spot from this waitlist. Please answer it in Messages first.");
+  }
+  tx.remove("waitlistEntries", entry.id);
+}
+
 /** A family's offers, newest first. */
 export function offersForFamily(data: Readonly<AppData>, familyId: string): WaitlistOffer[] {
   return data.waitlistOffers.filter((o) => o.familyId === familyId).sort((a, b) => (a.offeredAt < b.offeredAt ? 1 : -1));
