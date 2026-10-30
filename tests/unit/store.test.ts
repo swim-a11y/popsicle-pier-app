@@ -24,7 +24,7 @@ describe("store", () => {
     const storage = memoryStorage();
     const first = makeStore(storage, "one");
     await first.transaction((tx) =>
-      tx.add("waitlistEntries", { id: "w1", familyId: "f", childRecordId: "c", classId: "x", createdAt: "2026-10-30T00:00:00.000Z" }),
+      tx.add("waitlistEntries", { id: "w1", familyId: "f", childRecordId: "c", poolId: "pool-madison", classId: "x", createdAt: "2026-10-30T00:00:00.000Z" }),
     );
     expect(await makeStore(storage, "one").list("waitlistEntries")).toHaveLength(1);
     const second = makeStore(storage, "two");

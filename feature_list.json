@@ -375,7 +375,7 @@
     "area": "age",
     "description": "Every child 3 and under gets the swim diaper line; sign-up never asks about toilet training.",
     "test": "tests/unit/dates-ages.test.ts: ages > 3 and under gets the swim diaper line",
-    "passes": false
+    "passes": true
   },
   {
     "id": "rule-date-first-lesson",
@@ -515,21 +515,21 @@
     "area": "release",
     "description": "The release is signed once for the whole family at the end, says \"Covers [names]\", shows every line (never folded), is marked SAMPLE, and the SHA-256 of the exact text shown is saved.",
     "test": "tests/unit/release.test.ts: release > the text shown names every child and hashes with SHA-256",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-boxes",
     "area": "release",
     "description": "Each of the eight groups has its own required box; custody and health are yes or no per child with no text box; the three per-child choices (research, marketing, underwater images) start unchecked and \"no\" never changes lessons.",
     "test": "tests/unit/release.test.ts: release > every group box is required and the three choices start unchecked",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-texts-box",
     "area": "release",
     "description": "Separate from the release and unchecked: the texts box with the exact words, then the newsletter and marketing email boxes, unchecked.",
     "test": "tests/unit/release.test.ts: release > texts, newsletter and marketing email boxes are separate and unchecked",
-    "passes": false
+    "passes": true
   },
   {
     "id": "release-resign",
@@ -564,14 +564,14 @@
     "area": "payment",
     "description": "The bank-draft authorization row holds the family, the processor reference, its exact words and version, the confirmed email and the time; a copy shows in the family's account.",
     "test": "tests/unit/signature.test.ts: bank draft > the authorization row holds family, reference, exact words, version, email and time",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-references-only",
     "area": "payment",
     "description": "Payment methods hold a processor reference (SANDBOX-REF-0001), kind (bank or card) and job (main or backup) only; never a card, bank, routing or account number, not even the last four; no number boxes.",
     "test": "tests/unit/signature.test.ts: payment > references only, never a card or bank number",
-    "passes": false
+    "passes": true
   },
   {
     "id": "payment-evaluation",
@@ -592,21 +592,21 @@
     "area": "sign-up",
     "description": "Step 1, pool: one tap moves on.",
     "test": "e2e/sign-up.spec.ts: walk-through 1",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-2-swimmers",
     "area": "sign-up",
     "description": "Step 2, your swimmers: first name and birth date in three number boxes per child; shows the swim diaper line; never asks about toilet training.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-3-stage",
     "area": "sign-up",
     "description": "Step 3, per child: \"Which sounds most like [name] today?\" with one SAMPLE line per Path stage or \"Not sure? Free evaluation\"; one tap moves on.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-4-times",
@@ -620,14 +620,14 @@
     "area": "sign-up",
     "description": "Step 5, you: name, email (@example.com) and phone (555), \"Sample code: 246810\" with autocomplete one-time-code, a code that doesn't match, then a required one-tap \"How did you hear about us?\" with the eight choices.",
     "test": "tests/unit/signup-rules.test.ts: sign-up > emails end in @example.com and phones use 555 / the sample code is 246810 and a wrong code doesn't match / how did you hear about us is required with eight choices; e2e/sign-up.spec.ts: walk-through 5",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-6-people",
     "area": "sign-up",
     "description": "Step 6, your people: two emergency contacts (name and phone), then up to two message-only adults (name and email) or Skip.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 5",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-7-who-stays",
@@ -641,21 +641,21 @@
     "area": "sign-up",
     "description": "Step 8, payment: \"Nothing is charged today.\", bank draft first and preferred with its price, card second with its price, one tap each, the SAMPLE authorization with its own box, a copy saved, the required backup card line.",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 5",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-9-release",
     "area": "sign-up",
     "description": "Step 9, the family release with every line visible, eight required boxes, yes or no per child, three unchecked choices, the texts box, two email boxes, typed full name, the agree box and \"Sign and save my spot\" (Saving..., ignores double taps).",
     "test": "e2e/sign-up.spec.ts: walk-through 1, walk-through 2",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-step-count",
     "area": "sign-up",
     "description": "\"Step 3 of 9\" counts only the steps this family needs.",
     "test": "tests/unit/signup-rules.test.ts: sign-up > steps counted for this family only",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-keep-place",
@@ -669,21 +669,21 @@
     "area": "sign-up",
     "description": "Autofill is off on every field; the Sandbox sheet's \"Fill in a sample family\" fills the typed fields; every choice is still a tap.",
     "test": "tests/unit/signup-rules.test.ts: sign-up > sample fill fills typed fields only",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-sign-and-save",
     "area": "sign-up",
     "description": "Sign and save books once: spots drop by one per child, the draft clears, and refreshing You're in books nothing.",
     "test": "tests/unit/signup-rules.test.ts: sign-up > sign and save books once, drops spots and clears the draft; e2e/sign-up.spec.ts: walk-through 1",
-    "passes": false
+    "passes": true
   },
   {
     "id": "signup-youre-in",
     "area": "sign-up",
     "description": "You're in, at its own address: each child's first lesson (date, time, pool, instructor) and the price they'll pay, \"Nothing was charged today. Your first bill comes before your first lesson.\", any someone-will-talk line, the sample-only line and one primary button \"See your first lesson\".",
     "test": "e2e/sign-up.spec.ts: walk-through 1",
-    "passes": false
+    "passes": true
   },
   {
     "id": "first-lesson-page",
@@ -809,7 +809,7 @@
     "area": "walkthrough",
     "description": "Cold run: one child at Madison, every field typed with no fill button, paying by card; the card price shows before they choose; taps and typed fields counted.",
     "test": "e2e/sign-up.spec.ts: walk-through 5; tests/unit/walkthrough-rules.test.ts: walk-through 5",
-    "passes": false
+    "passes": true
   },
   {
     "id": "walkthrough-6",

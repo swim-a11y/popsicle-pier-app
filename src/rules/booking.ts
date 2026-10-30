@@ -7,18 +7,19 @@ import { BANK_DRAFT_WORDING_VERSION, bankDraftWords } from "@/content/payment";
 import { CONSENT_WORDING_VERSION, consentWords } from "@/content/release";
 import { isParentOrGuardian } from "@/content/sign-up";
 import type { Transaction } from "@/data/store";
-import type {
-  AppData,
-  Child,
-  ChoiceKey,
-  ConsentRecord,
-  DateOnly,
-  DraftChildRelease,
-  IsoTime,
-  ReleaseGroupKey,
-  ReleaseSignature,
-  ReleaseVersion,
-  SignUpDraft,
+import {
+  ANY_TIME,
+  type AppData,
+  type Child,
+  type ChoiceKey,
+  type ConsentRecord,
+  type DateOnly,
+  type DraftChildRelease,
+  type IsoTime,
+  type ReleaseGroupKey,
+  type ReleaseSignature,
+  type ReleaseVersion,
+  type SignUpDraft,
 } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
 import { ensureChildId, nextProcessorRef } from "@/rules/child-id";
@@ -360,7 +361,9 @@ export function signAndSave(tx: Transaction, input: SignAndSaveInput): { familyI
         tx.update("evaluationTimes", ev.id, { openSpots: ev.openSpots - 1 });
       }
     }
-    for (const classId of c.waitlistClassIds) tx.add("waitlistEntries", { id: newId(), familyId, childRecordId: child.id, classId, createdAt: now });
+    for (const classId of c.waitlistClassIds) {
+      tx.add("waitlistEntries", { id: newId(), familyId, childRecordId: child.id, poolId: pool.id, classId: classId === ANY_TIME ? null : classId, createdAt: now });
+    }
     signed.push({ key: c.key, child: tx.get("children", child.id)!, answers: draft.release.perChild[c.key] });
   }
 

@@ -180,11 +180,13 @@ export interface Enrollment {
   createdAt: IsoTime;
 }
 
+/** The waitlist for a full class, or (classId null) for any time that fits at the pool. A person makes every offer. */
 export interface WaitlistEntry {
   id: string;
   familyId: string;
   childRecordId: string;
-  classId: string;
+  poolId: string;
+  classId: string | null;
   createdAt: IsoTime;
 }
 
@@ -196,8 +198,11 @@ export interface DraftChild {
   birthYear: string;
   stage: StageId | "evaluation" | null;
   booking: { kind: "class" | "evaluation"; timeId: string } | null;
+  /** Full classes to wait for; ANY_TIME means any time that fits at the pool. */
   waitlistClassIds: string[];
 }
+
+export const ANY_TIME = "any-time";
 
 export interface DraftChildRelease {
   custody: "yes" | "no" | null;
