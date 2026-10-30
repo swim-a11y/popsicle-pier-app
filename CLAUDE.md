@@ -22,7 +22,9 @@ The owner answered three questions on October 30, 2026, after the first build. T
 2. **Bills: lessons only.** "Each month's lessons times the lesson price, bank draft and card price on every line, closed days not billed, bill by the 19th and draft on the 1st. No fees yet." The registration fee, the out-of-county fee and the founding marker wait for the owner's amounts.
 3. **Messages: tap-to-send notes.** "Ready-made notes picked from the child's lesson dates, like 'We'll miss Sunday, November 8'. No free text, so no health details. A person reads each one; nothing answers automatically."
 
-These three build parts of the RULES FOR LATER ROOMS that the brief said not to build yet (waitlist offers and owed lessons from Schedule, monthly bills from Money, the inbox from Office and Owner). Every other rule on that list stays unbuilt and shown on the staff page.
+4. **Two readings confirmed.** Asked to confirm them, the owner answered "yes to both, keep building" (October 30, 2026): a family joining after the 19th has its first month drafted on the next 1st at least 10 days after its bill, with the following month's (DECISIONS.md 82); and Messages keeps the "We'd like a different time" and "We'd like to stop lessons" notes beside the missed-lesson note (DECISIONS.md 73).
+
+These rulings build parts of the RULES FOR LATER ROOMS that the brief said not to build yet (waitlist offers and owed lessons from Schedule, monthly bills from Money, the inbox from Office and Owner). Every other rule on that list stays unbuilt and shown on the staff page.
 
 ## How to run, test and deploy
 
@@ -86,7 +88,6 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 ## Next
 
 - What's left needs the owner first:
-  - Two readings to confirm: a family joining after the 19th has its first month drafted on the next 1st, with the following month's (DECISIONS.md 82); and Messages offers "a different time" and "stop lessons" notes beside the ruling's missed-lesson example (DECISIONS.md 73).
   - Fees on the bill: the yearly registration fee, the out-of-county fee and the founding marker need the owner's amounts.
   - Fill-ins for a family's own miss (same instructor, the week after) and the "second no-show" and "two missed in a row" notes need the Deck room's check-in, which isn't built; the inbox is where they'd land.
   - Any other staff screen (roster, deck, instructors) needs a new ruling: the inbox is the one exception.
@@ -101,7 +102,6 @@ Nothing is failing: every entry in feature_list.json passes, with 143 unit tests
 - The sample banner wraps to four lines at 375px, not the three planned (DECISIONS.md 32).
 - Times stay in time order, so a Full time can come first in the list (DECISIONS.md 47).
 - Home's next lesson follows the weekly classes; a date booked in place of a cancelled lesson shows on Lesson dates and in Messages (DECISIONS.md 76).
-- A family joining after the 19th has its first month drafted on the next 1st with the following month's (DECISIONS.md 82); the owner may want to confirm that reading.
 - The inbox has no sign-in or roles: anyone on this phone can open it. Real data needs both first.
 - Screenshots are made by `npm run e2e` into `screenshots/` and aren't committed.
 

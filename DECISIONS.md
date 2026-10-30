@@ -136,3 +136,7 @@ The owner answered three questions after the first build. The rulings and the op
 89. **A calmer inbox.** One short line on top, only sections with something in them (or "Nothing is waiting for a person."), outlined choices inside its white cards, and each draft says where it goes ("Goes to Robin Example's Messages in the app."). The location sentences that echoed the banner are gone from Messages and the inbox. *Change:* inbox.tsx.
 90. **A cancelled lesson's new date sits under it.** On Lesson dates the cancelled day says its new date, time and coach, with the new date as a row right under it in the child's own card; the email lines are plain text under the note button. *Change:* lesson-dates.tsx.
 91. **Phone-height slices for every long page.** The walk-throughs save a slice for any page taller than one screen, since the fixed tab bar sits across a full-page shot. *Change:* `shoot` in e2e/sign-up.spec.ts.
+
+## The owner's answer: "yes to both, keep building" (October 30, 2026)
+
+92. **Both readings confirmed.** The late first bill drafted on the next 1st (82) and the "different time" and "stop lessons" notes (73) stand as built. They're listed under "Owner rulings after the brief" in CLAUDE.md, and no longer under Next or Known issues.
