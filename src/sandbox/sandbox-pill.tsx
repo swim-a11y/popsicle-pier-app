@@ -11,13 +11,13 @@ import { useGo } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { deviceState, familiesOnThisPhone, familyChildren } from "@/rules/family";
 import { namesList } from "@/rules/release";
-import { eraseAllSampleData, fillSampleFamily, playAs, pretendTheFirstLesson } from "@/sandbox/actions";
+import { eraseAllSampleData, fillSampleFamily, playAs, pretendAFamilyLeft, pretendTheFirstLesson, pretendTheSchoolCancelled } from "@/sandbox/actions";
 import { ROLE_LABELS, SCREENS, type ScreenRole } from "@/screens";
 
 const ROLE_LINES: Record<"parent" | "moving" | "owner", string> = {
   parent: "Start a new family's sign-up.",
   moving: "A Madison family checking in to the new app.",
-  owner: "Release versions, read-only, and the staff page.",
+  owner: "The approvals inbox, release versions and the staff page.",
 };
 
 /** The dashed Sandbox pill on every screen. Opens the sheet of sandbox tools. */
@@ -141,6 +141,45 @@ function SandboxSheetBody({ close }: { close: () => void }) {
           }
         >
           Pretend the first lesson happened
+        </Button>
+        <Button
+          variant="secondary"
+          size="block"
+          disabled={busy}
+          onClick={() =>
+            run(async () => {
+              const result = await pretendTheSchoolCancelled();
+              if (!result.familyName) {
+                setMessage("Sign up a family first, or pick one under Play as.");
+                return null;
+              }
+              if (!result.cancelled) {
+                setMessage("This family has no class lesson ahead to cancel.");
+                return null;
+              }
+              return "/more/messages";
+            })
+          }
+        >
+          Pretend the school cancelled a lesson
+        </Button>
+        <Button
+          variant="secondary"
+          size="block"
+          disabled={busy}
+          onClick={() =>
+            run(async () => {
+              const result = await pretendAFamilyLeft();
+              if (result.freed === 0) {
+                setMessage("No one on this phone is waiting for a full class.");
+                return null;
+              }
+              // The spot is for a person to offer: open the owner's inbox.
+              return playAs("owner");
+            })
+          }
+        >
+          Pretend a family left a full class
         </Button>
         {message ? (
           <p role="status" className="rounded-control bg-notice px-4 py-3">

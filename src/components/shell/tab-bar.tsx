@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileTextIcon, HouseIcon, MapPinIcon, NotebookTextIcon, EllipsisIcon, UsersIcon } from "lucide-react";
+import { FileTextIcon, HouseIcon, InboxIcon, MapPinIcon, NotebookTextIcon, EllipsisIcon, UsersIcon } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 import type { TabId } from "@/screens";
@@ -20,6 +20,7 @@ export const PARENT_TABS: readonly Tab[] = [
 ];
 
 export const OWNER_TABS: readonly Tab[] = [
+  { id: "inbox", label: "Inbox", href: "/owner/inbox", Icon: InboxIcon },
   { id: "releases", label: "Release versions", href: "/owner/releases", Icon: FileTextIcon },
   { id: "staff", label: "Staff side", href: "/staff", Icon: UsersIcon },
 ];

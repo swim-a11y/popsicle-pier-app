@@ -1,6 +1,8 @@
 /*
-  The records the parent's path uses. Later rooms' records are listed in
-  CLAUDE.md, not here.
+  The records the parent's path uses, plus the few the owner's rulings
+  added (bills are worked out, not stored; owed lessons, waitlist offers,
+  family notes and talk records are). Later rooms' other records are
+  listed in CLAUDE.md, not here.
 
   Times are UTC ISO strings (shown in America/New_York). Lesson dates are
   YYYY-MM-DD. Class times are the pool's wall clock ("09:30").
@@ -428,6 +430,95 @@ export interface Closure {
   reason: string;
 }
 
+/** One class date the school cancelled (a person decides). Unlike a closed day, the lesson is owed to each child in it. */
+export interface Cancellation {
+  id: string;
+  classId: string;
+  poolId: string;
+  date: DateOnly;
+  reason: string;
+  createdAt: IsoTime;
+}
+
+/** One date offered in place of a cancelled lesson: a class or a private (free evaluation) time of the same coach. A person picks it and sends the words. */
+export interface OwedOffer {
+  timeKind: "class" | "evaluation";
+  timeId: string;
+  date: DateOnly;
+  words: string;
+  offeredAt: IsoTime;
+  offeredBy: string;
+  answerBy: DateOnly;
+  answer: "yes" | "no" | null;
+  answeredAt: IsoTime | null;
+}
+
+/**
+ * A lesson the school cancelled, owed to one child: one date with the child's
+ * own instructor within three weeks, a week to answer, one more date, then it
+ * closes with no credit. A credit only when no opening exists, and only with
+ * the owner's approval.
+ */
+export interface OwedLesson {
+  id: string;
+  familyId: string;
+  childRecordId: string;
+  enrollmentId: string;
+  cancellationId: string;
+  poolId: string;
+  cancelledDate: DateOnly;
+  instructorFirstName: string;
+  offers: OwedOffer[];
+  /** The owner approved a credit because no opening exists: that lesson isn't billed. */
+  creditApprovedAt: IsoTime | null;
+  createdAt: IsoTime;
+}
+
+/** A spot offered to a child on the waitlist. A person chooses who, and sends the words. */
+export interface WaitlistOffer {
+  id: string;
+  waitlistEntryId: string;
+  familyId: string;
+  childRecordId: string;
+  poolId: string;
+  classId: string;
+  /** A person chose to offer it in place of this class (a switch), or null for another class. */
+  inPlaceOfEnrollmentId: string | null;
+  words: string;
+  offeredAt: IsoTime;
+  offeredBy: string;
+  answerBy: DateOnly;
+  answer: "yes" | "no" | null;
+  answeredAt: IsoTime | null;
+  /** The class booked when the family said yes. */
+  enrollmentId: string | null;
+}
+
+/** A ready-made note a family sends from Messages. No free text. A person reads each one. */
+export interface FamilyNote {
+  id: string;
+  familyId: string;
+  childRecordId: string;
+  kind: "miss" | "move" | "stop";
+  /** A miss: the lesson it's about. */
+  lessonDate: DateOnly | null;
+  enrollmentId: string | null;
+  /** The exact words the family saw and sent. */
+  words: string;
+  sentAt: IsoTime;
+  readAt: IsoTime | null;
+  readBy: string | null;
+}
+
+/** A person talked with the family about a custody or health yes, so the child's first lesson can go ahead. Nothing edits it. */
+export interface TalkRecord {
+  id: string;
+  familyId: string;
+  childRecordId: string;
+  talkedAt: IsoTime;
+  talkedBy: string;
+}
+
 export interface Counter {
   id: "child-serial" | "processor-ref";
   next: number;
@@ -466,6 +557,11 @@ export interface Rows {
   deviceStates: DeviceState;
   closures: Closure;
   addDrafts: AddDraft;
+  cancellations: Cancellation;
+  owedLessons: OwedLesson;
+  waitlistOffers: WaitlistOffer;
+  familyNotes: FamilyNote;
+  talkRecords: TalkRecord;
 }
 
 export type CollectionName = keyof Rows;
@@ -496,6 +592,11 @@ export const COLLECTIONS: readonly CollectionName[] = [
   "deviceStates",
   "closures",
   "addDrafts",
+  "cancellations",
+  "owedLessons",
+  "waitlistOffers",
+  "familyNotes",
+  "talkRecords",
 ];
 
 /** Add and list only: no edit, no delete. Only the sandbox erase wipes them. */

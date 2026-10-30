@@ -1,4 +1,4 @@
-import { MessagesScreen } from "@/components/screens/coming-next-screens";
+import { MessagesScreen } from "@/components/screens/messages";
 import { screenMetadata } from "@/screens";
 
 export const metadata = screenMetadata("messages");

@@ -30,6 +30,11 @@ export const FAMILY_FILES = [
   "src/rules/booking.ts",
   "src/rules/first-sunday.ts",
   "src/rules/add.ts",
+  // Words families see from the owner's rulings: bills, notes, offers and owed lessons.
+  "src/rules/bills.ts",
+  "src/rules/notes.ts",
+  "src/rules/offers.ts",
+  "src/rules/owed.ts",
 ].filter((f) => /\.tsx?$/.test(f) && !STAFF_FACING.includes(f));
 
 function stripComments(code: string): string {

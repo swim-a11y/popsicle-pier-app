@@ -1,0 +1,44 @@
+/*
+  Sandbox only. Two things a person at the school would do, so the inbox
+  has something to show: a family leaves a full class someone on this
+  phone is waiting for, and the school cancels a family's next lesson.
+  Neither offers anything to anyone; that stays with a person in the inbox.
+*/
+import type { Transaction } from "@/data/store";
+import type { DateOnly, IsoTime } from "@/data/types";
+import { nextLessonPerChild } from "@/rules/family";
+import { leaveClass } from "@/rules/offers";
+import { cancelClassDate } from "@/rules/owed";
+
+/** For each full class a family on this phone waits for, one sample family leaves. Returns the classes with a spot open now. */
+export function pretendFamilyLeft(tx: Transaction, input: { today: DateOnly }): string[] {
+  const freed: string[] = [];
+  const sample = new Set(tx.list("families").filter((f) => f.source === "sample").map((f) => f.id));
+  const wanted = new Set(tx.list("waitlistEntries").map((w) => w.classId).filter((id): id is string => Boolean(id)));
+  for (const classId of wanted) {
+    const cls = tx.get("classes", classId);
+    if (!cls || cls.openSpots > 0) continue;
+    const leaving = tx.list("enrollments").find((e) => e.kind === "class" && e.timeId === cls.id && sample.has(e.familyId));
+    if (!leaving) continue;
+    leaveClass(tx, leaving.id, input.today);
+    freed.push(cls.id);
+  }
+  return freed;
+}
+
+/** The school cancels the family's soonest class lesson. Each child in that class is owed the lesson. */
+export function pretendSchoolCancelled(
+  tx: Transaction,
+  input: { familyId: string; today: DateOnly; now: IsoTime; newId: () => string },
+): { childFirstName: string; date: DateOnly } | null {
+  const next = nextLessonPerChild(tx.data(), input.familyId, input.today).find((l) => l.lessonKind !== "evaluation");
+  if (!next) return null;
+  const owed = cancelClassDate(tx, {
+    classId: next.enrollment.timeId,
+    date: next.date,
+    reason: `Coach ${next.instructorFirstName} is away that day (sample)`,
+    now: input.now,
+    newId: input.newId,
+  });
+  return owed.length > 0 ? { childFirstName: next.child.firstName, date: next.date } : null;
+}

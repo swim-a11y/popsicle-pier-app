@@ -39,7 +39,8 @@
     "area": "shell",
     "description": "Parents get a bottom tab bar of 4 tabs (Home, First lesson, Progress, More; Bills and Messages under More). Sign-up is a focused flow with a Back arrow and no tabs. The Owner gets two tabs: Release versions and Staff side.",
     "test": "tests/unit/shell.test.tsx: shell > tab bars for parents, the sign-up flow and the owner",
-    "passes": true
+    "passes": true,
+    "supersededBy": "inbox-screen (owner ruling 1, DECISIONS.md 69): the owner's tabs are now Inbox, Release versions and Staff side."
   },
   {
     "id": "shell-coming-next",
@@ -186,14 +187,16 @@
     "area": "screen",
     "description": "Bills (coming next) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: bills renders, passes accessibility, and is captured",
-    "passes": true
+    "passes": true,
+    "supersededBy": "bills-lessons (owner ruling 2): Bills is filled, no longer coming next."
   },
   {
     "id": "screen-messages",
     "area": "screen",
     "description": "Messages (coming next) renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: messages renders, passes accessibility, and is captured",
-    "passes": true
+    "passes": true,
+    "supersededBy": "notes-ready-made (owner ruling 3): Messages is filled, no longer coming next."
   },
   {
     "id": "screen-move-over-welcome",
@@ -739,7 +742,8 @@
     "area": "home",
     "description": "Home then shows children and their stages, classes and prices, the release version signed, how they pay, and \"Add a child or a class\" as a coming-next card.",
     "test": "tests/unit/screens-render.test.tsx: parent screens > Home before and after the first lesson",
-    "passes": true
+    "passes": true,
+    "supersededBy": "add-start (DECISIONS.md 55): Add a child or a class is a working card, no longer coming next."
   },
   {
     "id": "move-over-flow",
@@ -767,7 +771,8 @@
     "area": "home",
     "description": "Bills and Messages keep the real header and tabs with a purpose sentence, up to three lines, one Preview card (a bill line, a message) and a Coming next tag; Messages includes the tell-us-in-a-sentence line.",
     "test": "tests/unit/shell.test.tsx: shell > coming next component shows purpose, here you'll be able to lines, preview card and tag; e2e/screens.spec.ts",
-    "passes": true
+    "passes": true,
+    "supersededBy": "bills-lessons and notes-ready-made (owner rulings 2 and 3, DECISIONS.md 70): Bills and Messages are filled; Messages keeps the brief's line with tap for a sentence."
   },
   {
     "id": "family-words",
@@ -984,6 +989,139 @@
     "area": "first-sunday",
     "description": "A family with lessons at both pools: each child's next lesson comes from all their classes; Your first lesson gives each pool (and any pool with a first visit ahead) its own at-a-glance, directions, things to bring and email line; Lesson dates an email line per pool.",
     "test": "tests/unit/screens-render.test.tsx: a family at both pools > gets each pool's own directions and email line; tests/unit/add.test.ts: adding a child or a class > a child's next lesson can come from any of their classes",
+    "passes": true
+  },
+  {
+    "id": "rulings-recorded",
+    "area": "docs",
+    "description": "The owner's three rulings of October 30, 2026 (an approvals inbox, bills for lessons only, tap-to-send notes) are in CLAUDE.md under \"Owner rulings after the brief\" and in DECISIONS.md, and the staff page marks the later-room rules they built.",
+    "test": "tests/unit/rooms-render.test.tsx: staff page > marks the later-room rules the owner's rulings built",
+    "passes": true
+  },
+  {
+    "id": "bills-lessons",
+    "area": "money",
+    "description": "Bills (owner ruling 2): this month's bill and the next, each month's lessons times the lesson price, the bank draft and card price on every line and in the total, closed days listed and not billed, no fees, \"Nothing is ever charged in the sample.\"",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > each month's lessons times the lesson price, both prices on every line, closed days not billed; tests/unit/rooms-render.test.tsx: bills > each month's lessons with both prices on every line, closed days not billed, nothing charged",
+    "passes": true
+  },
+  {
+    "id": "bills-dates",
+    "area": "money",
+    "description": "A bill reaches the family by the 19th, at least 10 days before the draft on the 1st; a bill that can only go out later (a family joining after the 19th) is dated the day the class was added and drafted 10 days after.",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > reaches the family by the 19th, at least 10 days before the draft on the 1st",
+    "passes": true
+  },
+  {
+    "id": "bills-who-pays",
+    "area": "money",
+    "description": "A card family pays the card price (\"card fee\" mode is one price plus a fee, never both); a free evaluation is never billed; a family moving over is billed here from the first bill date after it moves over, and has no bill before then.",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > a card family pays the card price; nothing fee-like in card price mode / a free evaluation is never billed / a family moving over is billed here from the first bill date after it moves over",
+    "passes": true
+  },
+  {
+    "id": "bills-cancelled",
+    "area": "money",
+    "description": "A lesson the school cancels stays on the bill while a date is owed in its place, says where that stands, and comes off only with the owner's approved credit.",
+    "test": "tests/unit/bills.test.ts: bills, lessons only > a lesson the school cancels stays billed while it's owed, and comes off with the owner's credit",
+    "passes": true
+  },
+  {
+    "id": "notes-ready-made",
+    "area": "family",
+    "description": "Messages (owner ruling 3): three ready-made notes (we'll miss a lesson, a different time, stop lessons) and no free text; a miss is picked from the child's lesson dates, never a closed or cancelled day, once per date; a move or stop note is sent once until a person reads it; only the family's own swimmers.",
+    "test": "tests/unit/notes.test.ts: tap-to-send notes > three ready-made notes, no free text / a miss is picked from the child's lesson dates, never a closed day / a move or stop note is sent once until a person reads it / only a family's own swimmers",
+    "passes": true
+  },
+  {
+    "id": "notes-screen",
+    "area": "family",
+    "description": "Send a note: what it's about, which swimmer, which lesson (each with its own address), then the exact words and \"Send this note\" (Sending..., once); Messages says \"Sent. A person at the school reads every note.\" and shows each note Waiting or Read by the school; Lesson dates marks the day Missing.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > sends a ready-made note picked from a lesson date; it waits for a person, then shows read",
+    "passes": true
+  },
+  {
+    "id": "messages-offers",
+    "area": "family",
+    "description": "Messages shows the school's offers with Yes or No (a waitlist spot with both prices and its first lesson date; a date for a cancelled lesson) and where each stands after; Home shows a card while an answer is needed; Lesson dates and Bills show a cancelled lesson's new date.",
+    "test": "tests/unit/rooms-render.test.tsx: messages and notes > a waitlist offer: words, both prices, and the family's yes books it / a lesson the school cancels: the notice, the date offered, and the family's answer",
+    "passes": true
+  },
+  {
+    "id": "waitlist-offers",
+    "area": "schedule",
+    "description": "A person offers an open spot from the inbox, as another class or in place of one (the person chooses); the app drafts the words; the spot is held a week; yes books it (ending the old class for a switch), no or no answer keeps the child on the waitlist; a family with no way to pay for lessons talks with a person first.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it / a no keeps the child on the waitlist; an offer not answered in a week closes / a family with no way to pay for lessons sets that up with a person before an offer",
+    "passes": true
+  },
+  {
+    "id": "owed-lessons",
+    "area": "schedule",
+    "description": "A lesson the school cancels is owed: skipped on the family's dates, offered with the child's own coach within three weeks (a class that fits, or the coach's private time), one date at a time with a week to answer, one more date, then closed with no credit; a credit only when no opening exists, by the owner's approval; cancelling a date twice adds nothing.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: owed lessons > a lesson the school cancels is owed, skipped, and offered with the child's own coach within three weeks / one date, a week to answer, one more date, then it closes with no credit / a yes books the date the person offered / a credit only when no opening exists, and only by the owner's approval / cancelling the same date twice adds nothing",
+    "passes": true
+  },
+  {
+    "id": "offer-holds",
+    "area": "schedule",
+    "description": "An open offer holds its place: a waitlist offer holds a weekly spot no one else can book or be offered; a date offered for an owed lesson holds that date, so a new booking there starts the week after.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it; the approvals inbox: owed lessons > one date, a week to answer, one more date, then it closes with no credit",
+    "passes": true
+  },
+  {
+    "id": "talk-flags",
+    "area": "office",
+    "description": "A custody or health yes waits in the inbox (which question had the yes, never details) until a person records the talk; the flag clears and the talk record stays.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: talk with a family first > a custody or health yes waits for a person, who records the talk; the flag clears",
+    "passes": true
+  },
+  {
+    "id": "inbox-screen",
+    "area": "office",
+    "description": "The approvals inbox (owner ruling 1) at /owner/inbox, the owner's first tab: talk with a family first, owed lessons, waitlist and notes from families, each with a count, then Done; a person picks, sees the drafted words exactly as the family will, then sends; nothing is sent or booked until they do.",
+    "test": "tests/unit/rooms-render.test.tsx: the approvals inbox > a person talks with a family, offers a spot and a date, and reads a note; the app only drafts; tests/unit/shell.test.tsx: shell > tab bars for parents, the sign-up flow and the owner",
+    "passes": true
+  },
+  {
+    "id": "sandbox-school",
+    "area": "sandbox",
+    "description": "Sandbox: \"Pretend the school cancelled a lesson\" (the current family's soonest class lesson, for every child in that class) and \"Pretend a family left a full class\" (a sample family leaves each full class someone on this phone waits for; its partner starts the unpaired month again; opens the inbox). Neither offers anything to anyone.",
+    "test": "tests/unit/inbox.test.ts: the approvals inbox: waitlist offers > a person offers an open spot in place of a class; the family's yes books it; tests/unit/shell.test.tsx: shell > Sandbox pill opens the sheet with roles, fill, pretend, erase, staff link and every screen",
+    "passes": true
+  },
+  {
+    "id": "screen-send-note",
+    "area": "screen",
+    "description": "Send a note renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: send-note renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "screen-owner-inbox",
+    "area": "screen",
+    "description": "Owner Inbox renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
+    "test": "e2e/screens.spec.ts: owner-inbox renders, passes accessibility, and is captured",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-8",
+    "area": "walkthrough",
+    "description": "Walk-through 8: walk-throughs 1 and 7's family reads its bills (both prices on every line, the closed day not billed) and sends a note that Mia will miss a lesson; Lesson dates marks it Missing.",
+    "test": "e2e/sign-up.spec.ts: walk-through 8",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-9",
+    "area": "walkthrough",
+    "description": "Walk-through 9: as the owner, talk with walk-through 2's family about Ada's yes, read Mia's note; a family leaves the full class Ada waits for; offer it in place of her 10:00 class; Ada's family says yes in Messages.",
+    "test": "e2e/sign-up.spec.ts: walk-through 9",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-10",
+    "area": "walkthrough",
+    "description": "Walk-through 10: the school cancels a lesson for walk-through 1's family; the owner offers a date with the same coach; the family says yes; Lesson dates and Bills show the new date.",
+    "test": "e2e/sign-up.spec.ts: walk-through 10",
     "passes": true
   }
 ]

@@ -4,7 +4,7 @@
 */
 import { cardPricing, type CardPricing } from "@/config";
 import type { AppData, Child, DateOnly, Enrollment, Family, PaymentMethod, Pool } from "@/data/types";
-import { closedDates, closureOn } from "@/rules/closures";
+import { cancellationOn, cancelledDates, closedDates, closureOn } from "@/rules/closures";
 import { addDays, ageInMonths } from "@/rules/dates";
 import { cardPriceCents, money } from "@/rules/prices";
 import { DEVICE_ID } from "@/rules/booking";
@@ -140,9 +140,9 @@ export function movingFamily(data: Readonly<AppData>): Family | null {
 export function upcomingLessonDate(data: Readonly<AppData>, info: LessonInfo, today: DateOnly): DateOnly {
   if (info.lessonKind === "evaluation") return info.firstLessonDate;
   const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
-  const closed = closedDates(data, info.pool.id);
+  const skipped = [...closedDates(data, info.pool.id), ...cancelledDates(data, info.enrollment.timeId)];
   let d = info.firstLessonDate;
-  while (d < today || held.has(d) || closed.includes(d)) d = addDays(d, 7);
+  while (d < today || held.has(d) || skipped.includes(d)) d = addDays(d, 7);
   return d;
 }
 
@@ -150,18 +150,26 @@ export interface LessonDay {
   date: DateOnly;
   /** Set when the pool is closed that day: no lesson, and it isn't billed. */
   closedReason: string | null;
+  /** Set when the school cancelled this class that day: no lesson, and it's owed. */
+  cancelledReason: string | null;
 }
 
 /** The weeks ahead for one weekly class, closed days included and marked. A free evaluation is one visit. */
 export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today: DateOnly, weeks: number): LessonDay[] {
   if (info.lessonKind === "evaluation") {
-    return info.firstLessonDate >= today ? [{ date: info.firstLessonDate, closedReason: null }] : [];
+    return info.firstLessonDate >= today ? [{ date: info.firstLessonDate, closedReason: null, cancelledReason: null }] : [];
   }
   const held = new Set(data.attendanceMarks.filter((m) => m.childRecordId === info.child.id).map((m) => m.lessonDate));
   let d = info.firstLessonDate;
   while (d < today || held.has(d)) d = addDays(d, 7);
   const days: LessonDay[] = [];
-  for (let i = 0; i < weeks; i++, d = addDays(d, 7)) days.push({ date: d, closedReason: closureOn(data, info.pool.id, d)?.reason ?? null });
+  for (let i = 0; i < weeks; i++, d = addDays(d, 7)) {
+    days.push({
+      date: d,
+      closedReason: closureOn(data, info.pool.id, d)?.reason ?? null,
+      cancelledReason: cancellationOn(data, info.enrollment.timeId, d)?.reason ?? null,
+    });
+  }
   return days;
 }
 

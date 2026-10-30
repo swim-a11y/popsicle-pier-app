@@ -1,17 +1,19 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { freshStore } from "./helpers";
+import { completeDraft, freshStore, NOW, testId, TODAY } from "./helpers";
 
 vi.mock("next/navigation", async () => (await import("./helpers")).navigationMock());
 vi.mock("next/link", async () => (await import("./helpers")).linkMock());
 
-import { BillsScreen, MessagesScreen } from "@/components/screens/coming-next-screens";
+import { BillsScreen } from "@/components/screens/bills";
+import { MessagesScreen } from "@/components/screens/messages";
 import { ComingNext } from "@/components/shell/coming-next";
 import { SampleBanner } from "@/components/shell/sample-banner";
 import { ScreenShell } from "@/components/shell/screen-shell";
 import { SAMPLE_BANNER } from "@/content/brand";
+import { signAndSave } from "@/rules/booking";
 import { SCREENS } from "@/screens";
 
 beforeEach(() => {
@@ -45,6 +47,9 @@ describe("shell", () => {
     for (const role of ["New parent", "Family moving over", "Owner"]) expect(s.getByRole("button", { name: new RegExp(`^${role}`) })).toBeInTheDocument();
     expect(s.getByRole("button", { name: "Fill in a sample family" })).toBeInTheDocument();
     expect(s.getByRole("button", { name: "Pretend the first lesson happened" })).toBeInTheDocument();
+    // The owner's rulings of October 30, 2026 gave the inbox something to show.
+    expect(s.getByRole("button", { name: "Pretend the school cancelled a lesson" })).toBeInTheDocument();
+    expect(s.getByRole("button", { name: "Pretend a family left a full class" })).toBeInTheDocument();
     expect(s.getByRole("button", { name: "Erase all sample data on this phone" })).toBeInTheDocument();
     expect(s.getAllByRole("link", { name: /Staff side, coming later/ }).length).toBeGreaterThan(0);
     for (const sc of SCREENS) expect(s.getAllByRole("link", { name: new RegExp(sc.title.replace(/[()]/g, ".")) }).length).toBeGreaterThan(0);
@@ -80,10 +85,11 @@ describe("shell", () => {
       </ScreenShell>,
     );
     const ownerTabs = screen.getByRole("navigation", { name: "Owner tabs" });
-    expect(within(ownerTabs).getAllByRole("link").map((a) => a.textContent)).toEqual(["Release versions", "Staff side"]);
+    // Owner ruling 1 (October 30, 2026): the approvals inbox joins the owner's two tabs.
+    expect(within(ownerTabs).getAllByRole("link").map((a) => a.textContent)).toEqual(["Inbox", "Release versions", "Staff side"]);
   });
 
-  it("coming next component shows purpose, here you'll be able to lines, preview card and tag", () => {
+  it("coming next component shows purpose, here you'll be able to lines, preview card and tag", async () => {
     render(<ComingNext title="Bills" purpose="One purpose." lines={["a.", "b.", "c.", "d."]} preview={<p>Line</p>} />);
     expect(screen.getByText("Coming next")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Bills" })).toBeInTheDocument();
@@ -91,16 +97,22 @@ describe("shell", () => {
     expect(within(screen.getByTestId("preview-card")).getByText("Preview")).toBeInTheDocument();
     cleanup();
 
+    // Owner rulings 2 and 3 (October 30, 2026) filled Bills and Messages, so they're no longer coming next.
+    // Messages keeps the brief's line, with tap for "tell us in a sentence": notes are ready-made, never free text.
+    const store = freshStore();
+    const draft = completeDraft({});
+    await act(async () => {
+      await store.transaction((tx) => tx.add("signUpDrafts", draft));
+      await store.transaction((tx) => signAndSave(tx, { draft, today: TODAY, now: NOW, browserName: "Chrome", newId: testId }));
+    });
     render(<MessagesScreen />);
-    expect(
-      screen.getByText("Tell us in a sentence, like \"We'll miss Sunday,\" and we'll take it from there. A person checks every reply."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Tap a note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Family tabs" })).toBeInTheDocument();
     cleanup();
 
     render(<BillsScreen />);
-    const preview = within(screen.getByTestId("preview-card"));
-    expect(preview.getByText(/Bank draft \$136\.00/)).toBeInTheDocument();
-    expect(preview.getByText(/Card \$140\.00/)).toBeInTheDocument();
+    const total = within((await screen.findAllByTestId("month-total"))[0]);
+    expect(total.getByText(/\$136\.00/)).toBeInTheDocument();
+    expect(total.getByText(/\$140\.00/)).toBeInTheDocument();
   });
 });

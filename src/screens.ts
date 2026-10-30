@@ -13,7 +13,7 @@ export type ScreenState = "filled" | "coming-next";
 /** tabs: parent tab bar. flow: focused flow with a Back arrow and no tabs. owner: owner tab bar. */
 export type ScreenShell = "tabs" | "flow" | "owner";
 
-export type TabId = "home" | "first-lesson" | "progress" | "more" | "releases" | "staff";
+export type TabId = "home" | "first-lesson" | "progress" | "more" | "inbox" | "releases" | "staff";
 
 export interface ScreenDef {
   id: string;
@@ -44,8 +44,9 @@ export const SCREENS: readonly ScreenDef[] = [
   { id: "progress", path: "/progress", role: "parent", title: "Progress", state: "filled", shell: "tabs", tab: "progress" },
   { id: "more", path: "/more", role: "parent", title: "More", state: "filled", shell: "tabs", tab: "more" },
   { id: "lesson-dates", path: "/more/lessons", role: "parent", title: "Lesson dates", state: "filled", shell: "tabs", tab: "more" },
-  { id: "bills", path: "/more/bills", role: "parent", title: "Bills", state: "coming-next", shell: "tabs", tab: "more" },
-  { id: "messages", path: "/more/messages", role: "parent", title: "Messages", state: "coming-next", shell: "tabs", tab: "more" },
+  { id: "bills", path: "/more/bills", role: "parent", title: "Bills", state: "filled", shell: "tabs", tab: "more" },
+  { id: "messages", path: "/more/messages", role: "parent", title: "Messages", state: "filled", shell: "tabs", tab: "more" },
+  { id: "send-note", path: "/more/messages/new", role: "parent", title: "Send a note", state: "filled", shell: "flow" },
 
   { id: "add-start", path: "/family/add", role: "parent", title: "Add a child or a class", state: "filled", shell: "flow" },
   { id: "add-child", path: "/family/add/child", role: "parent", title: "A brother or sister", state: "filled", shell: "flow" },
@@ -64,7 +65,8 @@ export const SCREENS: readonly ScreenDef[] = [
   { id: "move-over-payment", path: "/move-over/payment", role: "moving", title: "How you'll pay", state: "filled", shell: "flow" },
   { id: "move-over-release", path: "/move-over/release", role: "moving", title: "Family release", state: "filled", shell: "flow" },
 
-  // Owner
+  // Owner (the inbox is the owner's ruling of October 30, 2026: the one staff screen)
+  { id: "owner-inbox", path: "/owner/inbox", role: "owner", title: "Inbox", state: "filled", shell: "owner", tab: "inbox" },
   { id: "owner-releases", path: "/owner/releases", role: "owner", title: "Release versions", state: "filled", shell: "owner", tab: "releases" },
 
   // Every staff role

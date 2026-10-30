@@ -44,3 +44,8 @@ export function lessonTypePrice(data: Readonly<AppData>, lessonTypeId: string | 
   if (!lt) return null;
   return { bankCents: lt.bankDraftCents, cardCents: cardPriceCents(lt.bankDraftCents, mode), lessonType: lt };
 }
+
+/** A card amount in words: the card price, or in "card fee" mode the price plus its fee. */
+export function cardAmountWords(cardCents: number, feeCents: number): string {
+  return feeCents > 0 ? `${money(cardCents)} plus a card fee of ${money(feeCents)}` : money(cardCents);
+}

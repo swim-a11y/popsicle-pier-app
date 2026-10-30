@@ -2,11 +2,14 @@
   "Pretend the first lesson happened" (sandbox only). For each child of the
   current family: an attendance mark naming the parent on deck, then an
   approved note from a coach-line template for the child's stage, dated on
-  that child's first lesson date. A second press adds nothing.
+  that child's first lesson date (the week after, if the school cancelled
+  it). A second press adds nothing.
 */
 import type { Transaction } from "@/data/store";
 import type { IsoTime } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
+import { cancelledDates } from "@/rules/closures";
+import { addDays } from "@/rules/dates";
 import { markLessonHeld } from "@/rules/first-sunday";
 
 export function pretendFirstLesson(tx: Transaction, input: { familyId: string; now: IsoTime; newId: () => string }): { added: number } {
@@ -19,12 +22,17 @@ export function pretendFirstLesson(tx: Transaction, input: { familyId: string; n
       .filter((e) => e.childRecordId === child.id)
       .sort((a, b) => (a.firstLessonDate < b.firstLessonDate ? -1 : 1))[0];
     if (!enrollment) continue;
-    if (tx.list("attendanceMarks").some((m) => m.childRecordId === child.id && m.lessonDate === enrollment.firstLessonDate)) continue;
+    // A first lesson the school cancelled moves to the next week's.
+    const cancelled = enrollment.kind === "class" ? cancelledDates(tx.data(), enrollment.timeId) : [];
+    let lessonDate = enrollment.firstLessonDate;
+    while (cancelled.includes(lessonDate)) lessonDate = addDays(lessonDate, 7);
+    if (tx.list("attendanceMarks").some((m) => m.childRecordId === child.id && m.lessonDate === lessonDate)) continue;
     const mark = markLessonHeld(tx, {
       enrollmentId: enrollment.id,
       adult: { kind: "parent", name: family.parentFullName },
       now: input.now,
       id: input.newId(),
+      lessonDate,
     });
     const stage = enrollment.kind === "evaluation" ? "evaluation" : (child.stageId ?? "evaluation");
     const templates = tx.list("coachLineTemplates").filter((t) => t.stageId === stage);

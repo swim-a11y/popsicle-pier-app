@@ -1,6 +1,7 @@
 /*
   What the Sandbox sheet does: play as a role, fill in a sample family,
-  pretend the first lesson happened, and erase everything on this phone.
+  pretend the first lesson happened, pretend a family left a full class or
+  the school cancelled a lesson, and erase everything on this phone.
 */
 import { getStore } from "@/data/app-store";
 import { newId } from "@/data/ids";
@@ -9,6 +10,7 @@ import { todayAtSchool } from "@/rules/dates";
 import { currentFamily, movingFamily } from "@/rules/family";
 import { STEP_PATH } from "@/rules/sign-up";
 import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
+import { pretendFamilyLeft, pretendSchoolCancelled } from "@/sandbox/pretend-school";
 import { applySampleFill } from "@/sandbox/sample-fill";
 
 export const SIGN_UP_DRAFT_ID = "sign-up:this-phone";
@@ -26,7 +28,7 @@ export async function playAs(role: "parent" | "moving" | "owner", familyId: stri
     if (role === "owner") {
       const device = tx.get("deviceStates", DEVICE_ID);
       setCurrentFamily(tx, device?.currentFamilyId ?? null, "owner");
-      return "/owner/releases";
+      return "/owner/inbox";
     }
     setCurrentFamily(tx, familyId, "parent");
     return familyId ? "/" : "/sign-up";
@@ -53,6 +55,21 @@ export async function pretendTheFirstLesson(): Promise<{ added: number; familyNa
     const family = currentFamily(tx.data());
     if (!family) return { added: 0, familyName: null };
     return { ...pretendFirstLesson(tx, { familyId: family.id, now, newId }), familyName: family.parentFullName };
+  });
+}
+
+export async function pretendAFamilyLeft(): Promise<{ freed: number }> {
+  const today = todayAtSchool(new Date());
+  return getStore().transaction((tx) => ({ freed: pretendFamilyLeft(tx, { today }).length }));
+}
+
+export async function pretendTheSchoolCancelled(): Promise<{ familyName: string | null; cancelled: { childFirstName: string; date: string } | null }> {
+  const now = new Date();
+  return getStore().transaction((tx) => {
+    const family = currentFamily(tx.data());
+    if (!family) return { familyName: null, cancelled: null };
+    const cancelled = pretendSchoolCancelled(tx, { familyId: family.id, today: todayAtSchool(now), now: now.toISOString(), newId });
+    return { familyName: family.parentFullName, cancelled };
   });
 }
 

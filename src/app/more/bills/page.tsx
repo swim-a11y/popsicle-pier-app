@@ -1,4 +1,4 @@
-import { BillsScreen } from "@/components/screens/coming-next-screens";
+import { BillsScreen } from "@/components/screens/bills";
 import { screenMetadata } from "@/screens";
 
 export const metadata = screenMetadata("bills");

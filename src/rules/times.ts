@@ -3,9 +3,10 @@
   Nothing here pairs partners or moves anyone.
 */
 import { cardPricing as defaultMode, type CardPricing } from "@/config";
-import type { AppData, DateOnly, StageId } from "@/data/types";
-import { closedDates } from "@/rules/closures";
+import type { AppData, DateOnly, LessonType, Pool, StageId, SwimClass } from "@/data/types";
+import { closedDates, skippedDates } from "@/rules/closures";
 import { addMonths, ageInMonths, compareDates, firstOpenLessonDate, minutesOfDay } from "@/rules/dates";
+import { datesFullOfOneOffs, heldByWaitlistOffers } from "@/rules/holds";
 import { cardPriceCents } from "@/rules/prices";
 
 export const UNDER_3_MONTHS = 36;
@@ -46,6 +47,18 @@ export interface ChildTimes {
 }
 
 type TimeAt = { poolId: string; weekday: number; startTime: string; slotMinutes: number };
+
+/**
+ * Whether a class fits a child of this age (in months, on the lesson date)
+ * and stage. Under 3 is a private lesson with a parent in the water, never
+ * a shared class; a semi-private class is for its own Path stage.
+ */
+export function classFits(cls: SwimClass, lt: LessonType, ageMonths: number, stage: StageId | null, pool: Pick<Pool, "youngestAgeMonths">): boolean {
+  if (ageMonths < pool.youngestAgeMonths || ageMonths < cls.minAgeMonths || ageMonths > cls.maxAgeMonths) return false;
+  if (ageMonths < UNDER_3_MONTHS && !(lt.kind === "private" && cls.parentInWater)) return false;
+  if (lt.kind === "semi-private" && (stage === null || cls.stageId !== stage)) return false;
+  return true;
+}
 
 /** "Next to [name]'s lesson" means at the same pool, one slot before or after. */
 function siblingMark(siblings: SiblingPick[], all: Map<string, TimeAt>, poolId: string, weekday: number, startTime: string) {
@@ -94,17 +107,14 @@ export function timesForChild(input: {
   const classes: TimeOption[] = [];
   if (stage !== "evaluation") {
     for (const c of poolClasses) {
-      const first = firstOpenLessonDate(c.weekday, today, pool.opensOn, closed);
+      const first = firstOpenLessonDate(c.weekday, today, pool.opensOn, skippedDates(data, c, today));
       const age = ageInMonths(birthDate, first);
-      if (age < pool.youngestAgeMonths || age < c.minAgeMonths || age > c.maxAgeMonths) continue;
       const lt = data.lessonTypes.find((l) => l.id === c.lessonTypeId);
-      if (!lt) continue;
-      // Under 3 is a private lesson with a parent in the water, never a shared class.
-      if (age < UNDER_3_MONTHS && !(lt.kind === "private" && c.parentInWater)) continue;
-      if (lt.kind === "semi-private" && (stage === null || c.stageId !== stage)) continue;
+      if (!lt || !classFits(c, lt, age, stage, pool)) continue;
       const picked = siblings.filter((s) => !s.holdsSpot && s.booking?.kind === "class" && s.booking.timeId === c.id).length;
       const siblingHere = siblings.some((s) => s.booking?.kind === "class" && s.booking.timeId === c.id);
-      const spotsLeft = c.openSpots - picked;
+      // A spot a person has offered to someone on the waitlist is held while they answer.
+      const spotsLeft = c.openSpots - picked - heldByWaitlistOffers(data, c.id, today);
       classes.push({
         kind: "class",
         id: c.id,
@@ -127,7 +137,7 @@ export function timesForChild(input: {
 
   const evaluations: TimeOption[] = [];
   for (const e of poolEvals) {
-    const first = firstOpenLessonDate(e.weekday, today, pool.opensOn, closed);
+    const first = firstOpenLessonDate(e.weekday, today, pool.opensOn, [...closed, ...datesFullOfOneOffs(data, e, today)]);
     const age = ageInMonths(birthDate, first);
     if (age < pool.youngestAgeMonths) continue;
     const picked = siblings.filter((s) => !s.holdsSpot && s.booking?.kind === "evaluation" && s.booking.timeId === e.id).length;

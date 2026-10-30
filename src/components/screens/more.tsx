@@ -7,8 +7,8 @@ import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 
 const ITEMS = [
   { href: "/more/lessons", title: "Lesson dates", line: "The weeks ahead for each swimmer, with closed days." },
-  { href: "/more/bills", title: "Bills", line: "Each month's bill, with bank draft and card prices. Coming next." },
-  { href: "/more/messages", title: "Messages", line: "Notes between your family and the school. Coming next." },
+  { href: "/more/bills", title: "Bills", line: "Each month's bill, with the bank draft and card price on every line." },
+  { href: "/more/messages", title: "Messages", line: "Send a note about a lesson, and answer the school." },
 ];
 
 export function MoreScreen() {

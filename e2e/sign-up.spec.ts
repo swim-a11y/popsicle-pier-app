@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import fs from "node:fs";
 
 /*
-  The six walk-throughs, in order, as one serial group sharing one page, so
+  The walk-throughs, in order, as one serial group sharing one page, so
   walk-through 6 picks up the families from walk-throughs 1 and 2. Every tap
   and typed field is counted; each step saves a screenshot and runs axe and
   the family-words check. Counts go to docs/check-report.md.
@@ -824,5 +824,225 @@ test("walk-through 7: add a brother or sister, then another class at the other p
   await tap(page.getByRole("button", { name: "See lesson dates" }));
   await expect(page.getByTestId("lesson-dates")).toHaveCount(3);
   await check("lesson-dates");
+  run!.passed = true;
+});
+
+test("walk-through 8: bills and a note, continuing walk-throughs 1 and 7", async () => {
+  begin(8, "Walk-through 1 and 7's family reads its bills and sends a note that Mia will miss a lesson");
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+  await expect(page).toHaveURL(/\/$/);
+
+  screen("More");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Bills/ }));
+
+  screen("Bills");
+  await expect(page).toHaveURL(/\/more\/bills$/);
+  const months = page.getByTestId("month-bill");
+  await expect(months.first()).toBeVisible();
+  expect(await months.count()).toBeGreaterThanOrEqual(1);
+  await expect(page.getByText("Sample bills, worked out from your lesson dates. Nothing is ever charged in the sample.")).toBeVisible();
+  // Both prices on every line, bank draft first.
+  for (const prices of await page.getByTestId("line-prices").allInnerTexts()) {
+    const flat = prices.replace(/\s+/g, " ");
+    expect(flat.indexOf("Bank draft")).toBeGreaterThanOrEqual(0);
+    expect(flat.indexOf("Bank draft")).toBeLessThan(flat.indexOf("Card"));
+  }
+  const lines = page.getByTestId("bill-line");
+  await expect(lines.filter({ hasText: "Mia" }).first()).toBeVisible();
+  await expect(lines.filter({ hasText: "Jules" }).first()).toBeVisible();
+  await expect(months.first().getByTestId("you-pay")).toContainText("by bank draft");
+  const text = await page.locator("main").innerText();
+  if (/November/.test(await months.first().innerText())) {
+    await expect(page.getByTestId("not-billed").filter({ hasText: /^November\s29: Closed for the holiday weekend \(sample\)\. Not billed\.$/ }).first()).toBeVisible();
+  }
+  expect(text).not.toMatch(/\bfees?\b|surcharge/i);
+  await check("bills");
+  run!.notes.push("Every bill line shows the bank draft price, then the card price; closed days are listed and not billed.");
+
+  screen("Messages");
+  await page.goBack();
+  await tap(page.getByRole("link", { name: /^Messages/ }));
+  await expect(page.getByText("Tap a note, like \"We'll miss Sunday,\" and we'll take it from there. A person reads every note.")).toBeVisible();
+  await check("messages-empty");
+  await tap(page.getByRole("button", { name: "Send a note" }));
+
+  screen("Send a note: what it's about");
+  await expect(page).toHaveURL(/\/more\/messages\/new$/);
+  await expect(page.locator("main textarea, main input[type=text]")).toHaveCount(0);
+  await check("note-kind");
+  await tap(page.getByRole("button", { name: /^We'll miss a lesson/ }));
+
+  screen("Send a note: which swimmer");
+  await tap(page.getByRole("button", { name: /^Mia$/ }));
+
+  screen("Send a note: which lesson");
+  await expect(page.getByRole("heading", { name: "Which lesson will Mia miss?" })).toBeVisible();
+  await check("note-date");
+  const pick = page.locator('[data-testid^="miss-"]').first();
+  const pickedDate = (await pick.locator("span").first().innerText()).trim();
+  await tap(pick);
+
+  screen("Send a note: your note");
+  await expect(page.getByTestId("note-preview")).toHaveText(new RegExp(`^We'll miss Mia's lesson on ${pickedDate.replace(/\s/g, "\\s")}\\.$`));
+  await check("note-preview");
+  const notesBefore = (await stored()).familyNotes.length;
+  await tap(page.getByRole("button", { name: "Send this note" }));
+
+  screen("Messages after sending");
+  await expect(page).toHaveURL(/\/more\/messages\?sent=1$/);
+  await expect(page.getByText("Sent. A person at the school reads every note.")).toBeVisible();
+  await expect(page.getByTestId("family-note").first()).toContainText("Waiting for a person to read it.");
+  expect((await stored()).familyNotes.length).toBe(notesBefore + 1);
+  await check("messages-sent");
+
+  screen("Lesson dates");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Lesson dates/ }));
+  await expect(page.getByTestId("missing-day")).toHaveCount(1);
+  await expect(page.getByTestId("missing-day")).toContainText("You sent a note that Mia will miss it.");
+  await check("lesson-dates-missing");
+  run!.notes.push(`Mia's note for ${pickedDate} was saved with the app's own words; no text box anywhere; Lesson dates mark the day Missing.`);
+  run!.passed = true;
+});
+
+test("walk-through 9: the owner's approvals inbox, a talk, a note and a waitlist offer", async () => {
+  begin(9, "As the owner: talk with Ada's family, read Mia's note, offer the spot a family left, and Ada's family says yes");
+  screen("Sandbox: play as the owner");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+
+  screen("Inbox");
+  await expect(page).toHaveURL(/\/owner\/inbox$/);
+  await expect(page.getByRole("navigation", { name: "Owner tabs" }).getByRole("link", { name: "Inbox" })).toHaveAttribute("aria-current", "page");
+  const talk = page.getByTestId("inbox-talk").filter({ hasText: "Ada" });
+  await expect(talk).toContainText("A yes on the custody question.");
+  await check("inbox", { family: false });
+  await tap(talk.getByRole("button", { name: "We've talked with the family" }));
+  await expect(page.getByTestId("inbox-talk").filter({ hasText: "Ada" })).toHaveCount(0);
+  const note = page.getByTestId("inbox-note").filter({ hasText: "We'll miss Mia's lesson" });
+  await tap(note.getByRole("button", { name: "Mark as read" }));
+  await expect(page.getByTestId("inbox-note")).toHaveCount(0);
+  const ada = page.getByTestId("inbox-waitlist").filter({ hasText: "Ada" });
+  await expect(ada).toContainText("Waiting for the Sunday 9:00");
+  await expect(ada).toContainText("No spot that fits is open yet.");
+  const data = await stored();
+  const adaRow = data.children.find((c: { firstName: string }) => c.firstName === "Ada");
+  expect(adaRow.flaggedForPerson).toBe(false);
+  expect(data.talkRecords).toHaveLength(1);
+  run!.notes.push("The talk with Ada's family was recorded and her flag cleared; Mia's note was marked read.");
+
+  screen("Sandbox: Pretend a family left a full class");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: "Pretend a family left a full class" }));
+  await expect(page).toHaveURL(/\/owner\/inbox$/);
+
+  screen("Inbox: offer the spot");
+  const open = page.getByTestId("inbox-waitlist").filter({ hasText: "Ada" });
+  await expect(open).toContainText(/A spot is open in the Sunday 9:00\sam class, with Coach Wren\./);
+  await expect(open.getByTestId("draft")).toHaveCount(0);
+  await tap(open.getByRole("button", { name: /^In place of the Sunday 10:00\sam class/ }));
+  await expect(open.getByTestId("draft-words")).toContainText(/Would you like Ada to move there from the Sunday 10:00\sam class\?/);
+  await check("inbox-draft", { family: false });
+  await tap(open.getByRole("button", { name: "Send the offer (sample)" }));
+  await expect(page.getByTestId("inbox-waitlist").filter({ hasText: "Ada" }).getByTestId("inbox-waiting")).toContainText("Offer sent.");
+  expect((await stored()).waitlistOffers).toHaveLength(1);
+  run!.notes.push("A sample family left the full 9:00 class; a person chose to offer it in place of Ada's 10:00 class and saw the drafted words before sending.");
+
+  screen("Sandbox: play as Leo and Ada's family");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Leo and Ada's family/ }));
+
+  screen("Home: an answer is needed");
+  await expect(page.getByTestId("home-needs-answer")).toContainText("A spot for Ada.");
+  await check("home-needs-answer");
+  await tap(page.getByRole("button", { name: "Open Messages" }));
+
+  screen("Messages: the offer");
+  const offer = page.getByTestId("school-offer");
+  await expect(offer.getByTestId("offer-words")).toContainText("A spot opened for Ada in the Sunday 9:00");
+  await expect(offer).toContainText("Bank draft");
+  await check("messages-offer");
+  await tap(offer.getByRole("button", { name: "Yes, book it" }));
+  await expect(page.getByTestId("offer-status")).toContainText("You said yes. Ada's first lesson there is");
+  const after = await stored();
+  const adaClasses = after.enrollments.filter((e: { childRecordId: string }) => e.childRecordId === adaRow.id).map((e: { timeId: string }) => e.timeId);
+  expect(adaClasses).toEqual(["buc-sun-0900-cove"]);
+  expect(after.waitlistEntries.filter((w: { childRecordId: string }) => w.childRecordId === adaRow.id)).toHaveLength(0);
+  await check("messages-offer-yes");
+  run!.notes.push("Ada's family said yes: she moved to the 9:00 class, the 10:00 spot opened, and she left the waitlist.");
+  run!.passed = true;
+});
+
+test("walk-through 10: a lesson the school cancels, offered again with the same coach", async () => {
+  begin(10, "The school cancels a lesson for walk-through 1's family; the owner offers a date with the same coach; the family says yes");
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+
+  screen("Messages: the note was read");
+  await page.goto("/more/messages");
+  await expect(page.getByTestId("family-note").first()).toContainText("Read by the school on");
+
+  screen("Sandbox: Pretend the school cancelled a lesson");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: "Pretend the school cancelled a lesson" }));
+  await expect(page).toHaveURL(/\/more\/messages$/);
+
+  screen("Messages: the cancellation");
+  const card = page.getByTestId("school-cancelled").first();
+  const heading = await card.getByRole("heading").innerText();
+  const who = heading.match(/^We cancelled (\w+)'s lesson$/)![1];
+  await expect(card.getByTestId("offer-status")).toHaveText("A person at the school offers you another date with Coach Dev.");
+  await check("messages-cancelled");
+
+  screen("Sandbox: play as the owner");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+
+  screen("Inbox: offer a date");
+  const owed = page.getByTestId("inbox-owed").filter({ hasText: who }).first();
+  await expect(owed).toContainText("Pick one date to offer.");
+  await tap(owed.locator('[data-testid^="owed-slot-"]').first());
+  await expect(owed.getByTestId("draft-words")).toContainText(`We cancelled ${who}'s lesson on`);
+  await expect(owed.getByTestId("draft-words")).toContainText("with Coach Dev at Madison instead. Does that work?");
+  await check("inbox-owed", { family: false });
+  await tap(owed.getByRole("button", { name: "Send the offer (sample)" }));
+  await expect(page.getByTestId("inbox-owed").filter({ hasText: who }).first().getByTestId("inbox-waiting")).toContainText("Waiting for the family's answer by");
+
+  screen("Sandbox: play as Mia's family again");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+
+  screen("Home: an answer is needed");
+  await expect(page.getByTestId("home-needs-answer")).toContainText(`A new date for ${who}'s cancelled lesson.`);
+  await tap(page.getByRole("button", { name: "Open Messages" }));
+
+  screen("Messages: say yes");
+  const answer = page.getByTestId("school-cancelled").filter({ hasText: `We cancelled ${who}'s lesson` }).first();
+  await tap(answer.getByRole("button", { name: "Yes, that works" }));
+  await expect(answer.getByTestId("offer-status")).toContainText(`You said yes. ${who}'s lesson is on`);
+  await check("messages-owed-yes");
+
+  screen("Lesson dates");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Lesson dates/ }));
+  await expect(page.getByTestId("cancelled-day").first()).toContainText("Its new date is");
+  await expect(page.getByTestId("owed-dates")).toContainText(who);
+  await check("lesson-dates-owed");
+
+  screen("Bills");
+  await page.goto("/more/bills");
+  await expect(page.getByTestId("cancelled-billed").first()).toContainText("we cancelled this lesson. Its new date is");
+  await check("bills-owed");
+  const data = await stored();
+  const booked = data.owedLessons.filter((o: { offers: { answer: string | null }[] }) => o.offers.some((x) => x.answer === "yes"));
+  expect(booked).toHaveLength(1);
+  run!.notes.push(`The school cancelled ${who}'s lesson; a person offered one date with Coach Dev; the family said yes; Lesson dates and Bills show the new date.`);
   run!.passed = true;
 });

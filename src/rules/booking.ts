@@ -24,8 +24,9 @@ import {
 } from "@/data/types";
 import { sha256Hex } from "@/lib/sha256";
 import { ensureChildId, nextProcessorRef } from "@/rules/child-id";
-import { closedDates } from "@/rules/closures";
+import { closedDates, skippedDates } from "@/rules/closures";
 import { firstOpenLessonDate } from "@/rules/dates";
+import { datesFullOfOneOffs, heldByWaitlistOffers } from "@/rules/holds";
 import { buildReleaseView, currentRelease, EIGHT_GROUPS, releaseViewText } from "@/rules/release";
 import { draftBirthDate, emailProblem, nameProblem, needsPayment, phoneProblem, type StepKey } from "@/rules/sign-up";
 import { timesForChild } from "@/rules/times";
@@ -282,6 +283,8 @@ export function bookTime(
     now: IsoTime;
     newId: () => string;
     alone: boolean;
+    /** Booking the spot a waitlist offer held: that offer's own hold doesn't count against it. */
+    offerId?: string;
   },
 ): Enrollment {
   const { familyId, childRecordId, booking, today, now, newId } = input;
@@ -292,9 +295,12 @@ export function bookTime(
   if (booking.kind === "class") {
     const cls = tx.get("classes", booking.timeId);
     if (!cls || cls.poolId !== pool.id) throw new Error("No such class at that pool.");
-    if (cls.openSpots < 1) throw new TimeFilledError(tx.get("children", childRecordId)?.firstName ?? "your swimmer");
+    // A spot a person has offered to someone on the waitlist is held while they answer.
+    if (cls.openSpots - heldByWaitlistOffers(tx.data(), cls.id, today, input.offerId) < 1) {
+      throw new TimeFilledError(tx.get("children", childRecordId)?.firstName ?? "your swimmer");
+    }
     const lt = tx.get("lessonTypes", cls.lessonTypeId)!;
-    const first = firstOpenLessonDate(cls.weekday, today, pool.opensOn, closed);
+    const first = firstOpenLessonDate(cls.weekday, today, pool.opensOn, skippedDates(tx.data(), cls, today));
     const enrollment = tx.add("enrollments", {
       id: newId(),
       familyId,
@@ -321,7 +327,7 @@ export function bookTime(
     poolId: pool.id,
     timeId: ev.id,
     lessonTypeId: null,
-    firstLessonDate: firstOpenLessonDate(ev.weekday, today, pool.opensOn, closed),
+    firstLessonDate: firstOpenLessonDate(ev.weekday, today, pool.opensOn, [...closed, ...datesFullOfOneOffs(tx.data(), ev, today)]),
     unpairedSince: null,
     createdAt: now,
   });

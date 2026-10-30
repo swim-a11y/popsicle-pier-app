@@ -13,6 +13,7 @@ import { useGo } from "@/lib/nav";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
 import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, upcomingLessonDate } from "@/rules/family";
+import { answersWaiting } from "@/rules/owed";
 import { latestSignature } from "@/rules/release";
 
 export function HomeScreen() {
@@ -54,6 +55,7 @@ export function HomeScreen() {
     .sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
   const next = upcoming[0];
   const sameDay = next ? upcoming.filter((l) => l.date === next.date) : [];
+  const waiting = answersWaiting(data, family.id, today);
   const firstTitle = family.source === "moving-over" || data.attendanceMarks.some((m) => m.familyId === family.id) ? "Your next lesson" : "Your first lesson";
 
   return (
@@ -106,6 +108,22 @@ export function HomeScreen() {
           )}
           <Button size="block" onClick={() => go("/first-lesson")}>
             {firstTitle === "Your first lesson" ? "See your first lesson" : "See your next lesson"}
+          </Button>
+        </section>
+      ) : null}
+
+      {waiting.length > 0 ? (
+        <section className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby="needs-answer" data-testid="home-needs-answer">
+          <h2 id="needs-answer" className="font-heading text-big text-heading">
+            The school needs your answer
+          </h2>
+          {waiting.map((w) => (
+            <p key={w.id}>
+              {w.kind === "waitlist" ? `A spot for ${w.childFirstName}` : `A new date for ${w.childFirstName}'s cancelled lesson`}. Please answer by {longDate(w.answerBy, today)}.
+            </p>
+          ))}
+          <Button variant="secondary" size="block" onClick={() => go("/more/messages")}>
+            Open Messages
           </Button>
         </section>
       ) : null}

@@ -4,7 +4,7 @@ The finish line: a new parent books one child and signs on a phone in under 2 mi
 
 **Owner's stopwatch time for walk-through 5 (typing everything, on a phone): ________** (fill in by hand)
 
-All six run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so walk-through 6 picks up the families from walk-throughs 1 and 2. Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
+All ten run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
 
 Run them with `npm run e2e` (or `npx playwright test e2e/sign-up.spec.ts`).
 
@@ -38,6 +38,18 @@ Your first lesson shows parking, door, arrival time, what to bring, "No drop-off
 
 Continuing walk-through 1's family: "Add a child or a class" on Home; "A brother or sister"; Jules's first name and birth date; The Pier; Sundays at 9:30 am, marked next to Mia's lesson, with both prices; two no answers and the three choices left unchecked; Check and add shows the bank-draft price, "Nothing is charged today." and that the family release already covers Jules; Add Jules. Nothing new is signed (a coverage row instead), Jules gets the next child ID, and a refresh adds nothing. Then "Another class for Mia": her own Sunday class isn't offered; "See Buckhead times instead"; Wednesdays at 4:00 pm; Add this class; the done screen shows Buckhead's SAMPLE directions, and Mia keeps PP26-0042 across both pools. Lesson dates then lists all three classes.
 
+## 8. Bills and a note (after the owner's rulings)
+
+Continuing walk-throughs 1 and 7: Bills shows each month with a line per class, the bank draft price before the card price on every line, the holiday Sunday listed and not billed, and "You pay ... by bank draft"; nothing says fee. Messages: Send a note; "We'll miss a lesson"; Mia; a date from her lessons; the exact words; Send this note. The note waits for a person, no text box appears anywhere, and Lesson dates mark the day Missing.
+
+## 9. The owner's approvals inbox
+
+As the owner: walk-through 2's Ada waits under "Talk with a family first" (a yes on the custody question, no details); "We've talked with the family" clears it. Mia's note is marked read. Ada waits for the full Sunday 9:00 class; Pretend a family left a full class; a person picks "In place of the Sunday 10:00 am class", sees the drafted words and sends them. As Ada's family: Home says the school needs an answer; Messages shows the offer with both prices; Yes, book it moves Ada to 9:00 and off the waitlist.
+
+## 10. A lesson the school cancels
+
+Mia's family sees its note was read. Pretend the school cancelled a lesson: Messages says which lesson and that a person offers another date with Coach Dev. As the owner: pick one date with Coach Dev, see the drafted words, send. As the family: Home asks for an answer; Yes, that works; Lesson dates show the cancelled day with its new date, and Bills says the lesson stays on the bill with its new date.
+
 ## Counts
 
 The latest counts per screen are in `docs/check-report.md`. Totals from the last full run:
@@ -51,5 +63,8 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 5. Cold run, one child, typing everything, paying by card | 11 | 23 | 13 |
 | 6. The first Sunday | 10 | 13 | 0 |
 | 7. Add a brother or sister, then another class | 15 | 18 | 4 |
+| 8. Bills and a note | 10 | 12 | 0 |
+| 9. The owner's approvals inbox | 7 | 12 | 0 |
+| 10. A lesson the school cancels | 11 | 14 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.
