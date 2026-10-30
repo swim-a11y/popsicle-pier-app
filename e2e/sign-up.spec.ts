@@ -1057,5 +1057,78 @@ test("walk-through 10: a lesson the school cancels, offered again with the same 
   const booked = data.owedLessons.filter((o: { offers: { answer: string | null }[] }) => o.offers.some((x) => x.answer === "yes"));
   expect(booked).toHaveLength(1);
   run!.notes.push(`The school cancelled ${who}'s lesson; a person offered one date with Coach Dev; the family said yes; Lesson dates and Bills show the new date.`);
+
+  // The same class date was cancelled for walk-through 5's Noa too: every child in the class is owed the lesson.
+  screen("Sandbox: play as the owner for Noa");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+  screen("Inbox: offer Noa a date");
+  const noa = page.getByTestId("inbox-owed").filter({ hasText: "Noa" }).first();
+  await expect(noa).toContainText("Pick one date to offer.");
+  await tap(noa.locator('[data-testid^="owed-slot-"]').first());
+  await tap(noa.getByRole("button", { name: "Send the offer (sample)" }));
+  await expect(page.getByTestId("inbox-owed").filter({ hasText: "Noa" }).first().getByTestId("inbox-waiting")).toBeVisible();
+  screen("Sandbox: play as Noa's family");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Noa's family/ }));
+  screen("Home: Noa's answer");
+  await tap(page.getByRole("button", { name: "See Noa's new date" }));
+  screen("Messages: Noa says yes");
+  await tap(page.getByTestId("school-cancelled").first().getByRole("button", { name: "Yes, that works" }));
+  await expect(page.getByTestId("school-cancelled").first().getByTestId("offer-status")).toContainText("You said yes. Noa's lesson is on");
+  screen("Lesson dates: Noa's new date");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Lesson dates/ }));
+  const noaDay = page.getByTestId("cancelled-day").first();
+  await expect(noaDay).toContainText(/Its new date is \w+day, \w+\s\d+ at \d+:\d\d\s[ap]m with Coach Dev\./);
+  await expect(noaDay.getByTestId("owed-day")).toContainText("New date");
+  await check("lesson-dates-noa");
+  run!.notes.push("Walk-through 5's Noa, in the same cancelled class, was owed the lesson too; a person offered her a date and she said yes. Home still shows her next weekly lesson, which comes first.");
+  run!.passed = true;
+});
+
+test("walk-through 11: join a waitlist for another class, then leave it", async () => {
+  begin(11, "Walk-through 1's family puts Mia on the waitlist for a full class, then takes her off it from Home");
+  screen("Sandbox: play as Mia's family");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Mia and Jules's family/ }));
+
+  screen("Home");
+  await tap(page.getByTestId("add-child-card").getByRole("button", { name: "Add a child or a class" }));
+  screen("Add a child or a class");
+  await tap(page.getByRole("button", { name: "Another class for Mia" }));
+
+  screen("1 Pick a time");
+  const full = page.getByTestId("time-mad-wed-1630-shallows");
+  await expect(full).toContainText("Full");
+  await tap(full.getByRole("button", { name: "Join the waitlist" }));
+  await check("add-waitlist-times");
+  await tap(page.getByRole("button", { name: "Continue with the waitlist only" }));
+
+  screen("2 Check and join");
+  await expect(page.getByText(/On the waitlist for Wednesdays at 4:30\spm/)).toBeVisible();
+  await check("add-waitlist-review");
+  await tap(page.getByRole("button", { name: "Join the waitlist" }));
+
+  screen("On the waitlist");
+  await expect(page).toHaveURL(/\/family\/add\/done$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mia is on the waitlist");
+  await check("add-waitlist-done");
+  await tap(page.getByRole("button", { name: "Go to Home" }));
+
+  screen("Home: leave the waitlist");
+  const mia = page.getByTestId("home-child").filter({ hasText: "Mia" });
+  const line = mia.getByTestId("home-waitlist");
+  await expect(line).toContainText(/On the waitlist for Wednesdays at 4:30\spm\./);
+  await tap(line.getByRole("button", { name: "Leave this waitlist" }));
+  await expect(line).toContainText(/Take Mia off the waitlist for Wednesdays at 4:30\spm\?/);
+  await check("home-leave-waitlist");
+  await tap(line.getByRole("button", { name: "Leave the waitlist" }));
+  await expect(mia.getByTestId("home-waitlist")).toHaveCount(0);
+  const data = await stored();
+  const miaRow = data.children.find((c: { firstName: string }) => c.firstName === "Mia");
+  expect(data.waitlistEntries.filter((w: { childRecordId: string }) => w.childRecordId === miaRow.id)).toHaveLength(0);
+  run!.notes.push("Mia joined the waitlist for the full Wednesday 4:30 class (the done screen says so, not an earlier class), then the family took her off it from Home.");
   run!.passed = true;
 });

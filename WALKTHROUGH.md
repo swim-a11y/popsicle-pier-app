@@ -4,7 +4,7 @@ The finish line: a new parent books one child and signs on a phone in under 2 mi
 
 **Owner's stopwatch time for walk-through 5 (typing everything, on a phone): ________** (fill in by hand)
 
-All ten run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
+All eleven run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
 
 Run them with `npm run e2e` (or `npx playwright test e2e/sign-up.spec.ts`).
 
@@ -48,7 +48,11 @@ As the owner: walk-through 2's Ada waits under "Talk with a family first" (a yes
 
 ## 10. A lesson the school cancels
 
-Mia's family sees its note was read. Pretend the school cancelled a lesson: Messages says which lesson and that a person at the school is choosing a date with Coach Dev. As the owner: pick one date with Coach Dev (at least eight days out, so the family has a full week), see the drafted words and where they go, send. As the family: Home leads with the answer; Yes, that works; Lesson dates show the cancelled day with its new date and time right under it, and Bills says the lesson stays on the bill with its new date.
+Mia's family sees its note was read. Pretend the school cancelled a lesson: Messages says which lesson and that a person at the school is choosing a date with Coach Dev. As the owner: pick one date with Coach Dev (at least eight days out, so the family has a full week), see the drafted words and where they go, send. As the family: Home leads with the answer; Yes, that works; Lesson dates show the cancelled day with its new date and time right under it, and Bills says the lesson stays on the bill with its new date. Walk-through 5's Noa was in the same cancelled class, so she's owed the lesson too: a person offers her a date, she says yes, and her Lesson dates show it.
+
+## 11. Join a waitlist, then leave it
+
+Walk-through 1's family: Add a child or a class; Another class for Mia; the full Wednesday 4:30 class; Join the waitlist; Continue with the waitlist only; Join the waitlist. The done screen says "Mia is on the waitlist". On Home, Mia's card says so, with "Leave this waitlist"; it asks first, and "Leave the waitlist" takes her off it.
 
 ## Counts
 
@@ -65,6 +69,7 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 7. Add a brother or sister, then another class | 15 | 18 | 4 |
 | 8. Bills and a note | 10 | 12 | 0 |
 | 9. The owner's approvals inbox | 7 | 12 | 0 |
-| 10. A lesson the school cancels | 11 | 14 | 0 |
+| 10. A lesson the school cancels (and the other family in that class) | 17 | 24 | 0 |
+| 11. Join a waitlist, then leave it | 7 | 10 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

@@ -51,7 +51,8 @@ export function AddReviewStep() {
     const cls = data.classes.find((c) => c.id === id);
     return cls ? `${weekdayName(cls.weekday)}s at ${clockTime(cls.startTime)}` : "a full class";
   });
-  const label = draft.mode === "class" ? "Add this class" : needsSign ? `Sign and add ${who.firstName}` : `Add ${who.firstName}`;
+  const label =
+    draft.mode === "class" ? (draft.kid.booking ? "Add this class" : "Join the waitlist") : needsSign ? `Sign and add ${who.firstName}` : `Add ${who.firstName}`;
 
   const add = async () => {
     if (busy.current) return; // ignores double taps

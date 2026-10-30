@@ -1201,5 +1201,19 @@
     "description": "On Your swimmers, Continue stays on the first screen of a 375x667 phone (a bar pinned at the bottom), above the boxes still to scroll past.",
     "test": "e2e/sign-up.spec.ts: walk-through 5",
     "passes": true
+  },
+  {
+    "id": "add-waitlist-only",
+    "area": "add",
+    "description": "Another class that only joins a waitlist says so: the review button reads \"Join the waitlist\" and the done screen \"Mia is on the waitlist\", never an earlier addition.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > another class that only joins a waitlist reads as the waitlist, not an earlier addition; e2e/sign-up.spec.ts: walk-through 11",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-11",
+    "area": "walkthrough",
+    "description": "Walk-through 11: walk-through 1's family puts Mia on the waitlist for the full Wednesday 4:30 class through Add a child or a class, then takes her off it from Home after a confirm.",
+    "test": "e2e/sign-up.spec.ts: walk-through 11",
+    "passes": true
   }
 ]

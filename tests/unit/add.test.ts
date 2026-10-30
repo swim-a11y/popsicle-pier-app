@@ -205,4 +205,17 @@ describe("adding a child or a class", () => {
     // The older signature is still there, untouched.
     expect(after.releaseSignatures.filter((s) => s.familyId === familyId)).toHaveLength(2);
   });
+
+  it("another class that only joins a waitlist reads as the waitlist, not an earlier addition", async () => {
+    const { store, familyId } = await familyWithMia();
+    const mia = (await store.snapshot()).children.find((c) => c.familyId === familyId)!;
+    // First another class, then a waitlist for a full one.
+    const draft = newAddDraft({ familyId, mode: "class", childRecordId: mia.id, poolId: "pool-buckhead", kidKey: "k", now: LATER });
+    await add(store, { ...draft, kid: { ...draft.kid, booking: { kind: "class", timeId: "buc-wed-1600-shallows" } } });
+    const wait = newAddDraft({ familyId, mode: "class", childRecordId: mia.id, poolId: "pool-madison", kidKey: "k2", now: "2026-10-30T17:00:00.000Z" });
+    await store.transaction((tx) => tx.add("addDrafts", { ...wait, kid: { ...wait.kid, waitlistClassIds: ["mad-wed-1630-shallows"] } }));
+    await store.transaction((tx) => commitAdd(tx, { draftId: wait.id, today: TODAY, now: "2026-10-30T17:00:00.000Z", newId: testId, browserName: "Chrome" }));
+    const latest = latestAddition(await store.snapshot(), familyId)!;
+    expect([latest.child.firstName, latest.enrollment, latest.waitlistOnly]).toEqual(["Mia", null, true]);
+  });
 });

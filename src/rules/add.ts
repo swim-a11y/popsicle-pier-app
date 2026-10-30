@@ -233,14 +233,28 @@ export function commitAdd(
   return { childRecordId, enrollmentId: enrollment?.id ?? null };
 }
 
-/** The newest thing added to a family after it signed up: a lesson, or a child waiting on a waitlist. */
-export function latestAddition(data: Readonly<AppData>, familyId: string): { child: Child; enrollment: Enrollment | null } | null {
+export interface Addition {
+  child: Child;
+  /** The lesson booked, if one was. */
+  enrollment: Enrollment | null;
+  /** Another class for a child that only joined a waitlist: nothing booked, no new child. */
+  waitlistOnly: boolean;
+  /** When it was added. */
+  at: string;
+}
+
+/** The newest thing added to a family after it signed up: a lesson, a child, or a place on a waitlist. */
+export function latestAddition(data: Readonly<AppData>, familyId: string): Addition | null {
   const family = data.families.find((f) => f.id === familyId);
   if (!family) return null;
-  const newest = <T extends { createdAt: string }>(rows: T[]) => [...rows].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
-  const enrollment = newest(data.enrollments.filter((e) => e.familyId === familyId && !e.endedOn && e.createdAt > family.createdAt));
-  const child = newest(data.children.filter((c) => c.familyId === familyId && c.createdAt > family.createdAt));
-  if (child && (!enrollment || child.createdAt > enrollment.createdAt)) return { child, enrollment: null };
-  if (!enrollment) return null;
-  return { child: data.children.find((c) => c.id === enrollment.childRecordId)!, enrollment };
+  const after = <T extends { familyId: string; createdAt: string }>(rows: readonly T[]) => rows.filter((r) => r.familyId === familyId && r.createdAt > family.createdAt);
+  const childOf = (id: string) => data.children.find((c) => c.id === id);
+  const picks: { rank: number; addition: Addition | null }[] = [
+    ...after(data.enrollments.filter((e) => !e.endedOn)).map((e) => ({ rank: 0, addition: childOf(e.childRecordId) ? { child: childOf(e.childRecordId)!, enrollment: e, waitlistOnly: false, at: e.createdAt } : null })),
+    ...after(data.children).map((c) => ({ rank: 1, addition: { child: c, enrollment: null, waitlistOnly: false, at: c.createdAt } })),
+    ...after(data.waitlistEntries).map((w) => ({ rank: 2, addition: childOf(w.childRecordId) ? { child: childOf(w.childRecordId)!, enrollment: null, waitlistOnly: true, at: w.createdAt } : null })),
+  ].filter((p) => p.addition);
+  // The newest wins; one addition saved at one moment reads as its lesson, then its child, then its waitlist.
+  picks.sort((a, b) => (a.addition!.at === b.addition!.at ? a.rank - b.rank : a.addition!.at < b.addition!.at ? 1 : -1));
+  return picks[0]?.addition ?? null;
 }

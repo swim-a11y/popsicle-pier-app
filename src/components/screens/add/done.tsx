@@ -39,10 +39,10 @@ export function AddDoneScreen() {
       </ScreenShell>
     );
   }
-  const { child, enrollment } = added;
+  const { child, enrollment, waitlistOnly } = added;
   const info = enrollment ? lessonInfo(data, enrollment) : null;
   const anotherClass = Boolean(enrollment) && data.enrollments.filter((e) => e.childRecordId === child.id && !e.endedOn).length > 1;
-  const since = enrollment?.createdAt ?? child.createdAt;
+  const since = added.at;
   const waits = data.waitlistEntries.filter((w) => w.childRecordId === child.id && w.createdAt >= since);
   const { main } = familyPayment(data, family.id);
   const firstTimeAtPool = info && !data.enrollments.some((e) => e.familyId === family.id && e.id !== enrollment!.id && !e.endedOn && e.poolId === info.pool.id);
@@ -52,7 +52,9 @@ export function AddDoneScreen() {
       <div className="flex flex-col gap-3">
         <LaneLine />
         <PageTitle>
-          {anotherClass && info
+          {waitlistOnly
+            ? `${child.firstName} is on the waitlist`
+            : anotherClass && info
             ? info.lessonKind === "evaluation"
               ? `${child.firstName}'s free evaluation is added`
               : `${child.firstName}'s ${weekdayName(info.weekday)} class is added`
