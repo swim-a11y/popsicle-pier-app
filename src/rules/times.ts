@@ -13,6 +13,8 @@ export const UNDER_3_MONTHS = 36;
 export interface SiblingPick {
   name: string;
   booking: { kind: "class" | "evaluation"; timeId: string } | null;
+  /** Already booked and saved: its spot is already taken out of openSpots, so don't count it again. */
+  holdsSpot?: boolean;
 }
 
 export interface TimeOption {
@@ -43,11 +45,14 @@ export interface ChildTimes {
   nothingFits: boolean;
 }
 
-function siblingMark(siblings: SiblingPick[], all: Map<string, { weekday: number; startTime: string; slotMinutes: number }>, weekday: number, startTime: string) {
+type TimeAt = { poolId: string; weekday: number; startTime: string; slotMinutes: number };
+
+/** "Next to [name]'s lesson" means at the same pool, one slot before or after. */
+function siblingMark(siblings: SiblingPick[], all: Map<string, TimeAt>, poolId: string, weekday: number, startTime: string) {
   for (const s of siblings) {
     if (!s.booking) continue;
     const t = all.get(s.booking.timeId);
-    if (!t || t.weekday !== weekday) continue;
+    if (!t || t.poolId !== poolId || t.weekday !== weekday) continue;
     const diff = Math.abs(minutesOfDay(t.startTime) - minutesOfDay(startTime));
     if (diff === 0) return { name: s.name, relation: "same-time" as const };
     if (diff === t.slotMinutes) return { name: s.name, relation: "next-to" as const };
@@ -73,7 +78,7 @@ export function timesForChild(input: {
 
   const poolClasses = data.classes.filter((c) => c.poolId === poolId);
   const poolEvals = data.evaluationTimes.filter((e) => e.poolId === poolId);
-  const allTimes = new Map<string, { weekday: number; startTime: string; slotMinutes: number }>();
+  const allTimes = new Map<string, TimeAt>();
   for (const t of [...data.classes, ...data.evaluationTimes]) allTimes.set(t.id, t);
 
   const closed = closedDates(data, poolId);
@@ -97,7 +102,8 @@ export function timesForChild(input: {
       // Under 3 is a private lesson with a parent in the water, never a shared class.
       if (age < UNDER_3_MONTHS && !(lt.kind === "private" && c.parentInWater)) continue;
       if (lt.kind === "semi-private" && (stage === null || c.stageId !== stage)) continue;
-      const picked = siblings.filter((s) => s.booking?.kind === "class" && s.booking.timeId === c.id).length;
+      const picked = siblings.filter((s) => !s.holdsSpot && s.booking?.kind === "class" && s.booking.timeId === c.id).length;
+      const siblingHere = siblings.some((s) => s.booking?.kind === "class" && s.booking.timeId === c.id);
       const spotsLeft = c.openSpots - picked;
       classes.push({
         kind: "class",
@@ -113,8 +119,8 @@ export function timesForChild(input: {
         cardCents: cardPriceCents(lt.bankDraftCents, mode),
         spotsLeft,
         full: spotsLeft <= 0,
-        noPartnerYet: lt.kind === "semi-private" && c.openSpots === c.capacity && picked === 0,
-        sibling: siblingMark(siblings, allTimes, c.weekday, c.startTime),
+        noPartnerYet: lt.kind === "semi-private" && c.openSpots === c.capacity && !siblingHere,
+        sibling: siblingMark(siblings, allTimes, poolId, c.weekday, c.startTime),
       });
     }
   }
@@ -124,7 +130,7 @@ export function timesForChild(input: {
     const first = firstOpenLessonDate(e.weekday, today, pool.opensOn, closed);
     const age = ageInMonths(birthDate, first);
     if (age < pool.youngestAgeMonths) continue;
-    const picked = siblings.filter((s) => s.booking?.kind === "evaluation" && s.booking.timeId === e.id).length;
+    const picked = siblings.filter((s) => !s.holdsSpot && s.booking?.kind === "evaluation" && s.booking.timeId === e.id).length;
     const spotsLeft = e.openSpots - picked;
     evaluations.push({
       kind: "evaluation",
@@ -141,7 +147,7 @@ export function timesForChild(input: {
       spotsLeft,
       full: spotsLeft <= 0,
       noPartnerYet: false,
-      sibling: siblingMark(siblings, allTimes, e.weekday, e.startTime),
+      sibling: siblingMark(siblings, allTimes, poolId, e.weekday, e.startTime),
     });
   }
 

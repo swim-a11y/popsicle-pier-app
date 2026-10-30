@@ -4,7 +4,8 @@ import { CheckRow, ReleaseForm, YesNo } from "@/components/screens/release-form"
 import { Problem } from "@/components/screens/sign-up/shared";
 import { PageTitle } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
-import { CHOICES_INTRO, CUSTODY_QUESTION, HEALTH_QUESTION } from "@/content/release";
+import { Tag } from "@/components/parts/tag";
+import { CHOICES_INTRO, CUSTODY_QUESTION, HEALTH_QUESTION, RELEASE_SAMPLE_NOTE } from "@/content/release";
 import { useState } from "react";
 
 import type { DraftChildRelease } from "@/data/types";
@@ -66,6 +67,10 @@ export function AddQuestionsStep() {
   return (
     <AddScreen stepKey="questions" step={step}>
       <PageTitle>A few things about {name}</PageTitle>
+      <p className="flex flex-wrap items-center gap-2">
+        <Tag tone="plain">SAMPLE</Tag>
+        {RELEASE_SAMPLE_NOTE}
+      </p>
       <p>
         Your family release, version {version.number}, already covers {name}. There&apos;s nothing new to sign. Just answer these for {name}.
       </p>

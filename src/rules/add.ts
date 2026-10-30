@@ -12,7 +12,7 @@ import type { Transaction } from "@/data/store";
 import { ANY_TIME, type AddDraft, type AppData, type Child, type DateOnly, type Enrollment, type IsoTime, type StageId } from "@/data/types";
 import { AlreadySavedError, bookTime, recordSignature, releaseProblem } from "@/rules/booking";
 import { minutesOfDay } from "@/rules/dates";
-import { familyChildren, familyLessons, familyPayment } from "@/rules/family";
+import { familyChildren, familyLessons, familyPayment, hasLessonPayment } from "@/rules/family";
 import { addChildCoverage, currentRelease, familyNeedsToSign } from "@/rules/release";
 import { draftBirthDate, emptyDraftChild, nameProblem } from "@/rules/sign-up";
 import { timesForChild, type ChildTimes, type TimeOption } from "@/rules/times";
@@ -72,7 +72,7 @@ export function addTimes(data: Readonly<AppData>, draft: AddDraft, today: DateOn
   const lessons = familyLessons(data, draft.familyId);
   const siblings = lessons
     .filter((l) => l.child.id !== who.childRecordId)
-    .map((l) => ({ name: l.child.firstName, booking: { kind: l.enrollment.kind, timeId: l.enrollment.timeId } }));
+    .map((l) => ({ name: l.child.firstName, booking: { kind: l.enrollment.kind, timeId: l.enrollment.timeId }, holdsSpot: true }));
   const t = timesForChild({ data, poolId: draft.poolId, birthDate: who.birthDate, stage: who.stage, today, siblings });
   if (draft.mode !== "class") return t;
   const own = lessons.filter((l) => l.child.id === who.childRecordId);
@@ -105,9 +105,11 @@ export function addProblem(data: Readonly<AppData>, draft: AddDraft, today: Date
   }
   if (!draft.kid.booking && draft.kid.waitlistClassIds.length === 0) return { step: "times", message: "Pick a time, the waitlist or the free evaluation." };
   if (!addBookingFits(data, draft, today)) return { step: "times", message: "That time no longer fits. Please pick a time again." };
-  const needsWayToPay = draft.kid.booking?.kind === "class" || (draft.kid.booking?.kind === "evaluation" && evaluationAsksForCard);
-  if (needsWayToPay && !familyPayment(data, draft.familyId).main) {
-    return { step: "review", message: `There's no way to pay on file yet. Email us at ${pool.schoolEmail} to add one.` };
+  if (draft.kid.booking?.kind === "class" && !hasLessonPayment(data, draft.familyId)) {
+    return { step: "times", message: lessonPaymentNote(pool.schoolEmail) };
+  }
+  if (draft.kid.booking?.kind === "evaluation" && evaluationAsksForCard && !familyPayment(data, draft.familyId).main) {
+    return { step: "review", message: `There's no card on file to hold the spot yet. Email us at ${pool.schoolEmail} to add one.` };
   }
   if (draft.mode === "child") {
     if (familyNeedsToSign(data, draft.familyId)) {
@@ -119,6 +121,11 @@ export function addProblem(data: Readonly<AppData>, draft: AddDraft, today: Date
     }
   }
   return null;
+}
+
+/** For a family with no way to pay for lessons yet (a card that only holds a free evaluation's spot). */
+export function lessonPaymentNote(schoolEmail: string): string {
+  return `To add a class, a person sets up how you'll pay for lessons first. Email us at ${schoolEmail}. You can still join a waitlist or book a free evaluation.`;
 }
 
 export class AddIncompleteError extends Error {

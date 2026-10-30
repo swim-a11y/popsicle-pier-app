@@ -10,7 +10,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { longDate } from "@/rules/dates";
 import { approvedNotesForFamily, hasHadFirstLesson } from "@/rules/first-sunday";
-import { currentFamily, familyChildren, lessonPerChild, upcomingLessonDate } from "@/rules/family";
+import { currentFamily, familyChildren, nextLessonPerChild } from "@/rules/family";
 
 /** How it went, newest first. Only approved notes; the family's own children; the stage name only. */
 export function ProgressScreen() {
@@ -38,7 +38,7 @@ export function ProgressScreen() {
   }
   const kids = familyChildren(data, family.id);
   const notes = approvedNotesForFamily(data, family.id);
-  const lessons = lessonPerChild(data, family.id);
+  const lessons = nextLessonPerChild(data, family.id, today);
 
   return (
     <ScreenShell id="progress">
@@ -57,7 +57,7 @@ export function ProgressScreen() {
           const lesson = lessons.find((l) => l.child.id === k.id);
           return lesson ? (
             <p key={k.id} className="rounded-card bg-surface px-4 py-3 shadow-card" data-testid="note-not-yet">
-              Your first &apos;How it went&apos; note comes after {k.firstName}&apos;s first lesson on {longDate(upcomingLessonDate(data, lesson, today), today)}.
+              Your first &apos;How it went&apos; note comes after {k.firstName}&apos;s first lesson on {longDate(lesson.date, today)}.
             </p>
           ) : null;
         })}

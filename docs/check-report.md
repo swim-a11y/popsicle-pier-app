@@ -6,7 +6,7 @@
 <!-- wt-1 -->
 ### Walk-through 1: New parent, one child (age 4) at Madison, with Fill in a sample family
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 13 screens, 27 taps, 0 typed fields.
 
 - One spot gone from Sundays at 10:00 am; one release signature and one bank-draft authorization saved.
 - Refreshing You're in booked nothing.
@@ -32,7 +32,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 13 screens,
 <!-- wt-2 -->
 ### Walk-through 2: Two children at Buckhead (ages 3 and 6) with a grandmother listed
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 14 screens, 34 taps, 18 typed fields.
 
 - Closed the tab at Your people; Pick up where you left off came back to Your people.
 - One release covers Leo and Ada; Ada is flagged for a person; no Buckhead date before Sunday, November 8, 2026.
@@ -59,7 +59,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 14 screens,
 <!-- wt-3 -->
 ### Walk-through 3: A 2-year-old at Buckhead (told when they can start), then at Madison (private, parent in the water, free evaluation only)
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 12 screens, 24 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -81,7 +81,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 12 screens,
 <!-- wt-4 -->
 ### Walk-through 4: The family moving over (two children at Madison)
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 26 taps, 2 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -100,7 +100,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 9 screens, 
 <!-- wt-5 -->
 ### Walk-through 5: Cold run: one child at Madison, every field typed (no fill button), paying by card
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 11 screens, 23 taps, 13 typed fields.
 
 | Screen | Taps | Typed fields |
 |---|---|---|
@@ -121,7 +121,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 11 screens,
 <!-- wt-6 -->
 ### Walk-through 6: The first Sunday, continuing walk-through 1 (and walk-through 2's family on deck)
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 10 screens, 13 taps, 0 typed fields.
 
 - Pressing Pretend the first lesson happened again added nothing.
 - Walk-through 2's Waiting grandmother, Rose, was never named as the adult on deck.
@@ -144,7 +144,7 @@ Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 10 screens,
 <!-- wt-7 -->
 ### Walk-through 7: Add a brother or sister to walk-through 1's family, then another class for Mia at the other pool
 
-Run 2026-10-30 18:46 UTC, Playwright at 375x667. Result: **passed**. 15 screens, 18 taps, 4 typed fields.
+Run 2026-10-30 18:54 UTC, Playwright at 375x667. Result: **passed**. 15 screens, 18 taps, 4 typed fields.
 
 - Jules was covered by the family's current release with a coverage row and three consent rows; nothing new was signed; a refresh added nothing.
 - Mia's second class is at Buckhead and she keeps PP26-0042 across both pools.
@@ -219,3 +219,30 @@ Everything else passed: sandbox and nothing leaving the device, clean room and p
 | Moving over could sign twice by revisiting its steps | Refused; test added (DECISIONS.md 52) |
 
 Everything else passed: sandbox and nothing leaving the device, clean room, people choose and prices, family words, SAMPLE marks, the release, signature and authorization rows, child IDs, listed adults, payment, ages and stages, no live view, first Sunday, the 26 later-room rules matching CLAUDE.md, and the keeping notes. It could not run tests itself; the fingerprint, unit and e2e results are from this session's runs: 96 unit tests and 33 e2e tests pass.
+
+### Next phase: Lesson dates and Add a child or a class
+
+The design-critic and rules-checker agents were loaded in this session, so they ran as themselves.
+
+**Design critic.** Three blockers, all fixed:
+
+| Finding | Done |
+|---|---|
+| Lesson dates ended with Madison's email though Mia's Wednesday class is at Buckhead | An email line per pool on Lesson dates and Your first lesson; the first-lesson page also gives each pool its own directions (render test added) |
+| The add-class done screen's headline repeated the button ("Another class for Mia") | "Mia's Wednesday class is added" |
+| A full free-evaluation time was faded but didn't say Full | It says Full |
+
+Also done: dates keep the month and day together; Lesson dates drops the repeated time and closed-day words (six weeks); Home's add card loses the heading that repeated its button. Its "good" list: the add start, child, questions and review screens and the cold first visits. Counts: adding a brother is 9 taps and 4 typed fields, adding a class 5 taps.
+
+**Rules checker.** Two blockers and four lesser fails, all fixed:
+
+| Finding | Done |
+|---|---|
+| BLOCKER: a family with only a free evaluation (a card holding that spot) could add a class at the card price, skipping bank draft first | Class times can't be picked until a person sets up lesson payment; the waitlist and evaluations stay open (DECISIONS.md 64, test added) |
+| BLOCKER: the add flow's questions and choices weren't marked SAMPLE | Marked SAMPLE, like the release |
+| Saved siblings' spots were counted twice; "next to" marked lessons at the other pool | Counted once; same pool only (DECISIONS.md 65, tests added) |
+| Home and Your first lesson ignored a child's second class | Each child's next lesson comes from all their classes; directions for every pool with a first visit ahead (DECISIONS.md 66, test added) |
+| "Stays" named an under-3 under a pool they don't attend | Worked out per pool |
+| The words scan skipped src/rules/add.ts and closure reasons; two docs out of date | Both scanned; DECISIONS.md and CLAUDE.md corrected |
+
+Everything else passed: under 3 never in a shared class and age on the first lesson date, people choose and price from the lesson type, coverage never edits a signature, consents add-only with exact words, a yes flags the child, one child ID across pools, closed-day wording, FAMILY WORDS, nothing leaves the device, no Buckhead date before November 8. After the fixes: 113 unit tests and 42 e2e tests pass.

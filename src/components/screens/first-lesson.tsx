@@ -30,8 +30,8 @@ import {
 } from "@/rules/dates";
 import {
   currentFamily,
-  lessonPerChild,
-  upcomingLessonDate,
+  nextLessonPerChild,
+  poolsWithFirstVisitAhead,
 } from "@/rules/family";
 import { namesList } from "@/rules/release";
 import { UNDER_3_MONTHS } from "@/rules/times";
@@ -64,7 +64,7 @@ export function FirstLessonScreen() {
   }
   const { data, today } = loaded;
   const family = currentFamily(data);
-  const lessons = family ? lessonPerChild(data, family.id) : [];
+  const lessons = family ? nextLessonPerChild(data, family.id, today) : [];
   if (!family || lessons.length === 0) {
     return (
       <ScreenShell id="first-lesson">
@@ -80,38 +80,42 @@ export function FirstLessonScreen() {
     );
   }
 
-  const shown = lessons.map((l) => ({
-    ...l,
-    date: upcomingLessonDate(data, l, today),
-  }));
-  const pools = [...new Map(shown.map((l) => [l.pool.id, l.pool])).values()];
+  const shown = lessons;
+  const pools = [
+    ...new Map(
+      [
+        ...shown.map((l) => l.pool),
+        ...poolsWithFirstVisitAhead(data, family.id),
+      ].map((p) => [p.id, p]),
+    ).values(),
+  ];
   const multi = pools.length > 1;
   const anyHeld = data.attendanceMarks.some((m) => m.familyId === family.id);
   const title =
     family.source === "moving-over" || anyHeld
       ? "Your next lesson"
       : "Your first lesson";
-  const ages = shown.map((l) => ({
-    name: l.child.firstName,
-    months: ageInMonths(l.child.birthDate, l.date),
-    inWater: l.parentInWater,
-  }));
-  const inWater = ages.filter((a) => a.inWater && a.months < UNDER_3_MONTHS);
   const atPool = (poolId: string) =>
     shown
       .filter((l) => l.pool.id === poolId)
       .map((l) => ({
+        name: l.child.firstName,
         months: ageInMonths(l.child.birthDate, l.date),
         inWater: l.parentInWater,
       }));
   const adults = data.listedAdults.filter((a) => a.familyId === family.id);
   const coaches = [...new Set(shown.map((l) => l.instructorFirstName))];
-  const stays =
-    inWater.length > 0
-      ? `You, in the water with ${namesList(inWater.map((a) => a.name))}. No drop-off.`
-      : adults.length > 0
-        ? "You or a signed listed adult, the whole lesson. No drop-off."
-        : "You, the whole lesson. No drop-off.";
+  // Who stays, worked out for the children at that pool.
+  const staysAt = (poolId: string) => {
+    const inWaterHere = atPool(poolId).filter(
+      (a) => a.inWater && a.months < UNDER_3_MONTHS,
+    );
+    if (inWaterHere.length > 0)
+      return `You, in the water with ${namesList(inWaterHere.map((a) => a.name))}. No drop-off.`;
+    return adults.length > 0
+      ? "You or a signed listed adult, the whole lesson. No drop-off."
+      : "You, the whole lesson. No drop-off.";
+  };
 
   return (
     <ScreenShell id="first-lesson">
@@ -172,7 +176,7 @@ export function FirstLessonScreen() {
                     ? `${pool.firstLesson.atAGlance.bring}, and your own suit`
                     : pool.firstLesson.atAGlance.bring}
                 </Row>
-                <Row label="Stays">{stays}</Row>
+                <Row label="Stays">{staysAt(pool.id)}</Row>
               </dl>
             </div>
           );

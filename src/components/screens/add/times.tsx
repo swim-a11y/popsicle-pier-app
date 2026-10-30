@@ -8,7 +8,8 @@ import { PageTitle } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import { ANY_TIME, type AddDraft } from "@/data/types";
 import { cn } from "@/lib/utils";
-import { addSubject, addTimes } from "@/rules/add";
+import { addSubject, addTimes, lessonPaymentNote } from "@/rules/add";
+import { hasLessonPayment } from "@/rules/family";
 import { longDate } from "@/rules/dates";
 import type { TimeOption } from "@/rules/times";
 
@@ -25,6 +26,7 @@ export function AddTimesStep() {
   const other = data.pools.find((p) => p.id !== draft.poolId);
   const kid = draft.kid;
   const name = who.firstName || "your swimmer";
+  const canBookClass = hasLessonPayment(data, step.family.id);
 
   const book = (o: TimeOption) => void step.advance((d) => ({ ...d, kid: { ...d.kid, booking: { kind: o.kind, timeId: o.id } } }));
   const toggleWaitlist = (classId: string) =>
@@ -51,7 +53,7 @@ export function AddTimesStep() {
       type="button"
       data-testid={`time-${o.id}`}
       aria-pressed={kid.booking?.timeId === o.id ? true : undefined}
-      disabled={o.full}
+      disabled={o.full || (o.kind === "class" && !canBookClass)}
       onClick={() => book(o)}
       className={cn(
         "flex w-full flex-col items-start gap-1 rounded-card border-2 bg-surface px-4 py-3 text-left shadow-card disabled:opacity-60",
@@ -84,6 +86,11 @@ export function AddTimesStep() {
       ) : null}
 
       {!t ? <p>Tell us their birth date and stage first.</p> : null}
+      {t && !t.tooYoung && t.classes.length > 0 && !canBookClass ? (
+        <p className="rounded-card bg-surface px-4 py-3 shadow-card" data-testid="lesson-payment-note">
+          {lessonPaymentNote(pool.schoolEmail)}
+        </p>
+      ) : null}
 
       {t?.tooYoung ? (
         <div className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" data-testid="too-young">

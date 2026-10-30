@@ -78,6 +78,17 @@ export function familyPayment(data: Readonly<AppData>, familyId: string): { main
   return { main: methods.find((m) => m.job === "main") ?? null, backup: methods.find((m) => m.job === "backup") ?? null };
 }
 
+/**
+ * How the family pays for lessons: a bank draft, or a card chosen for a
+ * class. A card that only holds a free evaluation's spot isn't one; that
+ * family sets up how it pays with a person before adding a class.
+ */
+export function hasLessonPayment(data: Readonly<AppData>, familyId: string): boolean {
+  const { main } = familyPayment(data, familyId);
+  if (!main) return false;
+  return main.kind === "bank" || data.enrollments.some((e) => e.familyId === familyId && e.kind === "class");
+}
+
 /** "Bank draft, with a backup card", "Card", or "Not linked yet". */
 export function howTheyPay(data: Readonly<AppData>, familyId: string): string {
   const { main, backup } = familyPayment(data, familyId);
@@ -152,6 +163,25 @@ export function lessonDaysAhead(data: Readonly<AppData>, info: LessonInfo, today
   const days: LessonDay[] = [];
   for (let i = 0; i < weeks; i++, d = addDays(d, 7)) days.push({ date: d, closedReason: closureOn(data, info.pool.id, d)?.reason ?? null });
   return days;
+}
+
+/** Each child's next lesson across all their classes (the soonest upcoming date), soonest first. */
+export function nextLessonPerChild(data: Readonly<AppData>, familyId: string, today: DateOnly): (LessonInfo & { date: DateOnly })[] {
+  const byChild = new Map<string, LessonInfo & { date: DateOnly }>();
+  for (const l of familyLessons(data, familyId)) {
+    const date = upcomingLessonDate(data, l, today);
+    const current = byChild.get(l.child.id);
+    if (!current || date < current.date || (date === current.date && l.startTime < current.startTime)) byChild.set(l.child.id, { ...l, date });
+  }
+  return [...byChild.values()].sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
+}
+
+/** Pools where one of the family's classes hasn't had its first lesson yet: a first visit to come. */
+export function poolsWithFirstVisitAhead(data: Readonly<AppData>, familyId: string): Pool[] {
+  const pools = familyLessons(data, familyId)
+    .filter((l) => !data.attendanceMarks.some((m) => m.enrollmentId === l.enrollment.id))
+    .map((l) => l.pool);
+  return [...new Map(pools.map((p) => [p.id, p])).values()];
 }
 
 /** Each child's soonest lesson. */

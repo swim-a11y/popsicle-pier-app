@@ -964,5 +964,26 @@
     "description": "Add: added renders at 375x667 with the sample banner and the Sandbox pill, is captured, and has no serious or critical axe issues.",
     "test": "e2e/screens.spec.ts: add-done renders, passes accessibility, and is captured",
     "passes": true
+  },
+  {
+    "id": "add-lesson-payment",
+    "area": "add",
+    "description": "A family whose only booking is a free evaluation (a card that only holds that spot) can't pick a class in the add flow; it says a person sets up how they'll pay for lessons first, and the waitlist and free evaluations stay open.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > a family whose only booking is a free evaluation sets up lesson payment with a person first",
+    "passes": true
+  },
+  {
+    "id": "add-sibling-spots",
+    "area": "add",
+    "description": "A sibling's saved booking holds its own spot (counted once), and \"Next to [name]'s lesson\" only marks times at the same pool.",
+    "test": "tests/unit/add.test.ts: adding a child or a class > a brother joining his sister's class sees her spot counted once / marks a sibling's lesson only at the same pool",
+    "passes": true
+  },
+  {
+    "id": "family-both-pools",
+    "area": "first-sunday",
+    "description": "A family with lessons at both pools: each child's next lesson comes from all their classes; Your first lesson gives each pool (and any pool with a first visit ahead) its own at-a-glance, directions, things to bring and email line; Lesson dates an email line per pool.",
+    "test": "tests/unit/screens-render.test.tsx: a family at both pools > gets each pool's own directions and email line; tests/unit/add.test.ts: adding a child or a class > a child's next lesson can come from any of their classes",
+    "passes": true
   }
 ]

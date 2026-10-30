@@ -4,7 +4,7 @@ import { LocalStore } from "@/data/store";
 import type { AddDraft } from "@/data/types";
 import { addDraftId, addProblem, addSteps, addTimes, commitAdd, latestAddition, newAddDraft } from "@/rules/add";
 import { AlreadySavedError, signAndSave } from "@/rules/booking";
-import { familyLessons } from "@/rules/family";
+import { familyLessons, nextLessonPerChild, poolsWithFirstVisitAhead } from "@/rules/family";
 import { EIGHT_GROUPS, latestSignature } from "@/rules/release";
 import { buildSeed } from "@/sandbox/seed";
 
@@ -121,6 +121,61 @@ describe("adding a child or a class", () => {
     await expect(store.transaction((tx) => commitAdd(tx, { draftId: draft.id, today: TODAY, now: LATER, newId: testId, browserName: "Chrome" }))).rejects.toThrow(AlreadySavedError);
     expect((await store.snapshot()).children.length).toBe(families);
     expect(addDraftId(familyId)).toBe(draft.id);
+  });
+
+  it("a brother joining his sister's class sees her spot counted once", async () => {
+    const { store, familyId } = await familyWithMia();
+    // Mia holds one of the two spots in Sundays at 10:00.
+    const draft = brother(familyId, { kid: { ...brother(familyId).kid, birthYear: "2022", stage: "shallows", booking: null } });
+    const ten = addTimes(await store.snapshot(), draft, TODAY)!.classes.find((c) => c.id === "mad-sun-1000-shallows")!;
+    expect(ten.full).toBe(false);
+    expect(ten.spotsLeft).toBe(1);
+    expect(ten.sibling).toEqual({ name: "Mia", relation: "same-time" });
+    expect(ten.noPartnerYet).toBe(false);
+  });
+
+  it("marks a sibling's lesson only at the same pool", async () => {
+    const { store, familyId } = await familyWithMia();
+    // Sundays at 10:00 at Buckhead isn't next to Mia's Sunday 10:00 at Madison.
+    const draft = brother(familyId, { poolId: "pool-buckhead", kid: { ...brother(familyId).kid, birthYear: "2020", stage: "cove", booking: null } });
+    const t = addTimes(await store.snapshot(), draft, TODAY)!;
+    expect(t.classes.find((c) => c.id === "buc-sun-1000-cove")!.sibling).toBeNull();
+  });
+
+  it("an under-3 brother sees only private times with a parent in the water", async () => {
+    const { store, familyId } = await familyWithMia();
+    const draft = brother(familyId, { kid: { ...brother(familyId).kid, birthMonth: "6", birthDay: "1", birthYear: "2024", stage: "pier", booking: null } });
+    const t = addTimes(await store.snapshot(), draft, TODAY)!;
+    expect(t.under3).toBe(true);
+    expect(t.classes.map((c) => c.id)).toEqual(["mad-sun-0900-water"]);
+    for (const c of t.classes) expect(c.parentInWater).toBe(true);
+  });
+
+  it("a family whose only booking is a free evaluation sets up lesson payment with a person first", async () => {
+    const store = new LocalStore({ seedVersion: "t", seed: buildSeed, storage: memoryStorage() });
+    const signUp = completeDraft({ kids: [{ firstName: "Ivy", birth: "2022-01-01", stage: "evaluation", booking: { kind: "evaluation", timeId: "mad-eval-sun-1100" } }], payment: "hold" });
+    await store.transaction((tx) => tx.add("signUpDrafts", signUp));
+    const { familyId } = await store.transaction((tx) => signAndSave(tx, { draft: signUp, today: TODAY, now: NOW, browserName: "Chrome", newId: testId }));
+    const data = await store.snapshot();
+    // A class: no bank draft or card chosen for lessons yet, so a person sets it up.
+    expect(addProblem(data, brother(familyId), TODAY)).toMatchObject({ step: "times", message: expect.stringContaining("a person sets up how you'll pay for lessons first") });
+    // A free evaluation for the brother still works with the card that holds the spot.
+    const evaluation = brother(familyId, { kid: { ...brother(familyId).kid, stage: "evaluation", booking: { kind: "evaluation", timeId: "mad-eval-sun-1130" } } });
+    expect(addProblem(data, evaluation, TODAY)).toBeNull();
+  });
+
+  it("a child's next lesson can come from any of their classes", async () => {
+    const { store, familyId } = await familyWithMia();
+    const mia = (await store.snapshot()).children.find((c) => c.familyId === familyId)!;
+    const draft = newAddDraft({ familyId, mode: "class", childRecordId: mia.id, poolId: "pool-buckhead", kidKey: "k", now: LATER });
+    await add(store, { ...draft, kid: { ...draft.kid, booking: { kind: "class", timeId: "buc-wed-1600-shallows" } } });
+    const data = await store.snapshot();
+    expect(nextLessonPerChild(data, familyId, TODAY)[0].pool.name).toBe("Madison");
+    // The Monday after November 8: Wednesday at Buckhead (November 11) comes before the next Sunday (November 15).
+    const later = nextLessonPerChild(data, familyId, "2026-11-09")[0];
+    expect(later.pool.name).toBe("Buckhead");
+    expect(later.date).toBe("2026-11-11");
+    expect(poolsWithFirstVisitAhead(data, familyId).map((p) => p.name).sort()).toEqual(["Buckhead", "Madison"]);
   });
 
   it("a family on an older release signs the current one once for everyone", async () => {

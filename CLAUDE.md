@@ -20,7 +20,7 @@ Everything is sandbox: made-up families, classes and prices, stored only in the 
 - `npm run dev` for local work, `npm run build && npm run start` for the real build.
 - `npm test` runs Vitest (unit and render tests in `tests/`).
 - `npm run typecheck` runs `tsc --noEmit`. `npm run lint` runs ESLint.
-- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the six walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
+- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the seven walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
 - Deploy: any Node host that runs `next build` and `next start`. No vercel.json, no Vercel CLI. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ## Where things are

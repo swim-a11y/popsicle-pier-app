@@ -12,7 +12,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
-import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, lessonPerChild, upcomingLessonDate } from "@/rules/family";
+import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonKindWords, upcomingLessonDate } from "@/rules/family";
 import { latestSignature } from "@/rules/release";
 
 export function HomeScreen() {
@@ -42,14 +42,14 @@ export function HomeScreen() {
 
   const kids = familyChildren(data, family.id);
   const lessons = familyLessons(data, family.id);
-  const firsts = lessonPerChild(data, family.id);
+
   const notes = approvedNotesForFamily(data, family.id);
   const signature = latestSignature(data, family.id);
   const version = signature ? data.releaseVersions.find((v) => v.id === signature.versionId) : undefined;
   const { main } = familyPayment(data, family.id);
   const movingNotDone = family.source === "moving-over" && !family.movedOverAt;
   // Soonest first, and by time on the same day, so each child keeps their own time and coach.
-  const upcoming = firsts
+  const upcoming = lessons
     .map((l) => ({ ...l, date: upcomingLessonDate(data, l, today) }))
     .sort((a, b) => (a.date === b.date ? (a.startTime < b.startTime ? -1 : 1) : a.date < b.date ? -1 : 1));
   const next = upcoming[0];

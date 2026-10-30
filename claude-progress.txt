@@ -20,3 +20,5 @@ Next phase: Add a child or a class built (Home card opens /family/add; a brother
 Next: a design-critic and rules-checker round on the new screens, fix what they rank highest, then docs.
 Design round on the new phase: fixed the three blockers (an email line per pool on Lesson dates and Your first lesson, the add-class done screen says what was added, full evaluation times say Full) plus dates kept whole and plainer Lesson dates; 108 unit, 42 e2e.
 Next: the rules-checker results for this phase, then the check report.
+Agent round on the new phase done: design critic (3 blockers fixed: email line per pool, add-class done headline, Full evaluation) and rules checker (2 blockers fixed: evaluation-only families set up lesson payment with a person before a class; SAMPLE on the add questions; plus spot counting, same-pool sibling marks, next lesson across all classes, Stays per pool); 113 unit, 42 e2e; 141 of 141 entries pass.
+Next: nothing open in this phase; the next steps need the owner (staff-side Schedule, Bills, Messages).

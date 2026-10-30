@@ -29,6 +29,7 @@ export const FAMILY_FILES = [
   "src/rules/sign-up.ts",
   "src/rules/booking.ts",
   "src/rules/first-sunday.ts",
+  "src/rules/add.ts",
 ].filter((f) => /\.tsx?$/.test(f) && !STAFF_FACING.includes(f));
 
 function stripComments(code: string): string {
@@ -72,6 +73,8 @@ describe("family words", () => {
       }
     }
     // The seeds' family-facing words: each pool's first-lesson notes and school email.
+    // Closed days' reasons show on Lesson dates.
+    for (const c of buildSeed().closures) for (const [re, why] of BANNED) if (re.test(c.reason)) problems.push(`closure ${c.id}: ${why}`);
     for (const pool of buildSeed().pools) {
       for (const s of [pool.name, pool.schoolEmail, ...Object.values(pool.firstLesson).flat()]) {
         for (const [re, why] of BANNED) if (re.test(s)) problems.push(`seed ${pool.name}: ${why}: ${s}`);
