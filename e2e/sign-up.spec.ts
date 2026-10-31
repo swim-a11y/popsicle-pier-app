@@ -109,8 +109,11 @@ async function openSandbox() {
   await expect(page.getByRole("dialog")).toBeVisible();
 }
 
+/** The walk-throughs are written for Friday, October 30, 2026 at the school: the page's clock starts here and runs on, and typed birth dates count back from it. */
+const RUN_START = "2026-10-30T15:00:00Z";
+
 function datePartsYearsAgo(years: number, extraMonths: number) {
-  const d = new Date();
+  const d = new Date(RUN_START);
   d.setMonth(d.getMonth() - (years * 12 + extraMonths));
   return { m: String(d.getMonth() + 1), d: String(d.getDate()), y: String(d.getFullYear()) };
 }
@@ -155,8 +158,8 @@ test.beforeAll(async ({ browser }) => {
     hasTouch: true,
   });
   page = await context.newPage();
-  // The walk-throughs are written for Friday, October 30, 2026 at the school; the clock starts there and runs on, so dates and counts don't drift with the real date.
-  await page.clock.setSystemTime(new Date("2026-10-30T15:00:00Z"));
+  // The clock starts at RUN_START and runs on, so dates and counts don't drift with the real date.
+  await page.clock.setSystemTime(new Date(RUN_START));
 });
 
 test.afterAll(() => writeReport());
@@ -855,7 +858,8 @@ test("walk-through 8: bills and a note, continuing walk-throughs 1 and 7", async
   await expect(page).toHaveURL(/\/more\/bills$/);
   const months = page.getByTestId("month-bill");
   await expect(months.first()).toBeVisible();
-  expect(await months.count()).toBeGreaterThanOrEqual(1);
+  // November and December: the first lessons are in November.
+  await expect(months).toHaveCount(2);
   await expect(page.getByText("Sample bills, worked out from your lesson dates. Nothing is ever charged in the sample.")).toBeVisible();
   // Both prices on every line, bank draft first.
   for (const prices of await page.getByTestId("line-prices").allInnerTexts()) {
@@ -868,9 +872,8 @@ test("walk-through 8: bills and a note, continuing walk-throughs 1 and 7", async
   await expect(lines.filter({ hasText: "Jules" }).first()).toBeVisible();
   await expect(months.first().getByTestId("you-pay")).toContainText("by bank draft");
   const text = await page.locator("main").innerText();
-  if (/November/.test(await months.first().innerText())) {
-    await expect(page.getByTestId("not-billed").filter({ hasText: /^November\s29: Closed for the holiday weekend \(sample\)\. Not billed\.$/ }).first()).toBeVisible();
-  }
+  await expect(months.first().getByRole("heading", { level: 2 })).toHaveText("November");
+  await expect(page.getByTestId("not-billed").filter({ hasText: /^November\s29: Closed for the holiday weekend \(sample\)\. Not billed\.$/ }).first()).toBeVisible();
   expect(text).not.toMatch(/\bfees?\b|surcharge/i);
   await check("bills");
   run!.notes.push("Every bill line shows the bank draft price, then the card price; closed days are listed and not billed.");
@@ -1153,6 +1156,8 @@ test("walk-through 11: join a waitlist for another class, then leave it", async 
 
 test("walk-through 12: a fill-in for a lesson the family will miss", async () => {
   begin(12, "Walk-through 1's family says Mia will miss a lesson; the owner offers one fill-in with the same coach the week after; the family says yes");
+  // The page's clock started on Friday, October 30, 2026 (RUN_START), whatever the real date.
+  expect(await page.evaluate(() => new Date().toISOString().slice(0, 10))).toBe("2026-10-30");
   screen("Sandbox: play as Mia's family");
   await page.goto("/");
   await openSandbox();
@@ -1315,8 +1320,9 @@ test("walk-through 14: no partner after the first month", async () => {
 
   screen("Inbox: no partner after the first month");
   const card = page.getByTestId("inbox-partner").filter({ hasText: "Theo" });
-  await expect(card).toContainText("since Wednesday, October 7. The first month at the semi-private price ended Friday, November 6.");
-  await expect(card.getByTestId("draft-words")).toContainText("Nothing about Theo's class or its price changes before Wednesday, December 2.");
+  await expect(card).toContainText("No partner since Wednesday, October 7. The first month ended Friday, November 6.");
+  await expect(card).toContainText("Sending today, Monday, November 9, starts the three weeks' notice.");
+  await expect(card.getByTestId("draft-words")).toContainText("Your price for Theo's class stays the same until at least Wednesday, December 2.");
   await check("inbox-no-partner", { family: false });
   await tap(card.getByRole("button", { name: "Send the note (sample)" }));
   await expect(page.getByTestId("inbox-partner")).toHaveCount(0);
@@ -1328,10 +1334,9 @@ test("walk-through 14: no partner after the first month", async () => {
 
   screen("Home: Theo's class");
   const theo = page.getByTestId("home-child").filter({ hasText: "Theo" });
-  await expect(theo.getByTestId("home-no-partner")).toContainText("We sent you a note about it in Messages: nothing about this class or its price changes before Wednesday, December 2.");
+  await expect(theo.getByTestId("home-no-partner")).toContainText("Still no partner. Your price for this class stays the same until at least Wednesday, December 2.");
   await check("home-no-partner");
-  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
-  await tap(page.getByRole("link", { name: /^Messages/ }));
+  await tap(theo.getByRole("button", { name: "Read our note in Messages" }));
 
   screen("Messages: the note");
   const note = page.getByTestId("school-partner-note");

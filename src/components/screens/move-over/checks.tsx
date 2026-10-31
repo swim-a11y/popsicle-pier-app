@@ -2,9 +2,10 @@
 
 import { Tag } from "@/components/parts/tag";
 import { stageName } from "@/content/path";
-import { EMAIL_US_FIRST, NO_PARTNER_YET, relationshipLabel, SIGNS_ON_PAPER } from "@/content/sign-up";
+import { EMAIL_US_FIRST, relationshipLabel, SIGNS_ON_PAPER } from "@/content/sign-up";
 import { clockTime, weekdayName } from "@/rules/dates";
-import { familyChildren, familyLessons, lessonKindWords, stillUnpaired } from "@/rules/family";
+import { familyChildren, familyLessons, lessonKindWords } from "@/rules/family";
+import { noPartnerLine } from "@/rules/partners";
 import { PriceRows } from "@/components/parts/price-rows";
 
 import { ChangeLine, LooksRight, MoveOverScreen, useMoveOver } from "./shared";
@@ -110,7 +111,11 @@ export function MoveOverClasses() {
                   {lessonKindWords(l)} with Coach {l.instructorFirstName}
                 </p>
                 {l.bankCents !== null ? <PriceRows bankCents={l.bankCents} testId="prices" /> : null}
-                {stillUnpaired(loaded.data, l.enrollment) ? <p className="rounded-control bg-page px-3 py-2">{NO_PARTNER_YET}</p> : null}
+                {noPartnerLine(loaded.data, l.enrollment, loaded.today) ? (
+                  <p className="rounded-control bg-page px-3 py-2" data-testid="move-no-partner">
+                    {noPartnerLine(loaded.data, l.enrollment, loaded.today)}
+                  </p>
+                ) : null}
               </div>
             ))}
         </Card>

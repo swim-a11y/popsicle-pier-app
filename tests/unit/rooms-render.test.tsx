@@ -13,6 +13,7 @@ import { HomeScreen } from "@/components/screens/home";
 import { InboxScreen } from "@/components/screens/inbox";
 import { LessonDatesScreen } from "@/components/screens/lesson-dates";
 import { MessagesScreen } from "@/components/screens/messages";
+import { MoveOverClasses } from "@/components/screens/move-over/checks";
 import { SendNoteScreen } from "@/components/screens/send-note";
 import { StaffScreen } from "@/components/screens/staff";
 import type { LocalStore } from "@/data/store";
@@ -1005,16 +1006,19 @@ describe("no partner after the first month", () => {
     vi.setSystemTime(new Date("2026-11-09T17:00:00Z"));
     render(<InboxScreen />);
     const section = await screen.findByTestId("inbox-section-partners");
-    expect(within(section).getByRole("heading", { level: 2 })).toHaveTextContent("No partner after the first month");
     const card = within(section).getByTestId("inbox-partner");
-    expect(flat(card.textContent)).toContain(
-      "No partner in the Wednesday 5:00 pm class at Madison, with Coach Tamsin, since Wednesday, October 7. The first month at the semi-private price ended Friday, November 6.",
-    );
+    // What sending commits the school to, before the draft.
+    expect(flat(card.textContent)).toContain("Wednesday 5:00 pm with Coach Tamsin. No partner since Wednesday, October 7. The first month ended Friday, November 6.");
+    expect(flat(card.textContent)).toContain("Sending today, Monday, November 9, starts the three weeks' notice. Theo's first lesson after those three weeks is Wednesday, December 2.");
     expect(flat(card.textContent)).toContain("The app doesn't pair anyone or change the price.");
+    // The family moving over hasn't finished yet: the person is told.
+    expect(flat(within(card).getByTestId("partner-not-moved").textContent)).toBe("This family hasn't finished moving over yet. They'll see the note once they do.");
+    // The heading carries the count.
+    expect(flat(within(section).getByRole("heading", { level: 2 }).textContent)).toBe("No partner after the first month1");
     expect(flat(within(card).getByTestId("draft-words").textContent)).toBe(
-      "Theo has had no partner in the Wednesday 5:00 pm class at Madison, with Coach Tamsin, since Wednesday, October 7. The first month at the semi-private price has passed, and we haven't found a partner yet. We'd like to talk with you about what comes next: email us at madison.sample@example.com. Nothing about Theo's class or its price changes before Wednesday, December 2.",
+      "We haven't found a partner for Theo's Wednesday 5:00 pm class at Madison yet. Your price for Theo's class stays the same until at least Wednesday, December 2. We'd like to talk about what comes next. Email us at madison.sample@example.com.",
     );
-    expect(within(card).getByTestId("draft")).toHaveTextContent("Goes to Dana Whitcombe's Messages in the app.");
+    expect(flat(within(card).getByTestId("draft").textContent)).toContain("Goes to Dana Whitcombe's Messages in the app, and adds a line to Theo's card on Home.");
     const drafted = within(card).getByTestId("draft-words").textContent;
     await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Send the note (sample)" })));
     expect(screen.queryByTestId("inbox-partner")).toBeNull();
@@ -1033,9 +1037,8 @@ describe("no partner after the first month", () => {
     });
     render(<HomeScreen />);
     const theo = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Theo"))!;
-    expect(flat(within(theo).getByTestId("home-no-partner").textContent)).toBe(
-      "No partner yet. You pay the semi-private price for the first month. If we haven't found a partner by then, we'll talk with you before anything changes.",
-    );
+    // The first month is over and no note has gone yet.
+    expect(flat(within(theo).getByTestId("home-no-partner").textContent)).toBe("No partner yet. We'll talk with you before anything changes.");
     cleanup();
     await act(async () => {
       const theoClass = familyLessons(await store.snapshot(), MOVING_FAMILY_ID).find((l) => l.child.firstName === "Theo")!;
@@ -1044,17 +1047,73 @@ describe("no partner after the first month", () => {
     render(<MessagesScreen />);
     const card = await screen.findByTestId("school-partner-note");
     expect(within(card).getByRole("heading", { level: 3 })).toHaveTextContent("About Theo's class");
-    expect(flat(within(card).getByTestId("partner-note-words").textContent)).toContain("Nothing about Theo's class or its price changes before Wednesday, December 2.");
+    expect(flat(within(card).getByTestId("partner-note-words").textContent)).toContain("Your price for Theo's class stays the same until at least Wednesday, December 2.");
     expect(within(card).queryByRole("button")).toBeNull();
     expect(within(card).queryByTestId("partner-note-status")).toBeNull();
     cleanup();
     render(<HomeScreen />);
     const after = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Theo"))!;
-    expect(flat(within(after).getByTestId("home-no-partner").textContent)).toBe(
-      "No partner yet. We sent you a note about it in Messages: nothing about this class or its price changes before Wednesday, December 2.",
-    );
+    const line = within(after).getByTestId("home-no-partner");
+    expect(flat(line.textContent)).toBe("Still no partner. Your price for this class stays the same until at least Wednesday, December 2.Read our note in Messages");
+    await act(async () => fireEvent.click(within(line).getByRole("button", { name: "Read our note in Messages" })));
+    expect(pushes[pushes.length - 1]).toBe("/more/messages");
     // Juniper's class has a partner: no such line.
     const juniper = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Juniper"))!;
     expect(within(juniper).queryByTestId("home-no-partner")).toBeNull();
+  });
+
+  it("during the first month, Home gives the family sign-up's line and the day the month ends", async () => {
+    const store = freshStore();
+    await signUp(store);
+    render(<HomeScreen />);
+    expect(flat((await screen.findByTestId("home-no-partner")).textContent)).toBe(
+      "No partner yet. You pay the semi-private price for the first month. If we haven't found a partner by then, we'll talk with you before anything changes. The first month ends Monday, November 30.",
+    );
+  });
+
+  it("a note drafted on one day isn't sent on the next: the owner looks again first", async () => {
+    const store = freshStore();
+    vi.setSystemTime(new Date("2026-11-09T17:00:00Z"));
+    render(<InboxScreen />);
+    const card = await screen.findByTestId("inbox-partner");
+    // The page stays open past midnight.
+    vi.setSystemTime(new Date("2026-11-10T17:00:00Z"));
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Send the note (sample)" })));
+    expect(await within(card).findByText("A day has passed since this page opened. Look at the note again before sending.")).toBeInTheDocument();
+    expect((await store.snapshot()).partnerNotices).toEqual([]);
+  });
+
+  it("Messages says when a partner has joined, joined and left, or the class has ended; the moving-over check says what Home says", async () => {
+    const store = freshStore();
+    vi.setSystemTime(new Date("2026-11-09T17:00:00Z"));
+    let theoId = "";
+    await act(async () => {
+      await store.transaction((tx) => setCurrentFamily(tx, MOVING_FAMILY_ID, "moving"));
+      const theo = familyLessons(await store.snapshot(), MOVING_FAMILY_ID).find((l) => l.child.firstName === "Theo")!;
+      theoId = theo.enrollment.id;
+      await store.transaction((tx) => sendPartnerNotice(tx, { enrollmentId: theoId, today: "2026-11-09", now: "2026-11-09T17:00:00.000Z", newId: testId }));
+    });
+    render(<MoveOverClasses />);
+    const theoCheck = (await screen.findAllByTestId("move-class")).find((c) => c.textContent?.includes("Theo"))!;
+    expect(flat(within(theoCheck).getByTestId("move-no-partner").textContent)).toBe("Still no partner. Your price for this class stays the same until at least Wednesday, December 2.");
+    cleanup();
+    // Rae's family books the open spot: a partner has joined.
+    const rae = await signUp(store, completeDraft({ id: "draft-rae", kids: [{ firstName: "Rae", birth: "2019-05-01", stage: "cove", booking: { kind: "class", timeId: "mad-wed-1700-cove" } }] }));
+    await act(async () => void (await store.transaction((tx) => setCurrentFamily(tx, MOVING_FAMILY_ID, "moving"))));
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("partner-note-status")).textContent)).toBe("A partner has joined that class since.");
+    cleanup();
+    // Rae leaves on Friday, November 20: the first month starts again from Theo's next lesson.
+    await act(async () => {
+      const raeClass = familyLessons(await store.snapshot(), rae.familyId)[0];
+      await store.transaction((tx) => leaveClass(tx, raeClass.enrollment.id, "2026-11-20"));
+    });
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("partner-note-status")).textContent)).toBe("A partner joined that class and then left, so the first month started again on Wednesday, December 2.");
+    cleanup();
+    // Theo's class ends.
+    await act(async () => void (await store.transaction((tx) => leaveClass(tx, theoId, "2026-11-21"))));
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("partner-note-status")).textContent)).toBe("That class has since ended for Theo.");
   });
 });

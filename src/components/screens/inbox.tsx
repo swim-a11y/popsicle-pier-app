@@ -20,7 +20,7 @@ import { markNoteRead } from "@/rules/notes";
 import {
   ANSWER_DAYS,
   BY_THE_SCHOOL,
-  classFullWords,
+  OfferProblemError,
   classWords,
   differentTimes,
   nearOwnClassWords,
@@ -73,12 +73,16 @@ function Problem({ text }: { text: string | null }) {
 }
 
 /** The words the app drafted, shown exactly as the family will see them, then the person sends them. */
-function Draft({ words, to, busy, onSend, sendLabel = "Send the offer (sample)" }: { words: string; to: string; busy: boolean; onSend: () => void; sendLabel?: string }) {
+function Draft({ words, to, busy, onSend, sendLabel = "Send the offer (sample)", also }: { words: string; to: string; busy: boolean; onSend: () => void; sendLabel?: string; also?: string }) {
   return (
     <div className="flex flex-col gap-3 rounded-control border-2 border-line px-4 py-3" data-testid="draft">
       <p className="font-strong text-heading">Drafted for you to send</p>
-      <p data-testid="draft-words">{words}</p>
-      <p>Goes to {to}&apos;s Messages in the app.</p>
+      <p className="whitespace-pre-line" data-testid="draft-words">
+        {words}
+      </p>
+      <p>
+        Goes to {to}&apos;s Messages in the app{also ? `, and ${also}` : ""}.
+      </p>
       <Button size="block" disabled={busy} onClick={onSend}>
         {busy ? "Sending..." : sendLabel}
       </Button>
@@ -407,18 +411,33 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
 /** A semi-private class past its first month with no partner: the drafted note a person sends. Nothing changes on its own. */
 function PartnerCard({ data, item, today }: { data: Readonly<AppData>; item: UnpairedItem; today: DateOnly }) {
   const { busy, problem, act } = useAct();
+  const name = item.child.firstName;
   return (
     <Card title={childTitle(data, item.child.id)} sub={familyLine(data, item.family.id, item.pool.id)} testId="inbox-partner">
       <p>
-        No partner in {classFullWords(item.cls, item.pool.name)}, since {longDate(item.since, today)}. The first month at the semi-private price ended {longDate(item.monthEnded, today)}.
+        {weekdayName(item.cls.weekday)} {clockTime(item.cls.startTime)} with Coach {item.cls.instructorFirstName}. No partner since {longDate(item.since, today)}. The first month ended{" "}
+        {longDate(item.monthEnded, today)}.
       </p>
-      <p>The app doesn&apos;t pair anyone or change the price. This note opens a talk with the family.</p>
+      <p>
+        Sending today, {longDate(today, today)}, starts the three weeks&apos; notice. {name}&apos;s first lesson after those three weeks is {longDate(item.before, today)}.
+      </p>
+      <p>The app doesn&apos;t pair anyone or change the price.</p>
+      {item.family.source === "moving-over" && !item.family.movedOverAt ? (
+        <p data-testid="partner-not-moved">This family hasn&apos;t finished moving over yet. They&apos;ll see the note once they do.</p>
+      ) : null}
       <Draft
-        words={partnerNoticeWords({ childFirstName: item.child.firstName, cls: item.cls, pool: item.pool, since: item.since, before: item.before, today })}
+        words={partnerNoticeWords({ childFirstName: name, cls: item.cls, pool: item.pool, before: item.before, today })}
         to={item.family.parentFullName}
+        also={`adds a line to ${name}'s card on Home`}
         busy={busy}
         sendLabel="Send the note (sample)"
-        onSend={() => void act((tx, t, now) => sendPartnerNotice(tx, { enrollmentId: item.info.enrollment.id, today: t, now, newId }))}
+        onSend={() =>
+          void act((tx, t, now) => {
+            // The words and the three weeks were worked out for the day this opened: a new day needs a fresh look first.
+            if (t !== today) throw new OfferProblemError("A day has passed since this page opened. Look at the note again before sending.");
+            return sendPartnerNotice(tx, { enrollmentId: item.info.enrollment.id, today: t, now, newId });
+          })
+        }
       />
       <Problem text={problem} />
     </Card>

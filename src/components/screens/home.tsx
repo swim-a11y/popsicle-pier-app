@@ -10,7 +10,7 @@ import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import { SCHOOL_NAME } from "@/content/brand";
 import { CLIPS_LATER_LINE } from "@/content/first-lesson";
-import { NO_PARTNER_YET, SOMEONE_WILL_TALK } from "@/content/sign-up";
+import { SOMEONE_WILL_TALK } from "@/content/sign-up";
 import { stageName } from "@/content/path";
 import { getStore } from "@/data/app-store";
 import type { AppData, DateOnly, WaitlistEntry } from "@/data/types";
@@ -19,11 +19,11 @@ import { useGo } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { clockTime, longDate, monthDayYear, todayAtSchool, weekdayName } from "@/rules/dates";
 import { approvedNotesForFamily } from "@/rules/first-sunday";
-import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonInfo, lessonKindWords, stillUnpaired, upcomingLessons } from "@/rules/family";
+import { currentFamily, familyChildren, familyLessons, familyPayment, howTheyPay, lessonInfo, lessonKindWords, upcomingLessons } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { leaveWaitlist } from "@/rules/offers";
 import { answersWaiting } from "@/rules/owed";
-import { partnerNoticeFor } from "@/rules/partners";
+import { noPartnerLine, unpairedStage } from "@/rules/partners";
 import { latestSignature } from "@/rules/release";
 
 /** "On the waitlist for Sundays at 9:00 am." The family can leave it themselves, after a confirm. */
@@ -235,6 +235,8 @@ export function HomeScreen() {
                 const switched = data.waitlistOffers.find((o) => o.enrollmentId === l.enrollment.id && o.answer === "yes" && o.inPlaceOfEnrollmentId);
                 const was = switched && today <= l.firstLessonDate ? data.enrollments.find((e) => e.id === switched.inPlaceOfEnrollmentId) : undefined;
                 const wasInfo = was ? lessonInfo(data, was) : null;
+                // A semi-private class with no partner: its first month, past it, or after the school's note.
+                const stage = l.lessonKind === "semi-private" ? unpairedStage(data, l.enrollment, today) : null;
                 return (
                   <div key={l.enrollment.id} className={cn("flex flex-col gap-1", i > 0 && "mt-2 border-t border-line pt-3")} data-testid="home-class">
                     {wasInfo ? <Tag tone="mark">New</Tag> : null}
@@ -248,12 +250,15 @@ export function HomeScreen() {
                     ) : (
                       <p className="font-strong">Never charged</p>
                     )}
-                    {l.lessonKind === "semi-private" && stillUnpaired(data, l.enrollment) ? (
-                      <p className="rounded-control bg-page px-3 py-2" data-testid="home-no-partner">
-                        {partnerNoticeFor(data, l.enrollment)
-                          ? `No partner yet. We sent you a note about it in Messages: nothing about this class or its price changes before ${longDate(partnerNoticeFor(data, l.enrollment)!.nothingChangesBefore, today)}.`
-                          : NO_PARTNER_YET}
-                      </p>
+                    {stage ? (
+                      <div className="flex flex-col items-start gap-1 rounded-control bg-page px-3 py-2" data-testid="home-no-partner">
+                        <p>{noPartnerLine(data, l.enrollment, today)}</p>
+                        {stage.kind === "noted" ? (
+                          <Button variant="quiet" size="small" className="px-0" onClick={() => go("/more/messages")}>
+                            Read our note in Messages
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : null}
                     {wasInfo ? (
                       <p data-testid="home-switched">

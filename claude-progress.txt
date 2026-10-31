@@ -46,3 +46,5 @@ Rules round on the rules fixes (DECISIONS 136 to 142): a new date follows the bi
 Next: wait for the owner's pick among the later-room rules that need a ruling (two missed in a row, an unpaired child past the first month, changing how a family pays).
 Ruling 6 (October 31): the note about a semi-private class with no partner after its first month, drafted in the inbox, sent by a person, read in Messages and on Home; walk-through 14; the walk-throughs run on a clock from October 30; 219 unit, 51 e2e.
 Next: an agent round on the notice (design critic and rules checker), then the owner's next pick (two missed in a row, or changing how a family pays).
+Design and rules round on ruling 6 (DECISIONS 148 to 152): a short note that promises only the price; the owner's card says what sending commits to; one family line with three states, on Home and the moving-over check; joined-and-left status; staff page "in part"; e2e birth dates from the fixed start; 225 unit, 51 e2e; 239 of 239 entries pass.
+Next: the owner's next pick (two missed in a row, or changing how a family pays), and whether the note should come three weeks before the first month ends instead.

@@ -63,7 +63,7 @@ export const LATER_ROOM_RULES: readonly LaterRoomRule[] = [
   {
     room: "money",
     text: "An unpaired semi-private child pays the semi-private price for the first month from the first lesson. If there's still no partner, the family hears at least three weeks before the price changes. The month starts again when a partner leaves.",
-    builtIn: "the inbox's notes about a class with no partner, read in Messages; the price never changes on its own",
+    builtIn: "the inbox, in part: a person sends the note once the first month has passed, and the month starts again when a partner leaves; what comes after the note isn't built, and the price never changes on its own",
   },
   {
     room: "money",

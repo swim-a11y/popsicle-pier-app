@@ -1611,7 +1611,8 @@
     "area": "family",
     "description": "The drafted note says how long the class has had no partner, that the first month at the semi-private price has passed, invites a talk (the pool's email as plain text), and that nothing about the class or its price changes before the class's first lesson at least three weeks on, past closed days; it names no new price and no partner.",
     "test": "tests/unit/partners.test.ts: no partner after the first month > the note says what happened, opens a talk, and that nothing changes for three weeks: no new price, no partner named / nothing changes before a real lesson: a closed day three weeks on moves it a week",
-    "passes": true
+    "passes": true,
+    "supersededBy": "partner-notice-short (design and rules round, DECISIONS.md 148): the note is three short lines and promises only the price for three weeks; it no longer says how long, or that the first month has passed."
   },
   {
     "id": "partner-notice-send",
@@ -1625,7 +1626,8 @@
     "area": "family",
     "description": "The family reads the note in Messages (\"About Theo's class\", nothing to answer; later it says when a partner has joined or the class has ended); Home shows sign-up's \"No partner yet\" line on a class with no partner, then that nothing changes before the note's date.",
     "test": "tests/unit/rooms-render.test.tsx: no partner after the first month > the family reads it in Messages, and Home says no partner yet, then that nothing changes before that date; tests/unit/partners.test.ts: no partner after the first month > a partner joining ends it; a partner leaving starts the month again",
-    "passes": true
+    "passes": true,
+    "supersededBy": "partner-notice-family-v2 (design and rules round, DECISIONS.md 150): Home's line has three states and a link to the note; Messages also says when a partner joined and left; the moving-over check says what Home says."
   },
   {
     "id": "walkthrough-14",
@@ -1639,6 +1641,48 @@
     "area": "walkthrough",
     "description": "The walk-throughs run on a browser clock that starts Friday, October 30, 2026 at the school and runs on, so their dates and counts don't drift with the real date.",
     "test": "e2e/sign-up.spec.ts: walk-through 12",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-short",
+    "area": "family",
+    "description": "The note is three short lines: \"We haven't found a partner for Theo's Wednesday 5:00 pm class at Madison yet.\", \"Your price for Theo's class stays the same until at least Wednesday, December 2.\" (the class's first lesson at least three weeks on, past closed days) and \"We'd like to talk about what comes next. Email us at madison.sample@example.com.\"; it names no new price and no partner.",
+    "test": "tests/unit/partners.test.ts: no partner after the first month > the note is three short lines: no partner yet, nothing changes for at least three weeks, and an invitation to talk; no new price, no partner named / nothing changes before a real lesson: a closed day three weeks on moves it a week; tests/unit/rooms-render.test.tsx: no partner after the first month > the inbox drafts the note once the first month has passed; a person sends it; Done says so",
+    "passes": true
+  },
+  {
+    "id": "partner-owner-card",
+    "area": "office",
+    "description": "Before the draft, the owner's card gives the class and coach, how long it has had no partner and when the first month ended, that sending today starts the three weeks' notice and which lesson comes after it, that the app doesn't pair anyone or change the price, and for a family that hasn't finished moving over, that they'll see it once they do; the draft says it also adds a line to the child's Home card; a note opened on one day can't be sent the next without a fresh look; the section heading counts what's waiting.",
+    "test": "tests/unit/rooms-render.test.tsx: no partner after the first month > the inbox drafts the note once the first month has passed; a person sends it; Done says so / a note drafted on one day isn't sent on the next: the owner looks again first; tests/unit/partners.test.ts: no partner after the first month > a semi-private class with no partner waits out its first month, then a note is due",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-family-v2",
+    "area": "family",
+    "description": "Home's line for a class with no partner gives sign-up's words and the day the first month ends; once the month has passed, \"No partner yet. We'll talk with you before anything changes.\"; after the note, \"Still no partner. Your price for this class stays the same until at least ...\" with \"Read our note in Messages\". The moving-over check shows the same line. Messages shows the note with nothing to answer, and later says when a partner has joined, joined and left (the month started again), or the class has ended.",
+    "test": "tests/unit/rooms-render.test.tsx: no partner after the first month > the family reads it in Messages, and Home says no partner yet, then that nothing changes before that date / during the first month, Home gives the family sign-up's line and the day the month ends / Messages says when a partner has joined, joined and left, or the class has ended; the moving-over check says what Home says; tests/unit/partners.test.ts: no partner after the first month > for the family, a class with no partner is in its first month, past it, or noted / a sent note says when the class has since ended / a partner joining ends it; a partner leaving starts the month again",
+    "passes": true
+  },
+  {
+    "id": "partner-rule-in-part",
+    "area": "docs",
+    "description": "The staff page marks the no-partner rule built in part: the note and the restart, not what comes after the note; the price never changes on its own.",
+    "test": "tests/unit/rooms-render.test.tsx: staff page > marks the later-room rules the owner's rulings built",
+    "passes": true
+  },
+  {
+    "id": "ruling-6-in-docs",
+    "area": "docs",
+    "description": "CLAUDE.md records ruling 6 with the owner's own words, and DECISIONS.md holds its decisions.",
+    "test": "tests/unit/rulings-docs.test.ts: the owner's rulings are written down > ruling 6 is in CLAUDE.md with the owner's own words, and its decisions are in DECISIONS.md",
+    "passes": true
+  },
+  {
+    "id": "e2e-clock-birthdates",
+    "area": "walkthrough",
+    "description": "The walk-throughs' typed birth dates count back from the same fixed start as the page's clock; walk-through 12 checks the page's date is October 30, 2026, and walk-through 8 checks exactly two bills, November first.",
+    "test": "e2e/sign-up.spec.ts: walk-through 12 / walk-through 8",
     "passes": true
   }
 ]

@@ -293,7 +293,7 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
 }
 
 /** The school's note about a semi-private class with no partner after its first month. Nothing to answer; it opens a talk. */
-function PartnerNoticeCard({ data, notice }: { data: Readonly<AppData>; notice: PartnerNotice }) {
+function PartnerNoticeCard({ data, notice, today }: { data: Readonly<AppData>; notice: PartnerNotice; today: DateOnly }) {
   const child = data.children.find((c) => c.id === notice.childRecordId);
   if (!child) return null;
   const now = partnerNoticeNow(data, notice);
@@ -302,10 +302,15 @@ function PartnerNoticeCard({ data, notice }: { data: Readonly<AppData>; notice: 
       <h3 id={`partner-${notice.id}`} className="font-heading text-big text-heading">
         About {child.firstName}&apos;s class
       </h3>
-      <p data-testid="partner-note-words">{notice.words}</p>
+      <p className="whitespace-pre-line" data-testid="partner-note-words">
+        {notice.words}
+      </p>
       <p>Sent {shownAtSchool(notice.sentAt)}</p>
-      {now === "partner" ? <p data-testid="partner-note-status">A partner has joined that class since.</p> : null}
-      {now === "ended" ? <p data-testid="partner-note-status">That class has since ended for {child.firstName}.</p> : null}
+      {now.kind === "partner" ? <p data-testid="partner-note-status">A partner has joined that class since.</p> : null}
+      {now.kind === "restarted" ? (
+        <p data-testid="partner-note-status">A partner joined that class and then left, so the first month started again on {longDate(now.since, today)}.</p>
+      ) : null}
+      {now.kind === "ended" ? <p data-testid="partner-note-status">That class has since ended for {child.firstName}.</p> : null}
     </article>
   );
 }
@@ -344,7 +349,7 @@ export function MessagesScreen() {
     ...offers.map((o) => ({ key: o.id, at: o.answeredAt ?? o.offeredAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <WaitlistOfferCard key={o.id} data={data} offer={o} today={today} first={first} /> })),
     ...owed.map((o) => ({ key: o.id, at: o.offers[o.offers.length - 1]?.offeredAt ?? o.createdAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <CancelledCard key={o.id} data={data} owed={o} today={today} first={first} /> })),
     ...fillInsForFamily(data, family.id).map((f) => ({ key: f.id, at: f.offer.answeredAt ?? f.offer.offeredAt, open: waiting.some((w) => w.id === f.id), card: (first: boolean) => <FillInCard key={f.id} data={data} fillIn={f} today={today} first={first} /> })),
-    ...partnerNoticesForFamily(data, family.id).map((n) => ({ key: n.id, at: n.sentAt, open: false, card: () => <PartnerNoticeCard key={n.id} data={data} notice={n} /> })),
+    ...partnerNoticesForFamily(data, family.id).map((n) => ({ key: n.id, at: n.sentAt, open: false, card: () => <PartnerNoticeCard key={n.id} data={data} notice={n} today={today} /> })),
   ].sort((a, b) => (a.open !== b.open ? (a.open ? -1 : 1) : a.at < b.at ? 1 : -1));
 
   return (
