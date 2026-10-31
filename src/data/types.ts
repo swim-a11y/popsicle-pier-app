@@ -471,6 +471,12 @@ export interface OwedLesson {
   cancellationId: string;
   poolId: string;
   cancelledDate: DateOnly;
+  /**
+   * The lesson on the family's bill this one is owed for: the cancelled class
+   * date itself, or, when the school cancelled a new date or a fill-in booked
+   * for a lesson, that lesson. An approved credit takes it off the bill.
+   */
+  billedDate: DateOnly;
   instructorFirstName: string;
   offers: OwedOffer[];
   /** The owner approved a credit because no opening exists: that lesson isn't billed. */

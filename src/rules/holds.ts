@@ -16,10 +16,20 @@ export function heldByWaitlistOffers(data: Readonly<AppData>, classId: string, t
   return data.waitlistOffers.filter((o) => o.classId === classId && o.id !== exceptOfferId && offerOpen(o, today)).length;
 }
 
-/** Every date offered somewhere else for one lesson: owed lessons' dates and fill-ins. A fill-in goes with the class it stood in for. */
+/**
+ * Every date offered somewhere else for one lesson: owed lessons' dates and
+ * fill-ins. A fill-in goes with the class it stood in for, and one on a day
+ * the school cancelled or closed holds nothing.
+ */
 function oneOffOffers(data: Readonly<AppData>, exceptId?: string): OwedOffer[] {
   const live = (enrollmentId: string) => data.enrollments.some((e) => e.id === enrollmentId && !e.endedOn);
-  return [...data.owedLessons.filter((o) => o.id !== exceptId).flatMap((o) => o.offers), ...data.fillIns.filter((f) => f.id !== exceptId && live(f.enrollmentId)).map((f) => f.offer)];
+  const dead = (o: OwedOffer) => {
+    const poolId = (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.poolId;
+    return data.closures.some((c) => c.poolId === poolId && c.date === o.date) || (o.timeKind === "class" && data.cancellations.some((c) => c.classId === o.timeId && c.date === o.date));
+  };
+  return [...data.owedLessons.filter((o) => o.id !== exceptId).flatMap((o) => o.offers), ...data.fillIns.filter((f) => f.id !== exceptId && live(f.enrollmentId)).map((f) => f.offer)].filter(
+    (o) => !dead(o),
+  );
 }
 
 /** Places on one date of a class or evaluation time taken by owed lessons and fill-ins: booked there, or offered and still open. */

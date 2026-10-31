@@ -21,7 +21,7 @@ import { bookTime, setCurrentFamily, signAndSave } from "@/rules/booking";
 import { answerFillIn, sendFillIn } from "@/rules/fillins";
 import { LATER_ROOM_RULES } from "@/rules/later-rooms";
 import { markNoteRead, sendNote } from "@/rules/notes";
-import { answerWaitlistOffer, leaveWaitlist, offerDifferentTime, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
+import { answerWaitlistOffer, leaveClass, leaveWaitlist, offerDifferentTime, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
 import { answerOwedOffer, cancelClassDate, owedState, sendOwedOffer } from "@/rules/owed";
 import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
 import { pretendFamilyLeft, pretendSchoolCancelled } from "@/sandbox/pretend-school";
@@ -135,6 +135,8 @@ describe("messages and notes", () => {
     cleanup();
     render(<MessagesScreen />);
     const offer = await screen.findByTestId("school-offer");
+    // Not from a note of the family's: a plain "spot" title.
+    expect(within(offer).getByRole("heading", { level: 3 })).toHaveTextContent("A spot for Ada");
     expect(flat(within(offer).getByTestId("offer-words").textContent)).toBe(
       "A spot opened for Ada in the Sunday 9:00 am class at Buckhead. If you say yes, Ada moves there, and the Sunday 10:00 am class ends the day you say yes. If you say no, nothing changes. Please answer by Friday, November 6.",
     );
@@ -451,6 +453,12 @@ describe("a different time, from the inbox", () => {
     render(<HomeScreen />);
     expect(await screen.findAllByTestId("home-class")).toHaveLength(1);
     expect(flat(screen.getByTestId("home-switched").textContent)).toBe("New class from Wednesday, November 4. The Sunday 10:00 am class at Madison has ended.");
+    cleanup();
+    // After that first lesson, Home stops saying so.
+    vi.setSystemTime(new Date("2026-11-05T17:00:00Z"));
+    render(<HomeScreen />);
+    await screen.findAllByTestId("home-class");
+    expect(screen.queryByTestId("home-switched")).toBeNull();
   });
 
   it("a no keeps the class and the waitlist the family asked for", async () => {
@@ -804,5 +812,182 @@ describe("a family with nothing ahead", () => {
     cleanup();
     render(<LessonDatesScreen />);
     expect(flat((await screen.findByTestId("evaluation-done")).textContent)).toBe("The free evaluation was Sunday, November 1.");
+  });
+});
+
+describe("one-off lessons and offers, as each screen says them", () => {
+  /** Coach Dev's Sunday 9:30 class becomes a one-place Shallows class, so Mia's new date or fill-in can be a class slot. */
+  const devShallows = (store: LocalStore) => act(async () => void (await store.transaction((tx) => tx.update("classes", "mad-sun-0930-pier", { stageId: "shallows", openSpots: 1, capacity: 1 }))));
+
+  /** Mia's November 1 lesson is cancelled; she says yes to a new date, Sunday, November 8 at 11:00. */
+  async function miaNewDate(store: LocalStore, familyId: string, cancelled = "2026-11-01", offered = "2026-11-08") {
+    return act(async () => {
+      const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: cancelled, reason: "Coach Dev is away that day (sample)", now: NOW, newId: testId }));
+      await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "mad-eval-sun-1100", date: offered, today: TODAY, now: NOW }));
+      await store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+      return owed;
+    });
+  }
+
+  it("a new date kept after the family moves on shows on Lesson dates; one for a lesson after they moved is off, and Messages says why", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await miaNewDate(store, familyId);
+    await act(async () => {
+      const data = await store.snapshot();
+      const mia = data.children.find((c) => c.familyId === familyId)!;
+      const sunday = data.enrollments.find((e) => e.childRecordId === mia.id)!;
+      await store.transaction((tx) => bookTime(tx, { familyId, childRecordId: mia.id, booking: { kind: "class", timeId: "buc-wed-1600-shallows" }, poolId: "pool-buckhead", today: TODAY, now: NOW, newId: testId, alone: true }));
+      // Mia leaves her Sunday class on Monday, November 2, after the cancelled lesson.
+      await store.transaction((tx) => leaveClass(tx, sunday.id, "2026-11-02"));
+    });
+    vi.setSystemTime(new Date("2026-11-02T17:00:00Z"));
+    render(<LessonDatesScreen />);
+    const rows = within(await screen.findByTestId("lesson-dates")).getAllByRole("listitem").map((li) => flat(li.textContent));
+    expect(rows[0]).toBe("New dateSunday, November 8 at 11:00 am with Coach DevIn place of the lesson we cancelled on Sunday, November 1.");
+    cleanup();
+
+    // Another family moves before its cancelled lesson: nothing is owed, and the card says so.
+    vi.setSystemTime(new Date(NOW));
+    const other = freshStore();
+    const second = await signUp(other);
+    await miaNewDate(other, second.familyId, "2026-11-08", "2026-11-15");
+    await act(async () => {
+      const sunday = (await other.snapshot()).enrollments.find((e) => e.familyId === second.familyId)!;
+      await other.transaction((tx) => leaveClass(tx, sunday.id, TODAY));
+    });
+    render(<MessagesScreen />);
+    expect(flat((await screen.findByTestId("offer-status")).textContent)).toBe("Mia's class there ended before this lesson, so it isn't on your bill, and no new date is owed.");
+  });
+
+  it("a credit after a new date was cancelled too names the lesson that comes off the bill", async () => {
+    const store = freshStore();
+    await devShallows(store);
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-01", reason: "x", now: NOW, newId: testId }));
+      await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW }));
+      await store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+      const [again] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "y", now: NOW, newId: testId }));
+      await store.transaction((tx) => tx.update("owedLessons", again.id, { creditApprovedAt: NOW, creditApprovedBy: "the owner" }));
+    });
+    render(<MessagesScreen />);
+    const credited = (await screen.findAllByTestId("offer-status")).map((p) => flat(p.textContent)).find((t) => t.includes("approved a credit"));
+    expect(credited).toBe("No date with Coach Dev was open, so the owner approved a credit. The lesson on Sunday, November 1 comes off your bill.");
+    cleanup();
+    render(<BillsScreen />);
+    expect(flat((await screen.findAllByTestId("cancelled-billed"))[0].textContent)).toBe("November 1: we cancelled this lesson and credited it, so it isn't billed.");
+  });
+
+  it("a family on a waitlist only isn't asked to sign up: Lesson dates and Your first lesson say nothing is coming up yet", async () => {
+    const store = freshStore();
+    await signUp(store, completeDraft({ id: "draft-wait", kids: [{ firstName: "Mia", birth: "2022-07-30", stage: "shallows", booking: null, waitlist: ["mad-wed-1630-shallows"] }] }));
+    render(<LessonDatesScreen />);
+    expect(flat((await screen.findByTestId("nothing-ahead")).textContent)).toBe("No lesson is coming up yet. Mia is on a waitlist; Home shows where that stands.");
+    expect(screen.getByRole("button", { name: "Add a child or a class" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign up for lessons" })).toBeNull();
+    cleanup();
+    render(<FirstLessonScreen />);
+    expect(flat((await screen.findByTestId("nothing-ahead")).textContent)).toBe("No lesson is coming up yet. Mia is on a waitlist; Home shows where that stands.");
+  });
+
+  it("the owner's card and Done say when the school closed a date, and what each new date was for", async () => {
+    const store = freshStore();
+    await devShallows(store);
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-01", reason: "x", now: NOW, newId: testId }));
+      await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW }));
+      // The school cancels that day before the family answers.
+      await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "y", now: NOW, newId: testId }));
+      expect(familyId).toBeTruthy();
+    });
+    render(<InboxScreen />);
+    const card = await screen.findByTestId("inbox-owed");
+    expect(flat(within(card).getByTestId("owed-earlier").textContent)).toBe("Offered Sunday, November 8: we cancelled that day before they answered, so it doesn't count.");
+    expect(flat(card.textContent)).toContain("Pick one date to offer.");
+    const done = flat(screen.getByTestId("inbox-done").textContent);
+    expect(done).toContain("Offered Mia a new date, Sunday, November 8, for the cancelled lesson on Sunday, November 1. Closed before they answered: we cancelled that day.");
+  });
+
+  it("the different-time card says when the child has no weekly class, or an offer from another waitlist already waits", async () => {
+    const store = freshStore();
+    const ivy = await signUp(
+      store,
+      completeDraft({ id: "draft-ivy", kids: [{ firstName: "Ivy", birth: "2024-06-15", stage: "evaluation", booking: { kind: "evaluation", timeId: "mad-eval-sun-1100" } }], payment: "hold" }),
+    );
+    const ada = await signUp(store, adaDraft());
+    await act(async () => {
+      let data = await store.snapshot();
+      const ivyChild = data.children.find((c) => c.familyId === ivy.familyId)!;
+      await store.transaction((tx) => sendNote(tx, { familyId: ivy.familyId, childRecordId: ivyChild.id, kind: "move", today: TODAY, now: NOW, newId: testId }));
+      // Ada's class waitlist gets an offer; then her family asks for a different time.
+      await store.transaction((tx) => pretendFamilyLeft(tx, { today: TODAY }));
+      data = await store.snapshot();
+      const item = waitlistItems(data, TODAY).find((i) => i.family.id === ada.familyId)!;
+      await store.transaction((tx) => sendWaitlistOffer(tx, { entryId: item.entry.id, classId: "buc-sun-0900-cove", inPlaceOfEnrollmentId: item.ownClasses[0].enrollment.id, today: TODAY, now: NOW, newId: testId }));
+      await store.transaction((tx) => sendNote(tx, { familyId: ada.familyId, childRecordId: item.child.id, kind: "move", today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<InboxScreen />);
+    const notes = (await screen.findAllByTestId("inbox-note")).map((n) => flat(n.textContent));
+    expect(notes.find((t) => t.startsWith("Ivy"))).toContain("Ivy has no weekly class to replace.");
+    expect(notes.find((t) => t.startsWith("Ada"))).toContain("An offer for Ada is already waiting for the family's answer, by Friday, November 6.");
+  });
+
+  it("a switch to a class at another price shows both prices under Now and New", async () => {
+    const store = freshStore();
+    const { familyId } = await signUp(store);
+    await act(async () => {
+      await store.transaction((tx) => tx.update("classes", "mad-wed-1630-shallows", { openSpots: 1, lessonTypeId: "lt-mad-private" }));
+      const data = await store.snapshot();
+      const mia = data.children.find((c) => c.familyId === familyId)!;
+      const note = await store.transaction((tx) => sendNote(tx, { familyId, childRecordId: mia.id, kind: "move", today: TODAY, now: NOW, newId: testId }));
+      const own = data.enrollments.find((e) => e.childRecordId === mia.id)!;
+      await store.transaction((tx) => offerDifferentTime(tx, { noteId: note.id, classId: "mad-wed-1630-shallows", inPlaceOfEnrollmentId: own.id, today: TODAY, now: NOW, newId: testId }));
+    });
+    render(<MessagesScreen />);
+    const both = flat((await screen.findByTestId("now-and-new")).textContent);
+    expect(both).toMatch(/^NowSundays at 10:00 am, Madison, Coach DevBank draft\$34\.00 a lessonCard\$35\.00 a lessonEnds the day you say yes\.NewWednesdays at 4:30 pm, Madison, Coach TamsinBank draft\$\d+\.\d\d a lessonCard\$\d+\.\d\d a lesson$/);
+    expect(both).not.toContain("Same as now.");
+  });
+
+  it("a booked date whose day is closed, or a fill-in the school cancels, says so on Lesson dates, Bills, Messages and Your first lesson", async () => {
+    const store = freshStore();
+    await devShallows(store);
+    const { familyId } = await signUp(store);
+    await miaNewDate(store, familyId);
+    await act(async () => {
+      // The pool closes Sunday, November 8 (sample): the new date at 11:00 is off.
+      await store.transaction((tx) => tx.add("closures", { id: "closure-test", poolId: "pool-madison", date: "2026-11-08", reason: "The pool is closed for a repair (sample)" }));
+    });
+    render(<LessonDatesScreen />);
+    expect(flat((await screen.findAllByTestId("cancelled-day"))[0].textContent)).toContain("The pool is closed for its new date on Sunday, November 8.");
+    cleanup();
+    render(<BillsScreen />);
+    expect(flat((await screen.findAllByTestId("cancelled-billed"))[0].textContent)).toBe(
+      "November 1: we cancelled this lesson. The pool is closed on its new date, Sunday, November 8. It stays on the bill for now.",
+    );
+    cleanup();
+    render(<FirstLessonScreen />);
+    expect(flat((await screen.findAllByTestId("lesson-ticket"))[0].textContent)).not.toContain("11:00 am");
+
+    // A fill-in the family said yes to, in a class slot the school then cancels.
+    const other = freshStore();
+    await devShallows(other);
+    const second = await signUp(other);
+    await act(async () => {
+      const data = await other.snapshot();
+      const mia = data.children.find((c) => c.familyId === second.familyId)!;
+      const sunday = data.enrollments.find((e) => e.childRecordId === mia.id)!;
+      const note = await other.transaction((tx) => sendNote(tx, { familyId: second.familyId, childRecordId: mia.id, kind: "miss", enrollmentId: sunday.id, lessonDate: "2026-11-01", today: TODAY, now: NOW, newId: testId }));
+      const f = await other.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+      await other.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId: second.familyId, answer: "yes", today: TODAY, now: NOW }));
+      await other.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "The pool heater is out (sample)", now: NOW, newId: testId }));
+    });
+    cleanup();
+    render(<MessagesScreen />);
+    expect(flat(within(await screen.findByTestId("school-fill-in")).getByTestId("offer-status").textContent)).toBe(
+      "You said yes on Friday, October 30 to a fill-in on Sunday, November 8 at 9:30 am. We cancelled that day. The pool heater is out (sample).",
+    );
   });
 });

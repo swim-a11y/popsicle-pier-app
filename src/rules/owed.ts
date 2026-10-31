@@ -14,7 +14,7 @@ import { cancellationOn, closureOn } from "@/rules/closures";
 import { addDays, ageInMonths, clockTime, longDate, minutesOfDay, weekdayOf } from "@/rules/dates";
 import { heldByWaitlistOffers, offerOpen, oneOffsOn } from "@/rules/holds";
 import { ANSWER_DAYS, BY_THE_SCHOOL, OfferProblemError, offersForFamily } from "@/rules/offers";
-import { fillInOpen, isActive, oneOffGone } from "@/rules/family";
+import { closedBeforeAnswer, fillInOpen, isActive, oneOffOfOwed } from "@/rules/family";
 import { classFits } from "@/rules/times";
 
 export const OWED_WINDOW_DAYS = 21;
@@ -118,15 +118,19 @@ export type OwedState =
   | { kind: "waiting"; offer: OwedOffer }
   | { kind: "booked"; offer: OwedOffer }
   | { kind: "closed"; offer: OwedOffer }
-  | { kind: "credited" };
+  | { kind: "credited" }
+  /** The family's class ended on or before the lesson's day, so it isn't billed and nothing is owed. */
+  | { kind: "class-ended" };
 
 /** Where an owed lesson stands. An offer nobody answered by its day counts as a no. */
 export function owedState(data: Readonly<AppData>, owed: OwedLesson, today: DateOnly): OwedState {
   if (owed.creditApprovedAt) return { kind: "credited" };
+  const enrollment = data.enrollments.find((e) => e.id === owed.enrollmentId);
+  if (enrollment?.endedOn && enrollment.endedOn <= owed.billedDate) return { kind: "class-ended" };
   const yes = owed.offers.find((o) => o.answer === "yes");
   if (yes) return { kind: "booked", offer: yes };
-  // A date the school then cancels or closes before the family answers isn't one of the two: it closes, and a person can offer another.
-  const counted = owed.offers.filter((o) => o.answer !== null || !oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: o }));
+  // A date the school cancels or closes while the family could still answer isn't one of the two: a person can offer another. One the family let lapse first still counts.
+  const counted = owed.offers.filter((o) => !closedBeforeAnswer(data, oneOffOfOwed(owed, o)));
   const last = counted[counted.length - 1];
   if (last && offerOpen(last, today)) return { kind: "waiting", offer: last };
   if (last && counted.length >= MAX_OWED_OFFERS) return { kind: "closed", offer: last };
@@ -207,19 +211,29 @@ export function cancelClassDate(tx: Transaction, input: { classId: string; date:
   if (!cls || weekdayOf(input.date) !== cls.weekday || closureOn(tx.data(), cls.poolId, input.date) || cancellationOn(tx.data(), cls.id, input.date)) return [];
   const cancellation = tx.add("cancellations", { id: input.newId(), classId: cls.id, poolId: cls.poolId, date: input.date, reason: input.reason, createdAt: input.now });
   const data = tx.data();
-  // Owed to each child booked that day: the class's own children, and any with a new date or fill-in booked into it.
+  const stillIn = (enrollmentId: string, billedDate: DateOnly) => {
+    const e = data.enrollments.find((x) => x.id === enrollmentId);
+    return Boolean(e) && (!e!.endedOn || e!.endedOn > billedDate);
+  };
+  // Owed to each child booked that day: the class's own children, and any with a new date or fill-in booked into it that still stands.
+  // Each keeps the lesson on the bill it's owed for, so a credit later takes that one off.
   const booked = [
     ...tx
       .list("enrollments")
       .filter((x) => x.kind === "class" && x.timeId === cls.id && x.firstLessonDate <= input.date && (!x.endedOn || x.endedOn > input.date))
-      .map((e) => ({ familyId: e.familyId, childRecordId: e.childRecordId, enrollmentId: e.id })),
-    ...data.owedLessons.filter((o) => o.offers.some((x) => x.answer === "yes" && x.timeId === cls.id && x.date === input.date)),
-    ...data.fillIns.filter((f) => f.offer.answer === "yes" && f.offer.timeId === cls.id && f.offer.date === input.date),
+      .map((e) => ({ familyId: e.familyId, childRecordId: e.childRecordId, enrollmentId: e.id, billedDate: input.date, oneOff: false })),
+    ...data.owedLessons
+      .filter((o) => o.offers.some((x) => x.answer === "yes" && x.timeId === cls.id && x.date === input.date) && stillIn(o.enrollmentId, o.billedDate))
+      .map((o) => ({ familyId: o.familyId, childRecordId: o.childRecordId, enrollmentId: o.enrollmentId, billedDate: o.billedDate, oneOff: true })),
+    // A fill-in goes with its class, so one for a class the family has left isn't owed.
+    ...data.fillIns
+      .filter((f) => f.offer.answer === "yes" && f.offer.timeId === cls.id && f.offer.date === input.date && data.enrollments.some((e) => e.id === f.enrollmentId && isActive(e)))
+      .map((f) => ({ familyId: f.familyId, childRecordId: f.childRecordId, enrollmentId: f.enrollmentId, billedDate: f.missedDate, oneOff: true })),
   ];
   const owed: OwedLesson[] = [];
   for (const b of booked) {
-    // A family that already told us they'll miss that day keeps its own miss (and its fill-in): nothing is owed twice.
-    if (data.familyNotes.some((n) => n.kind === "miss" && n.enrollmentId === b.enrollmentId && n.lessonDate === input.date)) continue;
+    // A family that already told us they'll miss that weekly lesson keeps its own miss (and its fill-in): nothing is owed twice.
+    if (!b.oneOff && data.familyNotes.some((n) => n.kind === "miss" && n.enrollmentId === b.enrollmentId && n.lessonDate === input.date)) continue;
     owed.push(
       tx.add("owedLessons", {
         id: input.newId(),
@@ -229,6 +243,7 @@ export function cancelClassDate(tx: Transaction, input: { classId: string; date:
         cancellationId: cancellation.id,
         poolId: cls.poolId,
         cancelledDate: input.date,
+        billedDate: b.billedDate,
         instructorFirstName: cls.instructorFirstName,
         offers: [],
         creditApprovedAt: null,

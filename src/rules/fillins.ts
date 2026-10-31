@@ -11,7 +11,7 @@
 import type { Transaction } from "@/data/store";
 import type { AppData, DateOnly, FamilyNote, FillIn, IsoTime } from "@/data/types";
 import { addDays, clockTime, longDate } from "@/rules/dates";
-import { fillInOpen, isActive, lessonInfo } from "@/rules/family";
+import { closedBeforeAnswer, fillInOpen, isActive, lessonInfo, oneOffOfFillIn } from "@/rules/family";
 import { BY_THE_SCHOOL, OfferProblemError } from "@/rules/offers";
 import { coachSlots, type OwedSlot } from "@/rules/owed";
 
@@ -28,8 +28,9 @@ export type FillInState =
   | { kind: "booked"; fillIn: FillIn }
   | { kind: "closed"; fillIn: FillIn };
 
+/** The note's fill-in: the latest, if a person offered another after the school closed the first. */
 export function fillInForNote(data: Readonly<AppData>, noteId: string): FillIn | undefined {
-  return data.fillIns.find((f) => f.noteId === noteId);
+  return data.fillIns.filter((f) => f.noteId === noteId).sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)).pop();
 }
 
 /** The missed class, for a "We'll miss" note about a weekly class. A free evaluation is one visit, so it has no fill-in. */
@@ -44,13 +45,15 @@ function missedLesson(data: Readonly<AppData>, note: FamilyNote) {
  * Where a "We'll miss" note's fill-in stands. null: a note that has no
  * fill-in (a move or stop note, a free evaluation, or a class the family has
  * since left). A fill-in still waiting closes if its day is cancelled or
- * closed, or its class ends.
+ * closed, or its class ends. When the school closes it that way before the
+ * family answers, the family hasn't had its fill-in: a person can offer
+ * another date in the same week.
  */
 export function fillInState(data: Readonly<AppData>, note: FamilyNote, today: DateOnly): FillInState | null {
   const info = missedLesson(data, note);
   if (!info) return null;
   const fillIn = fillInForNote(data, note.id);
-  if (fillIn) {
+  if (fillIn && !closedBeforeAnswer(data, oneOffOfFillIn(fillIn))) {
     if (fillIn.offer.answer === "yes") return { kind: "booked", fillIn };
     if (fillInOpen(data, fillIn, today)) return { kind: "waiting", fillIn };
     return { kind: "closed", fillIn };

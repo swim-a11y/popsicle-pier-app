@@ -5,9 +5,10 @@ import type { SignUpDraft } from "@/data/types";
 import { bookTime, signAndSave } from "@/rules/booking";
 import { monthBill } from "@/rules/bills";
 import { familyLessons, lessonDaysAhead, nextLessonPerChild, replacementLessons } from "@/rules/family";
-import { answerFillIn, fillInState, sendFillIn } from "@/rules/fillins";
+import { answerFillIn, fillInForNote, fillInState, sendFillIn } from "@/rules/fillins";
+import { notesForAPerson } from "@/rules/inbox";
 import { missOptions, sendNote } from "@/rules/notes";
-import { leaveClass, OfferProblemError } from "@/rules/offers";
+import { leaveClass, OfferProblemError, waitlistItems } from "@/rules/offers";
 import { answerOwedOffer, answersWaiting, cancelClassDate, owedState, sendOwedOffer } from "@/rules/owed";
 import { timesForChild } from "@/rules/times";
 import { buildSeed } from "@/sandbox/seed";
@@ -184,11 +185,27 @@ describe("fill-ins and the dates around them", () => {
     expect(replacementLessons(await closed.store.snapshot(), closed.familyId, TODAY)).toEqual([]);
   });
 
-  it("a booked new date stays when the family moves to another class: the lesson it replaces is on their bill", async () => {
+  it("a new date stays when the family moves to another class after the lesson it replaces, which is on their bill", async () => {
     const { store, familyId, child } = await newDateInClassSlot("yes");
     const sunday = (await store.snapshot()).enrollments.find((e) => e.childRecordId === child.id)!;
+    // The family moves on Monday, November 2: the cancelled November 1 lesson was theirs, and stays on the bill while it's owed.
+    await store.transaction((tx) => leaveClass(tx, sunday.id, "2026-11-02"));
+    const data = await store.snapshot();
+    expect(replacementLessons(data, familyId, "2026-11-02").map((l) => [l.date, l.startTime])).toEqual([["2026-11-08", "09:30"]]);
+    expect(monthBill(data, familyId, "2026-11-01").lines.find((l) => l.lesson.enrollment.id === sunday.id)!.billed).toEqual(["2026-11-01"]);
+  });
+
+  it("when the family moved before the cancelled lesson, it isn't on their bill: its new date goes, and nothing is owed", async () => {
+    const { store, familyId, child } = await family();
+    const [owed] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-1000-shallows", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    await store.transaction((tx) => sendOwedOffer(tx, { owedId: owed.id, timeId: "mad-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW }));
+    await store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+    const sunday = (await store.snapshot()).enrollments.find((e) => e.childRecordId === child.id)!;
     await store.transaction((tx) => leaveClass(tx, sunday.id, TODAY));
-    expect(replacementLessons(await store.snapshot(), familyId, TODAY).map((l) => [l.date, l.startTime])).toEqual([["2026-11-08", "09:30"]]);
+    const data = await store.snapshot();
+    expect(replacementLessons(data, familyId, TODAY)).toEqual([]);
+    expect(owedState(data, data.owedLessons.find((o) => o.id === owed.id)!, TODAY).kind).toBe("class-ended");
+    expect(monthBill(data, familyId, "2026-11-01").lines.some((l) => l.lesson.enrollment.id === sunday.id)).toBe(false);
   });
 
   it("an offer still waiting closes when the school cancels its day: a fill-in has closed; a new date isn't one of the two", async () => {
@@ -198,7 +215,8 @@ describe("fill-ins and the dates around them", () => {
     expect(answersWaiting(await store.snapshot(), familyId, TODAY).map((a) => a.kind)).toEqual(["fill-in"]);
     await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
     let data = await store.snapshot();
-    expect(fillInState(data, note, TODAY)?.kind).toBe("closed");
+    // The family hadn't had its fill-in: a person can offer another date that week (DECISIONS.md 141).
+    expect(fillInState(data, note, TODAY)?.kind).toBe("offer");
     expect(answersWaiting(data, familyId, TODAY)).toEqual([]);
     await expect(store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This fill-in has closed.");
 
@@ -209,5 +227,90 @@ describe("fill-ins and the dates around them", () => {
     expect(state).toMatchObject({ kind: "offer", round: 1 });
     expect(answersWaiting(data, owed.familyId, TODAY)).toEqual([]);
     await expect(owed.store.transaction((tx) => answerOwedOffer(tx, { owedId: owed.owedId, familyId: owed.familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This offer has closed.");
+  });
+
+  it("a credit on a lesson owed again, after its new date was cancelled too, takes the first lesson off the bill", async () => {
+    const { store, familyId } = await newDateInClassSlot("yes");
+    const [again] = await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    expect([again.cancelledDate, again.billedDate]).toEqual(["2026-11-08", "2026-11-01"]);
+    await store.transaction((tx) => tx.update("owedLessons", again.id, { creditApprovedAt: NOW, creditApprovedBy: "the owner" }));
+    const line = monthBill(await store.snapshot(), familyId, "2026-11-01").lines.find((l) => l.lesson.enrollment.timeId === "mad-sun-1000-shallows")!;
+    expect(line.billed).not.toContain("2026-11-01");
+    expect(line.cancelled).toEqual([{ date: "2026-11-01", credited: true }]);
+  });
+
+  it("cancelling a day owes no fill-in whose class has ended, and a one-off isn't skipped for a miss of that day's weekly lesson", async () => {
+    const left = await family(completeDraft({}), devShallows);
+    const note = await miss(left.store, left.familyId, left.child.id, "2026-11-01");
+    const f = await left.store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+    await left.store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId: left.familyId, answer: "yes", today: TODAY, now: NOW }));
+    await left.store.transaction((tx) => leaveClass(tx, f.enrollmentId, TODAY));
+    expect(await left.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }))).toEqual([]);
+
+    // Mia's new date is Sunday, November 8 at 9:30; she'll miss her 10:00 class that day. Cancelling 9:30 still owes the new date.
+    const both = await newDateInClassSlot("yes");
+    await miss(both.store, both.familyId, both.child.id, "2026-11-08");
+    const owed = await both.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    expect(owed.map((o) => o.childRecordId)).toEqual([both.child.id]);
+  });
+
+  it("a date the family let lapse still counts once the school cancels its day; one cancelled while open doesn't", async () => {
+    const lapsed = await newDateInClassSlot(null);
+    // The answer-by day, Friday, November 6, has passed when the school cancels on Saturday, November 7.
+    await lapsed.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: "2026-11-07T15:00:00.000Z", newId: testId }));
+    let data = await lapsed.store.snapshot();
+    expect(owedState(data, data.owedLessons.find((o) => o.id === lapsed.owedId)!, "2026-11-07")).toMatchObject({ round: 2 });
+    const open = await newDateInClassSlot(null);
+    await open.store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    data = await open.store.snapshot();
+    expect(owedState(data, data.owedLessons.find((o) => o.id === open.owedId)!, "2026-11-07")).toMatchObject({ round: 1 });
+  });
+
+  it("after the school closes a fill-in before the family answers, a person can offer another that week, and the inbox lists the note again", async () => {
+    const { store, familyId, child } = await family(completeDraft({}), devShallows);
+    const note = await miss(store, familyId, child.id, "2026-11-01");
+    await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-sun-0930-pier", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+    expect(notesForAPerson(await store.snapshot(), TODAY)).toEqual([]);
+    await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    expect(notesForAPerson(await store.snapshot(), TODAY).map((n) => n.id)).toEqual([note.id]);
+    const second = await store.transaction((tx) => sendFillIn(tx, { noteId: note.id, timeId: "mad-eval-sun-1100", date: "2026-11-08", today: TODAY, now: NOW, newId: testId }));
+    let data = await store.snapshot();
+    expect(fillInForNote(data, note.id)?.id).toBe(second.id);
+    expect(fillInState(data, note, TODAY)?.kind).toBe("waiting");
+    expect(notesForAPerson(data, TODAY)).toEqual([]);
+    await store.transaction((tx) => answerFillIn(tx, { fillInId: second.id, familyId, answer: "yes", today: TODAY, now: NOW }));
+    data = await store.snapshot();
+    expect(replacementLessons(data, familyId, TODAY).map((l) => [l.date, l.startTime])).toEqual([["2026-11-08", "11:00"]]);
+  });
+
+  it("a fill-in still waiting closes when its class ends, or when the pool closes its day", async () => {
+    const ended = await family();
+    const a = await miss(ended.store, ended.familyId, ended.child.id, "2026-11-08");
+    const f = await ended.store.transaction((tx) => sendFillIn(tx, { noteId: a.id, timeId: "mad-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW, newId: testId }));
+    await ended.store.transaction((tx) => leaveClass(tx, f.enrollmentId, TODAY));
+    expect(answersWaiting(await ended.store.snapshot(), ended.familyId, TODAY)).toEqual([]);
+    await expect(ended.store.transaction((tx) => answerFillIn(tx, { fillInId: f.id, familyId: ended.familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This fill-in has closed.");
+
+    const closed = await family();
+    const b = await miss(closed.store, closed.familyId, closed.child.id, "2026-11-08");
+    const g = await closed.store.transaction((tx) => sendFillIn(tx, { noteId: b.id, timeId: "mad-eval-sun-1100", date: "2026-11-15", today: TODAY, now: NOW, newId: testId }));
+    await closed.store.transaction((tx) => tx.add("closures", { id: "closure-test", poolId: "pool-madison", date: "2026-11-15", reason: "x" }));
+    expect(answersWaiting(await closed.store.snapshot(), closed.familyId, TODAY)).toEqual([]);
+    await expect(closed.store.transaction((tx) => answerFillIn(tx, { fillInId: g.id, familyId: closed.familyId, answer: "yes", today: TODAY, now: NOW }))).rejects.toThrow("This fill-in has closed.");
+  });
+
+  it("a new date on a day the school then cancels holds no place: a new weekly booking can start sooner", async () => {
+    const { store } = await newDateInClassSlot("yes");
+    await store.transaction((tx) => cancelClassDate(tx, { classId: "mad-sun-0930-pier", date: "2026-11-08", reason: "x", now: NOW, newId: testId }));
+    const slot = timesForChild({ data: await store.snapshot(), poolId: "pool-madison", birthDate: "2022-01-01", stage: "shallows", today: TODAY }).classes.find((c) => c.id === "mad-sun-0930-pier")!;
+    expect(slot.firstLessonDate).toBe("2026-11-01");
+  });
+
+  it("waiting for any time that fits never offers a class on the same day and time as the child's own", async () => {
+    const { store, child } = await family();
+    await store.transaction((tx) => tx.add("waitlistEntries", { id: "w-any", familyId: child.familyId, childRecordId: child.id, poolId: "pool-madison", classId: null, fromNoteId: null, createdAt: NOW }));
+    await store.transaction((tx) => tx.update("classes", "mad-sun-0930-pier", { stageId: "shallows", startTime: "10:00", maxAgeMonths: 83 }));
+    const [item] = waitlistItems(await store.snapshot(), TODAY);
+    expect(item.open.map((o) => o.cls.id)).not.toContain("mad-sun-0930-pier");
   });
 });

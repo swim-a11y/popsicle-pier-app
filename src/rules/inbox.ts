@@ -8,7 +8,8 @@
 import type { Transaction } from "@/data/store";
 import type { AppData, Child, DateOnly, Family, FamilyNote, IsoTime, OwedLesson, TalkRecord } from "@/data/types";
 import { longDate, shownAtSchool } from "@/rules/dates";
-import { lessonInfo, nextLessonPerChild } from "@/rules/family";
+import { closedBeforeAnswer, lessonInfo, nextLessonPerChild, oneOffGone, oneOffOfFillIn, oneOffOfOwed, type OneOff, type OneOffGone } from "@/rules/family";
+import { fillInState } from "@/rules/fillins";
 import { hasHadFirstLesson } from "@/rules/first-sunday";
 import { BY_THE_SCHOOL, OfferProblemError, classWords, waitlistItems } from "@/rules/offers";
 import { owedState, type OwedState } from "@/rules/owed";
@@ -56,8 +57,15 @@ export function recordTalk(tx: Transaction, input: { childRecordId: string; now:
   return tx.add("talkRecords", { id: input.newId(), familyId: child.familyId, childRecordId: child.id, talkedAt: input.now, talkedBy: input.by ?? BY_THE_SCHOOL });
 }
 
-export function unreadNotes(data: Readonly<AppData>): FamilyNote[] {
-  return data.familyNotes.filter((n) => !n.readAt).sort((a, b) => (a.sentAt < b.sentAt ? -1 : 1));
+/**
+ * Notes a person still has to act on: every unread note, and a read "We'll
+ * miss" note whose fill-in the school closed before the family answered, so
+ * another date can go out that week.
+ */
+export function notesForAPerson(data: Readonly<AppData>, today: DateOnly): FamilyNote[] {
+  return data.familyNotes
+    .filter((n) => !n.readAt || (n.kind === "miss" && data.fillIns.some((f) => f.noteId === n.id) && fillInState(data, n, today)?.kind === "offer"))
+    .sort((a, b) => (a.sentAt < b.sentAt ? -1 : 1));
 }
 
 /** Owed lessons a person still has to act on: a date to offer, or a credit to decide. */
@@ -81,7 +89,7 @@ export function inboxCounts(data: Readonly<AppData>, today: DateOnly): InboxCoun
     talks: talkItems(data, today).length,
     owed: owedToDo(data, today).filter((x) => x.state.kind !== "waiting").length,
     waitlist: waitlistItems(data, today).filter((i) => !i.pending && i.open.length > 0).length,
-    notes: unreadNotes(data).length,
+    notes: notesForAPerson(data, today).length,
   };
 }
 
@@ -117,10 +125,23 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
     const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
     items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(o.childRecordId)} ${what}${instead}. ${answer}` });
   }
+  // How a date offered for a lesson ended up, in the person's words, including when the school's own change closed it.
+  const goneWords = (g: OneOffGone) => (g.kind === "cancelled" ? "we cancelled that day" : g.kind === "closed" ? "the pool was closed that day" : "the class ended");
+  const oneOffAnswer = (oneOff: OneOff) => {
+    const o = oneOff.offer;
+    if (o.answer === "yes") {
+      const gone = oneOffGone(data, oneOff);
+      return gone ? `They said yes; then ${goneWords(gone)}.` : "They said yes.";
+    }
+    if (o.answer === "no") return "They said no, thanks.";
+    const early = closedBeforeAnswer(data, oneOff);
+    if (early) return `Closed before they answered: ${goneWords(early)}.`;
+    return o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
+  };
   for (const owed of data.owedLessons) {
     const state = owedState(data, owed, today);
     for (const o of owed.offers) {
-      const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
+      const answer = oneOffAnswer(oneOffOfOwed(owed, o));
       items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(owed.childRecordId)} a new date, ${longDate(o.date, today)}, for the cancelled lesson on ${longDate(owed.cancelledDate, today)}. ${answer}` });
     }
     if (state.kind === "credited") items.push({ at: owed.creditApprovedAt!, line: `Approved a credit for ${name(owed.childRecordId)}'s lesson on ${longDate(owed.cancelledDate, today)}.` });
@@ -128,7 +149,7 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
   }
   for (const f of data.fillIns) {
     const o = f.offer;
-    const answer = o.answer === "yes" ? "They said yes." : o.answer === "no" ? "They said no, thanks." : o.answerBy < today ? "No answer in time." : `Waiting for an answer by ${longDate(o.answerBy, today)}.`;
+    const answer = oneOffAnswer(oneOffOfFillIn(f));
     items.push({ at: o.answeredAt ?? o.offeredAt, line: `Offered ${name(f.childRecordId)} a fill-in on ${longDate(o.date, today)} for the missed lesson on ${longDate(f.missedDate, today)}. ${answer}` });
   }
   return items.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, limit);

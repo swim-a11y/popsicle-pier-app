@@ -14,8 +14,8 @@ import type { Transaction } from "@/data/store";
 import type { AppData, DateOnly, FamilyNote, OwedLesson } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { addDays, clockTime, longDate, shownAtSchool, todayAtSchool, weekdayName } from "@/rules/dates";
-import { doneItems, inboxCounts, owedToDo, recordTalk, talkItems, unreadNotes, type TalkItem } from "@/rules/inbox";
-import { fillInState, fillInWords, sendFillIn } from "@/rules/fillins";
+import { doneItems, inboxCounts, notesForAPerson, owedToDo, recordTalk, talkItems, type TalkItem } from "@/rules/inbox";
+import { fillInForNote, fillInState, fillInWords, sendFillIn } from "@/rules/fillins";
 import { markNoteRead } from "@/rules/notes";
 import {
   ANSWER_DAYS,
@@ -30,7 +30,7 @@ import {
   waitlistOfferWords,
   type WaitlistItem,
 } from "@/rules/offers";
-import { familyLessons, hasLessonPayment } from "@/rules/family";
+import { closedBeforeAnswer, familyLessons, hasLessonPayment, oneOffOfOwed } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { approveOwedCredit, owedOfferWords, sendOwedOffer, type OwedSlot, type OwedState } from "@/rules/owed";
 
@@ -146,6 +146,23 @@ function OwedCard({ data, owed, state, today }: { data: Readonly<AppData>; owed:
         Cancelled {longDate(owed.cancelledDate, today)}
         {cls ? `, ${classWords(cls)}` : ""} with Coach {owed.instructorFirstName}. {cancellation ? `${cancellation.reason}.` : ""}
       </p>
+      {owed.offers
+        .filter((o) => o !== (state.kind === "waiting" ? state.offer : null))
+        .map((o) => {
+          const early = closedBeforeAnswer(data, oneOffOfOwed(owed, o));
+          return (
+            <p key={`${o.timeId}-${o.date}`} data-testid="owed-earlier">
+              Offered {longDate(o.date, today)}:{" "}
+              {o.answer === "no"
+                ? "they said no, thanks."
+                : early?.kind === "cancelled"
+                  ? "we cancelled that day before they answered, so it doesn't count."
+                  : early?.kind === "closed"
+                    ? "the pool was closed that day, so it doesn't count."
+                    : "no answer in time."}
+            </p>
+          );
+        })}
       {state.kind === "offer" ? (
         <>
           <p className="font-strong text-heading">{state.round === 1 ? "Pick one date to offer." : "They said no, or didn't answer. Pick one more date, the last one."}</p>
@@ -394,6 +411,8 @@ function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: Family
   const chosen = slots.find((s) => `${s.time.id}|${s.date}` === pick);
   const child = data.children.find((c) => c.id === note.childRecordId);
   const pool = state?.kind === "offer" && chosen ? data.pools.find((p) => p.id === chosen.time.poolId) : undefined;
+  // A read note back here: the school closed the fill-in it offered before the family answered.
+  const again = note.readAt ? fillInForNote(data, note.id) : undefined;
   const markRead = (label: string) => (
     <Button size="block" variant="secondary" disabled={busy} onClick={() => void act((tx, _t, now) => markNoteRead(tx, { noteId: note.id, now, by: BY_THE_SCHOOL }))}>
       {busy ? "Saving..." : label}
@@ -407,7 +426,17 @@ function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: Family
       <p>Sent {shownAtSchool(note.sentAt)}</p>
       {state?.kind === "offer" ? (
         <>
-          <p className="font-strong text-heading">A fill-in: one date with Coach {state.coach} the week after. Pick one, or none. Once you send it, there&apos;s no second date.</p>
+          {again ? (
+            <p data-testid="fill-in-again">
+              We cancelled the day of the fill-in we offered, {longDate(again.offer.date, today)}, before the family answered, so they haven&apos;t had one. This stays here until that week
+              has passed.
+            </p>
+          ) : null}
+          <p className="font-strong text-heading">
+            {again
+              ? `Another fill-in: one date with Coach ${state.coach} the week after. Pick one, or none.`
+              : `A fill-in: one date with Coach ${state.coach} the week after. Pick one, or none. Once you send it, there's no second date.`}
+          </p>
           <div className="flex flex-col gap-2">
             {slots.map((s) => (
               <ChoiceButton
@@ -430,7 +459,7 @@ function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: Family
               onSend={() => void act((tx, t, now) => sendFillIn(tx, { noteId: note.id, timeId: chosen.time.id, date: chosen.date, today: t, now, newId }))}
             />
           ) : null}
-          {markRead("Mark as read, no fill-in")}
+          {again ? null : markRead("Mark as read, no fill-in")}
         </>
       ) : state?.kind === "no-opening" ? (
         <>
@@ -484,7 +513,7 @@ export function InboxScreen() {
   const talks = talkItems(data, today);
   const owed = owedToDo(data, today);
   const waits = waitlistItems(data, today);
-  const notes = unreadNotes(data);
+  const notes = notesForAPerson(data, today);
   const done = doneItems(data, today);
   const sections = [
     { id: "talks", title: "Talk with a family first", count: counts.talks, items: talks.map((t) => <TalkCard key={t.child.id} data={data} item={t} today={today} />) },

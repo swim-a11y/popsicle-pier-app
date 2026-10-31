@@ -15,7 +15,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
 import { firstWeeklyDate } from "@/rules/closures";
 import { clockTime, longDate, shownAtSchool, todayAtSchool, weekdayName } from "@/rules/dates";
-import { currentFamily, familyLessons, fillInOpen, lessonInfo, oneOffGone, type OneOffGone } from "@/rules/family";
+import { closedBeforeAnswer, currentFamily, familyLessons, fillInOpen, lessonInfo, oneOffGone, oneOffOfFillIn, oneOffOfOwed, type OneOffGone } from "@/rules/family";
 import { answerFillIn, fillInsForFamily } from "@/rules/fillins";
 import { offerOpen } from "@/rules/holds";
 import { notesForFamily } from "@/rules/notes";
@@ -177,7 +177,7 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
   const cls = cancellation ? data.classes.find((c) => c.id === cancellation.classId) : undefined;
   if (!child || !pool) return null;
   const state = owedState(data, owed, today);
-  const bookedGone = state.kind === "booked" ? oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: state.offer }) : null;
+  const bookedGone = state.kind === "booked" ? oneOffGone(data, oneOffOfOwed(owed, state.offer)) : null;
   const timeOf = (o: OwedLesson["offers"][number]) =>
     (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime ?? "";
   return (
@@ -196,7 +196,7 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
         .filter((o) => o !== (state.kind === "waiting" || state.kind === "booked" ? state.offer : null))
         .map((o) => (
           <p key={`${o.timeId}-${o.date}`}>
-            {longDate(o.date, today)} at {clockTime(timeOf(o))}: {o.answer === "no" ? "you said no, thanks." : goneShort(oneOffGone(data, { enrollmentId: owed.enrollmentId, fillIn: false, offer: o })) || "no answer in time."}
+            {longDate(o.date, today)} at {clockTime(timeOf(o))}: {o.answer === "no" ? "you said no, thanks." : goneShort(closedBeforeAnswer(data, oneOffOfOwed(owed, o))) || "no answer in time."}
           </p>
         ))}
       {state.kind === "waiting" ? (
@@ -218,7 +218,11 @@ function CancelledCard({ data, owed, today, first }: { data: Readonly<AppData>; 
         <p data-testid="offer-status">Neither date worked, so this one is closed. It stays on your bill.</p>
       ) : state.kind === "credited" ? (
         <p className="rounded-control bg-success px-3 py-2" data-testid="offer-status">
-          No date with Coach {owed.instructorFirstName} was open, so the owner approved a credit. {longDate(owed.cancelledDate, today)} comes off your bill.
+          No date with Coach {owed.instructorFirstName} was open, so the owner approved a credit. The lesson on {longDate(owed.billedDate, today)} comes off your bill.
+        </p>
+      ) : state.kind === "class-ended" ? (
+        <p data-testid="offer-status">
+          {child.firstName}&apos;s class there ended before this lesson, so it isn&apos;t on your bill, and no new date is owed.
         </p>
       ) : state.kind === "no-opening" ? (
         <p data-testid="offer-status">A person at the school is checking what&apos;s open with Coach {owed.instructorFirstName}.</p>
@@ -236,8 +240,8 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
   const o = fillIn.offer;
   const time = (o.timeKind === "class" ? data.classes.find((c) => c.id === o.timeId) : data.evaluationTimes.find((e) => e.id === o.timeId))?.startTime ?? "";
   const open = fillInOpen(data, fillIn, today);
-  // Its day cancelled or closed, or its class ended, after it was offered.
-  const gone = oneOffGone(data, { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: o });
+  // Its day cancelled or closed, or its class ended, after it was offered; for one not answered, only while it was still open.
+  const gone = o.answer === null ? closedBeforeAnswer(data, oneOffOfFillIn(fillIn)) : oneOffGone(data, oneOffOfFillIn(fillIn));
   const poolName = data.pools.find((p) => p.id === fillIn.poolId)?.name ?? "";
   const stoodFor = data.enrollments.find((e) => e.id === fillIn.enrollmentId);
   const wasClass = stoodFor ? lessonInfo(data, stoodFor) : null;

@@ -60,8 +60,13 @@ export function waitlistItems(data: Readonly<AppData>, today: DateOnly): Waitlis
     const ownClasses = familyLessons(data, family.id).filter((l) => l.child.id === child.id && l.lessonKind !== "evaluation");
     const wanted = entry.classId ? (data.classes.find((c) => c.id === entry.classId) ?? null) : null;
     const fits = timesForChild({ data, poolId: pool.id, birthDate: child.birthDate, stage: child.stageId ?? "evaluation", today }).classes;
+    // Waiting for any time that fits: never one on the same day and time as one of the child's own classes.
+    const sameTime = (o: { id: string }) => {
+      const cls = data.classes.find((c) => c.id === o.id);
+      return Boolean(cls) && ownClasses.some((l) => l.weekday === cls!.weekday && l.startTime === cls!.startTime);
+    };
     const open = fits
-      .filter((o) => !o.full && (!wanted || o.id === wanted.id) && !ownClasses.some((l) => l.enrollment.timeId === o.id))
+      .filter((o) => !o.full && (wanted ? o.id === wanted.id : !sameTime(o)) && !ownClasses.some((l) => l.enrollment.timeId === o.id))
       .map((o) => ({ cls: data.classes.find((c) => c.id === o.id)!, spotsFree: o.spotsLeft }));
     // One open offer per child at a time, from any of their waitlists.
     const pending = data.waitlistOffers.find((o) => o.childRecordId === child.id && offerOpen(o, today)) ?? null;

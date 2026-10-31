@@ -11,7 +11,7 @@ import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { upcomingBills, type BillLine, type MonthBill } from "@/rules/bills";
 import { clockTime, longDate, parseDate, weekdayName } from "@/rules/dates";
-import { currentFamily, oneOffGone } from "@/rules/family";
+import { currentFamily, oneOffGone, oneOffOfOwed } from "@/rules/family";
 import { owedState } from "@/rules/owed";
 import { cardAmountWords, money } from "@/rules/prices";
 
@@ -36,17 +36,22 @@ function dayWords(d: DateOnly): string {
 /** What a lesson the school cancelled means for the bill. Describes where it stands; never promises a date. */
 function cancelledWords(data: Readonly<AppData>, line: BillLine, date: DateOnly, credited: boolean, today: DateOnly): string {
   if (credited) return `${dayWords(date)}: we cancelled this lesson and credited it, so it isn't billed.`;
-  const owed = data.owedLessons.find((o) => o.enrollmentId === line.lesson.enrollment.id && o.cancelledDate === date);
-  const state = owed ? owedState(data, owed, today) : null;
+  // The lessons owed for it: the first, then one more each time we cancelled the new date booked for it too.
+  const chain = data.owedLessons
+    .filter((o) => o.enrollmentId === line.lesson.enrollment.id && o.billedDate === date)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+  const latest = chain[chain.length - 1];
+  const state = latest ? owedState(data, latest, today) : null;
+  const what = chain.length > 1 ? `${dayWords(date)}: we cancelled this lesson, and then its new date, ${longDate(latest.cancelledDate, today)}, too.` : `${dayWords(date)}: we cancelled this lesson.`;
   if (state?.kind === "booked") {
-    const gone = oneOffGone(data, { enrollmentId: line.lesson.enrollment.id, fillIn: false, offer: state.offer });
-    if (gone?.kind === "cancelled") return `${dayWords(date)}: we cancelled this lesson, and then its new date, ${longDate(state.offer.date, today)}, too. It stays on the bill for now.`;
-    if (gone?.kind === "closed") return `${dayWords(date)}: we cancelled this lesson. The pool is closed on its new date, ${longDate(state.offer.date, today)}. It stays on the bill for now.`;
-    return `${dayWords(date)}: we cancelled this lesson. Its new date is ${longDate(state.offer.date, today)}.`;
+    const gone = oneOffGone(data, oneOffOfOwed(latest, state.offer));
+    if (gone?.kind === "cancelled") return `${what} Its new date, ${longDate(state.offer.date, today)}, was cancelled too. It stays on the bill for now.`;
+    if (gone?.kind === "closed") return `${what} The pool is closed on its new date, ${longDate(state.offer.date, today)}. It stays on the bill for now.`;
+    return `${what} Its new date is ${longDate(state.offer.date, today)}.`;
   }
-  if (state?.kind === "closed") return `${dayWords(date)}: we cancelled this lesson. Neither date we offered worked, so it stays on the bill.`;
-  if (state?.kind === "waiting") return `${dayWords(date)}: we cancelled this lesson. It stays on the bill for now; Messages has a new date for you to answer.`;
-  return `${dayWords(date)}: we cancelled this lesson. It stays on the bill for now.`;
+  if (state?.kind === "closed") return `${what} Neither date we offered worked, so it stays on the bill.`;
+  if (state?.kind === "waiting") return `${what} It stays on the bill for now; Messages has a new date for you to answer.`;
+  return `${what} It stays on the bill for now.`;
 }
 
 function Amounts({ bank, card, fee = 0, count, testId }: { bank: number; card: number; fee?: number; count?: { n: number; bankEach: number; cardEach: number }; testId?: string }) {

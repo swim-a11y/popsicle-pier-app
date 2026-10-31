@@ -3,9 +3,9 @@
   "today" comes in as an argument.
 */
 import { cardPricing, type CardPricing } from "@/config";
-import type { AppData, Child, DateOnly, Enrollment, Family, FillIn, OwedOffer, PaymentMethod, Pool } from "@/data/types";
+import type { AppData, Child, DateOnly, Enrollment, Family, FillIn, OwedLesson, OwedOffer, PaymentMethod, Pool } from "@/data/types";
 import { cancellationOn, cancelledDates, closedDates, closureOn } from "@/rules/closures";
-import { addDays, ageInMonths } from "@/rules/dates";
+import { addDays, ageInMonths, todayAtSchool } from "@/rules/dates";
 import { offerOpen } from "@/rules/holds";
 import { cardPriceCents, money } from "@/rules/prices";
 import { DEVICE_ID } from "@/rules/booking";
@@ -201,30 +201,65 @@ export interface NextLesson extends LessonInfo {
 /** Why a date offered or booked in place of a lesson no longer stands. */
 export type OneOffGone = { kind: "cancelled"; reason: string } | { kind: "closed"; reason: string } | { kind: "class-ended" };
 
+/** A date offered or booked in place of a lesson, and the lesson on the family's bill it stands for. */
+export interface OneOff {
+  enrollmentId: string;
+  fillIn: boolean;
+  offer: Pick<OwedOffer, "timeKind" | "timeId" | "date" | "answer" | "answerBy">;
+  billedDate: DateOnly;
+}
+
+export function oneOffOfOwed(owed: Pick<OwedLesson, "enrollmentId" | "billedDate">, offer: OwedOffer): OneOff {
+  return { enrollmentId: owed.enrollmentId, fillIn: false, offer, billedDate: owed.billedDate };
+}
+
+export function oneOffOfFillIn(fillIn: Pick<FillIn, "enrollmentId" | "offer" | "missedDate">): OneOff {
+  return { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: fillIn.offer, billedDate: fillIn.missedDate };
+}
+
 /**
  * Whether a new date (for a lesson the school cancelled) or a fill-in (for
  * the family's own miss) still stands: null while it does. Its day can be
- * cancelled or closed after it was offered. A fill-in also goes with the
- * class it stood in for; a new date stays when the family moves to another
- * class, since the lesson it replaces is on their bill.
+ * cancelled or closed after it was offered. A fill-in goes with the class it
+ * stood in for. A new date stays when the family moves to another class only
+ * while the lesson it replaces is on their bill: a class ended on or before
+ * that lesson's day doesn't bill it, so nothing is owed.
  */
-export function oneOffGone(data: Readonly<AppData>, input: { enrollmentId: string; fillIn: boolean; offer: Pick<OwedOffer, "timeKind" | "timeId" | "date"> }): OneOffGone | null {
+export function oneOffGone(data: Readonly<AppData>, input: OneOff): OneOffGone | null {
   const { offer } = input;
   const time = offer.timeKind === "class" ? data.classes.find((c) => c.id === offer.timeId) : data.evaluationTimes.find((e) => e.id === offer.timeId);
   const closed = time ? closureOn(data, time.poolId, offer.date) : undefined;
   if (closed) return { kind: "closed", reason: closed.reason };
   const cancelled = offer.timeKind === "class" ? cancellationOn(data, offer.timeId, offer.date) : undefined;
   if (cancelled) return { kind: "cancelled", reason: cancelled.reason };
-  if (input.fillIn) {
-    const enrollment = data.enrollments.find((e) => e.id === input.enrollmentId);
-    if (!enrollment || !isActive(enrollment)) return { kind: "class-ended" };
-  }
+  const enrollment = data.enrollments.find((e) => e.id === input.enrollmentId);
+  if (input.fillIn ? !enrollment || !isActive(enrollment) : enrollment?.endedOn && enrollment.endedOn <= input.billedDate) return { kind: "class-ended" };
   return null;
+}
+
+/**
+ * An offer the family hadn't answered that the school closed while it was
+ * still open (its day cancelled or closed, or its class ended), not one the
+ * family let lapse: it doesn't count against them. null otherwise.
+ */
+export function closedBeforeAnswer(data: Readonly<AppData>, input: OneOff): OneOffGone | null {
+  if (input.offer.answer !== null) return null;
+  const gone = oneOffGone(data, input);
+  if (gone?.kind === "cancelled") {
+    const when = cancellationOn(data, input.offer.timeId, input.offer.date)!.createdAt;
+    return todayAtSchool(new Date(when)) <= input.offer.answerBy ? gone : null;
+  }
+  if (gone?.kind === "class-ended") {
+    const ended = data.enrollments.find((e) => e.id === input.enrollmentId)?.endedOn;
+    return ended && ended <= input.offer.answerBy ? gone : null;
+  }
+  // A closed day is set ahead of time.
+  return gone;
 }
 
 /** A fill-in the family can still answer: not answered, not past its answer-by day, and still standing. */
 export function fillInOpen(data: Readonly<AppData>, fillIn: FillIn, today: DateOnly): boolean {
-  return fillIn.offer.answer === null && offerOpen(fillIn.offer, today) && !oneOffGone(data, { enrollmentId: fillIn.enrollmentId, fillIn: true, offer: fillIn.offer });
+  return fillIn.offer.answer === null && offerOpen(fillIn.offer, today) && !oneOffGone(data, oneOffOfFillIn(fillIn));
 }
 
 /**
@@ -235,10 +270,10 @@ export function fillInOpen(data: Readonly<AppData>, fillIn: FillIn, today: DateO
 export function replacementLessons(data: Readonly<AppData>, familyId: string, today: DateOnly): NextLesson[] {
   const out: NextLesson[] = [];
   const booked = [
-    ...data.owedLessons.filter((o) => o.familyId === familyId).flatMap((o) => o.offers.map((offer) => ({ enrollmentId: o.enrollmentId, offer, inPlaceOf: o.cancelledDate, fillIn: false }))),
-    ...data.fillIns.filter((f) => f.familyId === familyId).map((f) => ({ enrollmentId: f.enrollmentId, offer: f.offer, inPlaceOf: f.missedDate, fillIn: true })),
+    ...data.owedLessons.filter((o) => o.familyId === familyId).flatMap((o) => o.offers.map((offer) => ({ ...oneOffOfOwed(o, offer), offer, inPlaceOf: o.cancelledDate }))),
+    ...data.fillIns.filter((f) => f.familyId === familyId).map((f) => ({ ...oneOffOfFillIn(f), offer: f.offer, inPlaceOf: f.missedDate })),
   ];
-  for (const { enrollmentId, offer, inPlaceOf, fillIn } of booked) {
+  for (const { enrollmentId, offer, inPlaceOf, fillIn, billedDate } of booked) {
     if (offer.answer !== "yes" || offer.date < today) continue;
     const enrollment = data.enrollments.find((e) => e.id === enrollmentId);
     const info = enrollment ? lessonInfo(data, enrollment) : null;
@@ -246,7 +281,7 @@ export function replacementLessons(data: Readonly<AppData>, familyId: string, to
     const pool = time ? data.pools.find((p) => p.id === time.poolId) : undefined;
     if (!info || !time || !pool) continue;
     // Not if that day is cancelled or closed, or (a fill-in) once the family has left the class it stood in for.
-    if (oneOffGone(data, { enrollmentId, fillIn, offer })) continue;
+    if (oneOffGone(data, { enrollmentId, fillIn, offer, billedDate })) continue;
     // Already marked held: it's happened.
     if (data.attendanceMarks.some((m) => m.childRecordId === info.child.id && m.lessonDate === offer.date && m.slot === time.startTime)) continue;
     out.push({

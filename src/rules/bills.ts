@@ -129,7 +129,8 @@ export function monthBill(data: Readonly<AppData>, familyId: string, month: Date
         continue;
       }
       if (cancellationOn(data, info.enrollment.timeId, d)) {
-        const credited = data.owedLessons.some((o) => o.enrollmentId === info.enrollment.id && o.cancelledDate === d && o.creditApprovedAt !== null);
+        // A credit on this lesson, or on an owed lesson that took its place after the school cancelled the new date too.
+        const credited = data.owedLessons.some((o) => o.enrollmentId === info.enrollment.id && o.billedDate === d && o.creditApprovedAt !== null);
         line.cancelled.push({ date: d, credited });
         if (credited) continue;
       }

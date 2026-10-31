@@ -5,11 +5,27 @@ import { Tag } from "@/components/parts/tag";
 import { PageTitle, ScreenShell } from "@/components/shell/screen-shell";
 import { Button } from "@/components/ui/button";
 import { emailUsLine, emailUsLineFor } from "@/content/first-lesson";
-import type { AppData, DateOnly, OwedOffer } from "@/data/types";
+import type { AppData, DateOnly } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo } from "@/lib/nav";
 import { clockTime, longDate, weekdayName } from "@/rules/dates";
-import { currentFamily, familyLessons, fillInOpen, lessonDaysAhead, lessonKindWords, oneOffGone, replacementLessons, upcomingLessons, type LessonInfo, type NextLesson } from "@/rules/family";
+import {
+  closedBeforeAnswer,
+  currentFamily,
+  familyLessons,
+  fillInOpen,
+  isActive,
+  lessonDaysAhead,
+  lessonKindWords,
+  oneOffGone,
+  oneOffOfFillIn,
+  oneOffOfOwed,
+  replacementLessons,
+  upcomingLessons,
+  type LessonInfo,
+  type NextLesson,
+  type OneOff,
+} from "@/rules/family";
 import { missNoted } from "@/rules/notes";
 import { owedState } from "@/rules/owed";
 
@@ -29,9 +45,9 @@ function StandInBlock({ lesson, today, note }: { lesson: NextLesson; today: Date
 }
 
 /** A booked new date or fill-in that isn't coming after all, in a family's words; "" while it still stands. */
-function goneWords(data: Readonly<AppData>, enrollmentId: string, fillIn: boolean, offer: OwedOffer, today: DateOnly): string {
-  const gone = oneOffGone(data, { enrollmentId, fillIn, offer });
-  const what = `${fillIn ? "the fill-in" : "its new date"} on ${longDate(offer.date, today)}`;
+function goneWords(data: Readonly<AppData>, oneOff: OneOff, today: DateOnly): string {
+  const gone = oneOffGone(data, oneOff);
+  const what = `${oneOff.fillIn ? "the fill-in" : "its new date"} on ${longDate(oneOff.offer.date, today)}`;
   if (gone?.kind === "cancelled") return `We cancelled ${what} too. Messages says what's next.`;
   if (gone?.kind === "closed") return `The pool is closed for ${what}.`;
   return "";
@@ -40,10 +56,11 @@ function goneWords(data: Readonly<AppData>, enrollmentId: string, fillIn: boolea
 /** What a day the family said they'll miss means now: the note, and where its fill-in stands. */
 function missLine(data: Readonly<AppData>, l: LessonInfo, date: DateOnly, extras: NextLesson[], today: DateOnly): string {
   const enrollmentId = l.enrollment.id;
-  const f = data.fillIns.find((x) => x.enrollmentId === enrollmentId && x.missedDate === date);
+  // The latest fill-in for that day: a person can offer another after the school closes one.
+  const f = data.fillIns.filter((x) => x.enrollmentId === enrollmentId && x.missedDate === date).sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)).pop();
   const sent = `You sent a note that ${l.child.firstName} will miss it.`;
   if (f?.offer.answer === "yes") {
-    const gone = goneWords(data, enrollmentId, true, f.offer, today);
+    const gone = goneWords(data, oneOffOfFillIn(f), today);
     if (gone) return `${sent} ${gone}`;
     // Shown under the day while it's to come; once it's marked held, it has happened.
     return extras.some((x) => x.fillIn && x.inPlaceOf === date) ? sent : `${sent} ${l.child.firstName}'s fill-in on ${longDate(f.offer.date, today)} has happened.`;
@@ -51,7 +68,7 @@ function missLine(data: Readonly<AppData>, l: LessonInfo, date: DateOnly, extras
   if (f?.offer.answer === "no") return `${sent} You said no, thanks, to the fill-in.`;
   if (f && fillInOpen(data, f, today)) return `${sent} Messages has a fill-in for you to answer.`;
   if (f) {
-    const gone = oneOffGone(data, { enrollmentId, fillIn: true, offer: f.offer });
+    const gone = closedBeforeAnswer(data, oneOffOfFillIn(f));
     if (gone?.kind === "cancelled") return `${sent} The fill-in we offered closed when we cancelled its day.`;
     if (gone?.kind === "closed") return `${sent} The fill-in we offered closed: the pool is closed that day.`;
     return `${sent} The fill-in we offered closed with no answer.`;
@@ -65,11 +82,11 @@ function missLine(data: Readonly<AppData>, l: LessonInfo, date: DateOnly, extras
 function owedLine(data: Readonly<AppData>, enrollmentId: string, date: DateOnly, extras: NextLesson[], today: DateOnly): string {
   const owed = data.owedLessons.find((o) => o.enrollmentId === enrollmentId && o.cancelledDate === date);
   const state = owed ? owedState(data, owed, today) : null;
-  if (state?.kind === "waiting") return "Messages has another date for you to answer.";
+  if (state?.kind === "waiting") return "Messages has a new date for you to answer.";
   if (state?.kind === "booked") {
-    const gone = goneWords(data, enrollmentId, false, state.offer, today);
+    const gone = goneWords(data, oneOffOfOwed(owed!, state.offer), today);
     if (gone) return gone;
-    return extras.some((x) => !x.fillIn && x.inPlaceOf === date) ? "" : `Its new date, ${longDate(state.offer.date, today)}, has happened.`;
+    return extras.some((x) => x.inPlaceOf === date) ? "" : `Its new date, ${longDate(state.offer.date, today)}, has happened.`;
   }
   if (state?.kind === "credited") return "It's credited on your bill.";
   if (state?.kind === "closed") return "Neither date we offered worked.";
@@ -91,7 +108,7 @@ export function LessonDatesScreen() {
   const { data, today } = loaded;
   const family = currentFamily(data);
   const lessons = family ? familyLessons(data, family.id) : [];
-  if (!family || lessons.length === 0) {
+  if (!family) {
     return (
       <ScreenShell id="lesson-dates">
         <PageTitle>Lesson dates</PageTitle>
@@ -102,7 +119,29 @@ export function LessonDatesScreen() {
       </ScreenShell>
     );
   }
+  if (lessons.length === 0) {
+    // Signed up with no class yet: a waitlist only.
+    const waiting = [...new Set(data.waitlistEntries.filter((w) => w.familyId === family.id).map((w) => w.childRecordId))]
+      .map((id) => data.children.find((c) => c.id === id)?.firstName)
+      .filter((n): n is string => Boolean(n));
+    return (
+      <ScreenShell id="lesson-dates">
+        <PageTitle>Lesson dates</PageTitle>
+        <p data-testid="nothing-ahead">
+          No lesson is coming up yet.
+          {waiting.length > 0 ? ` ${waiting.join(" and ")} ${waiting.length > 1 ? "are" : "is"} on a waitlist; Home shows where that stands.` : ""}
+        </p>
+        <Button size="block" onClick={() => go("/family/add")}>
+          Add a child or a class
+        </Button>
+      </ScreenShell>
+    );
+  }
   const pools = [...new Map(lessons.map((l) => [l.pool.id, l.pool])).values()];
+  const replacements = replacementLessons(data, family.id, today);
+  // A new date kept after the family left its class (the lesson it replaces is on their bill) shows in that child's first section.
+  const firstSection = new Map<string, string>();
+  for (const l of lessons) if (!firstSection.has(l.child.id)) firstSection.set(l.child.id, l.enrollment.id);
 
   return (
     <ScreenShell id="lesson-dates">
@@ -111,9 +150,11 @@ export function LessonDatesScreen() {
       {lessons.map((l) => {
         const days = lessonDaysAhead(data, l, today, WEEKS);
         // New dates and fill-ins still to come for this class: the same list Home and Your first lesson read.
-        const extras = replacementLessons(data, family.id, today).filter((x) => x.enrollment.id === l.enrollment.id);
-        // One whose own day isn't in these weeks (it has passed, say) gets a row of its own, in date order.
-        const loose = extras.filter((x) => !days.some((d) => d.date === x.inPlaceOf));
+        const extras = replacements.filter((x) => x.enrollment.id === l.enrollment.id);
+        const kept = firstSection.get(l.child.id) === l.enrollment.id ? replacements.filter((x) => x.child.id === l.child.id && !isActive(x.enrollment)) : [];
+        // Each shows under the cancelled or missed day it stands in for; one whose day isn't listed here (it has passed, say) gets a row of its own, in date order.
+        const underDays = new Set(days.filter((d) => !d.closedReason && (d.cancelledReason || missNoted(data, l.enrollment.id, d.date))).map((d) => d.date));
+        const loose = [...extras.filter((x) => !underDays.has(x.inPlaceOf!)), ...kept];
         const rows = [...days.map((d) => ({ date: d.date, day: d, lesson: null })), ...loose.map((x) => ({ date: x.date, day: null, lesson: x }))].sort((a, b) =>
           a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
         );
@@ -156,7 +197,7 @@ export function LessonDatesScreen() {
                       We cancelled this lesson. {d.cancelledReason}.{owedLine(data, l.enrollment.id, d.date, extras, today) ? ` ${owedLine(data, l.enrollment.id, d.date, extras, today)}` : ""}
                     </span>
                     {extras
-                      .filter((x) => !x.fillIn && x.inPlaceOf === d.date)
+                      .filter((x) => x.inPlaceOf === d.date)
                       .map((x) => (
                         <StandInBlock key={`${x.date}-${x.startTime}`} lesson={x} today={today} />
                       ))}
@@ -167,7 +208,7 @@ export function LessonDatesScreen() {
                     <Tag>Not coming</Tag>
                     <span>{missLine(data, l, d.date, extras, today)}</span>
                     {extras
-                      .filter((x) => x.fillIn && x.inPlaceOf === d.date)
+                      .filter((x) => x.inPlaceOf === d.date)
                       .map((x) => (
                         <StandInBlock key={`${x.date}-${x.startTime}`} lesson={x} today={today} />
                       ))}

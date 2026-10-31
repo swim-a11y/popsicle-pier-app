@@ -1349,7 +1349,8 @@
     "area": "schedule",
     "description": "Cancelling a class date owes the lesson to everyone booked into it that day (one-offs too) but not to a family that already said they'll miss it; a one-off on a cancelled, closed or left class's day isn't shown as coming.",
     "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a cancelled day is owed to who was booked into it; a noted miss isn't owed twice / a booked fill-in goes once the family leaves the class it stood in for",
-    "passes": true
+    "passes": true,
+    "supersededBy": "cancel-owes-standing (rules round, DECISIONS.md 138): a new date stays after a class ends while its lesson is billed, a fill-in for a class that has ended isn't owed, and a miss of the weekly lesson doesn't skip a one-off."
   },
   {
     "id": "switch-now-and-new",
@@ -1420,7 +1421,8 @@
     "area": "schedule",
     "description": "A booked new date for a lesson the school cancelled stays when the family moves to another class, since the lesson it replaces is on their bill; a fill-in goes with its class.",
     "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a booked new date stays when the family moves to another class: the lesson it replaces is on their bill / a booked fill-in goes once the family leaves the class it stood in for",
-    "passes": true
+    "passes": true,
+    "supersededBy": "new-date-follows-bill (rules round, DECISIONS.md 136): a new date stays after a switch only while the cancelled lesson it replaces is on the bill; the old test ended the class before that lesson, so its claim was false, and it was replaced."
   },
   {
     "id": "one-offs-proven",
@@ -1497,6 +1499,97 @@
     "area": "walkthrough",
     "description": "Walk-through 13 also captures the switch's answered card in Messages (with the note saying what the school did) and the owner's Done list after the family's yes.",
     "test": "e2e/sign-up.spec.ts: walk-through 13",
+    "passes": true
+  },
+  {
+    "id": "new-date-follows-bill",
+    "area": "schedule",
+    "description": "A new date for a lesson the school cancelled stays when the family moves to another class after that lesson (it stays on their bill) and shows on Lesson dates in that child's first section; when they moved on or before that lesson's day, it isn't billed, its new date is off, nothing is owed, and Messages says so.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a new date stays when the family moves to another class after the lesson it replaces, which is on their bill / when the family moved before the cancelled lesson, it isn't on their bill: its new date goes, and nothing is owed; tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a new date kept after the family moves on shows on Lesson dates; one for a lesson after they moved is off, and Messages says why",
+    "passes": true
+  },
+  {
+    "id": "owed-billed-date",
+    "area": "money",
+    "description": "An owed lesson keeps the lesson on the bill it's owed for: when the school cancels a new date or fill-in booked for a lesson, the lesson owed again points back to it, so an approved credit takes that lesson off the bill and Messages names it; Bills say what happened to each new date.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a credit on a lesson owed again, after its new date was cancelled too, takes the first lesson off the bill; tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a credit after a new date was cancelled too names the lesson that comes off the bill; every screen agrees about new dates and fill-ins > a new date whose day the school then cancels shows as coming nowhere, and each screen says so",
+    "passes": true
+  },
+  {
+    "id": "cancel-owes-standing",
+    "area": "schedule",
+    "description": "Cancelling a class date owes the lesson to everyone booked into it that day: the class's own children (not a family that already said they'll miss that weekly lesson) and anyone with a new date or fill-in there that still stands; a fill-in whose class has ended isn't owed, and a miss of the weekly lesson that day doesn't skip what's owed for a one-off.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a cancelled day is owed to who was booked into it; a noted miss isn't owed twice / cancelling a day owes no fill-in whose class has ended, and a one-off isn't skipped for a miss of that day's weekly lesson / a booked new date whose day is cancelled is owed again; one whose day is closed isn't coming",
+    "passes": true
+  },
+  {
+    "id": "lapsed-offers-count",
+    "area": "schedule",
+    "description": "A date the family let lapse still counts as one of the two once the school cancels its day; only one the school cancelled or closed while the family could still answer doesn't.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a date the family let lapse still counts once the school cancels its day; one cancelled while open doesn't",
+    "passes": true
+  },
+  {
+    "id": "fill-in-again",
+    "area": "schedule",
+    "description": "When the school cancels or closes a fill-in's day before the family answers, the family hasn't had one: the note comes back to the inbox for another date that week (it leaves once that week has passed), and Messages shows both.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > after the school closes a fill-in before the family answers, a person can offer another that week, and the inbox lists the note again / an offer still waiting closes when the school cancels its day: a fill-in has closed; a new date isn't one of the two",
+    "passes": true
+  },
+  {
+    "id": "stale-fill-ins-close",
+    "area": "schedule",
+    "description": "A fill-in still waiting closes when its class ends or the pool closes its day: a yes is refused, and it leaves the answers Home and Messages ask for.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a fill-in still waiting closes when its class ends, or when the pool closes its day",
+    "passes": true
+  },
+  {
+    "id": "owner-sees-closed-dates",
+    "area": "office",
+    "description": "The owner's owed card lists each date offered before and how it ended, and Done says when the school's own change closed or undid one (\"Closed before they answered: we cancelled that day.\", \"They said yes; then we cancelled that day.\") and what each new date was for.",
+    "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > the owner's card and Done say when the school closed a date, and what each new date was for",
+    "passes": true
+  },
+  {
+    "id": "dead-days-hold-nothing",
+    "area": "schedule",
+    "description": "A new date or fill-in on a day the school cancelled or closed holds no place, so a new weekly booking can start sooner.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > a new date on a day the school then cancels holds no place: a new weekly booking can start sooner",
+    "passes": true
+  },
+  {
+    "id": "any-time-not-same-time",
+    "area": "schedule",
+    "description": "Waiting for any time that fits never offers a class on the same day and time as one of the child's own.",
+    "test": "tests/unit/fill-in-edges.test.ts: fill-ins and the dates around them > waiting for any time that fits never offers a class on the same day and time as the child's own",
+    "passes": true
+  },
+  {
+    "id": "nothing-ahead-waitlist",
+    "area": "family",
+    "description": "A family on a waitlist only sees \"No lesson is coming up yet. Mia is on a waitlist; Home shows where that stands.\" on Lesson dates and Your first lesson, with \"Add a child or a class\", never the sign-up prompt.",
+    "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a family on a waitlist only isn't asked to sign up: Lesson dates and Your first lesson say nothing is coming up yet",
+    "passes": true
+  },
+  {
+    "id": "card-truth-proven",
+    "area": "office",
+    "description": "The different-time card says \"Ivy has no weekly class to replace.\" for a child with no weekly class, and that an offer is already waiting when it came from another of the child's waitlists.",
+    "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > the different-time card says when the child has no weekly class, or an offer from another waitlist already waits",
+    "passes": true
+  },
+  {
+    "id": "switch-prices-differ",
+    "area": "family",
+    "description": "A switch to a class at another price shows both prices under Now and New, with no \"Same as now.\"; an offer not from the family's note is titled \"A spot for Ada\".",
+    "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a switch to a class at another price shows both prices under Now and New; messages and notes > a waitlist offer: words, both prices, and the family's yes books it",
+    "passes": true
+  },
+  {
+    "id": "one-offs-agree-proven",
+    "area": "schedule",
+    "description": "A booked date on a day the pool closes, or a fill-in the school cancels, says so on Lesson dates, Bills and Messages and isn't Your first lesson's; Home's \"New class from\" line goes after that class's first lesson.",
+    "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a booked date whose day is closed, or a fill-in the school cancels, says so on Lesson dates, Bills, Messages and Your first lesson; a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson",
     "passes": true
   }
 ]
