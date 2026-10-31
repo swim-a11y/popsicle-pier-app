@@ -19,11 +19,14 @@ import type { LocalStore } from "@/data/store";
 import type { SignUpDraft } from "@/data/types";
 import { bookTime, setCurrentFamily, signAndSave } from "@/rules/booking";
 import { answerFillIn, sendFillIn } from "@/rules/fillins";
+import { familyLessons } from "@/rules/family";
 import { LATER_ROOM_RULES } from "@/rules/later-rooms";
 import { markNoteRead, sendNote } from "@/rules/notes";
 import { answerWaitlistOffer, leaveClass, leaveWaitlist, offerDifferentTime, sendWaitlistOffer, waitlistItems } from "@/rules/offers";
 import { answerOwedOffer, cancelClassDate, owedState, sendOwedOffer } from "@/rules/owed";
+import { sendPartnerNotice } from "@/rules/partners";
 import { pretendFirstLesson } from "@/sandbox/pretend-first-lesson";
+import { MOVING_FAMILY_ID } from "@/sandbox/seed";
 import { pretendFamilyLeft, pretendSchoolCancelled } from "@/sandbox/pretend-school";
 
 const flat = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
@@ -693,9 +696,9 @@ describe("staff page", () => {
     freshStore();
     render(<StaffScreen />);
     const built = LATER_ROOM_RULES.filter((r) => r.builtIn);
-    // Six from rulings 1 to 3, and the fill-in rule from ruling 5.
-    expect(built).toHaveLength(7);
-    expect(screen.getAllByText("Built")).toHaveLength(7);
+    // Six from rulings 1 to 3, the fill-in rule from ruling 5, and the note about a class with no partner from ruling 6.
+    expect(built).toHaveLength(8);
+    expect(screen.getAllByText("Built")).toHaveLength(8);
     for (const r of built) expect(screen.getByText(`In ${r.builtIn}.`)).toBeInTheDocument();
   });
 });
@@ -989,5 +992,69 @@ describe("one-off lessons and offers, as each screen says them", () => {
     expect(flat(within(await screen.findByTestId("school-fill-in")).getByTestId("offer-status").textContent)).toBe(
       "You said yes on Friday, October 30 to a fill-in on Sunday, November 8 at 9:30 am. We cancelled that day. The pool heater is out (sample).",
     );
+  });
+});
+
+describe("no partner after the first month", () => {
+  it("the inbox drafts the note once the first month has passed; a person sends it; Done says so", async () => {
+    const store = freshStore();
+    // Before Theo's first month with no partner ends (Saturday, November 7), nothing is listed.
+    render(<InboxScreen />);
+    expect(await screen.findByText("Nothing is waiting for a person.")).toBeInTheDocument();
+    cleanup();
+    vi.setSystemTime(new Date("2026-11-09T17:00:00Z"));
+    render(<InboxScreen />);
+    const section = await screen.findByTestId("inbox-section-partners");
+    expect(within(section).getByRole("heading", { level: 2 })).toHaveTextContent("No partner after the first month");
+    const card = within(section).getByTestId("inbox-partner");
+    expect(flat(card.textContent)).toContain(
+      "No partner in the Wednesday 5:00 pm class at Madison, with Coach Tamsin, since Wednesday, October 7. The first month at the semi-private price ended Friday, November 6.",
+    );
+    expect(flat(card.textContent)).toContain("The app doesn't pair anyone or change the price.");
+    expect(flat(within(card).getByTestId("draft-words").textContent)).toBe(
+      "Theo has had no partner in the Wednesday 5:00 pm class at Madison, with Coach Tamsin, since Wednesday, October 7. The first month at the semi-private price has passed, and we haven't found a partner yet. We'd like to talk with you about what comes next: email us at madison.sample@example.com. Nothing about Theo's class or its price changes before Wednesday, December 2.",
+    );
+    expect(within(card).getByTestId("draft")).toHaveTextContent("Goes to Dana Whitcombe's Messages in the app.");
+    const drafted = within(card).getByTestId("draft-words").textContent;
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Send the note (sample)" })));
+    expect(screen.queryByTestId("inbox-partner")).toBeNull();
+    expect(flat(screen.getByTestId("inbox-done").textContent)).toContain(
+      "Sent Dana Whitcombe a note about Theo's Wednesday 5:00 pm class at Madison: no partner yet; nothing changes before Wednesday, December 2.",
+    );
+    // Exactly the words the person saw are what the family gets.
+    expect((await store.snapshot()).partnerNotices.map((n) => n.words)).toEqual([drafted]);
+  });
+
+  it("the family reads it in Messages, and Home says no partner yet, then that nothing changes before that date", async () => {
+    const store = freshStore();
+    vi.setSystemTime(new Date("2026-11-09T17:00:00Z"));
+    await act(async () => {
+      await store.transaction((tx) => setCurrentFamily(tx, MOVING_FAMILY_ID, "moving"));
+    });
+    render(<HomeScreen />);
+    const theo = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Theo"))!;
+    expect(flat(within(theo).getByTestId("home-no-partner").textContent)).toBe(
+      "No partner yet. You pay the semi-private price for the first month. If we haven't found a partner by then, we'll talk with you before anything changes.",
+    );
+    cleanup();
+    await act(async () => {
+      const theoClass = familyLessons(await store.snapshot(), MOVING_FAMILY_ID).find((l) => l.child.firstName === "Theo")!;
+      await store.transaction((tx) => sendPartnerNotice(tx, { enrollmentId: theoClass.enrollment.id, today: "2026-11-09", now: "2026-11-09T17:00:00.000Z", newId: testId }));
+    });
+    render(<MessagesScreen />);
+    const card = await screen.findByTestId("school-partner-note");
+    expect(within(card).getByRole("heading", { level: 3 })).toHaveTextContent("About Theo's class");
+    expect(flat(within(card).getByTestId("partner-note-words").textContent)).toContain("Nothing about Theo's class or its price changes before Wednesday, December 2.");
+    expect(within(card).queryByRole("button")).toBeNull();
+    expect(within(card).queryByTestId("partner-note-status")).toBeNull();
+    cleanup();
+    render(<HomeScreen />);
+    const after = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Theo"))!;
+    expect(flat(within(after).getByTestId("home-no-partner").textContent)).toBe(
+      "No partner yet. We sent you a note about it in Messages: nothing about this class or its price changes before Wednesday, December 2.",
+    );
+    // Juniper's class has a partner: no such line.
+    const juniper = (await screen.findAllByTestId("home-child")).find((c) => c.textContent?.includes("Juniper"))!;
+    expect(within(juniper).queryByTestId("home-no-partner")).toBeNull();
   });
 });

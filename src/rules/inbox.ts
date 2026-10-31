@@ -13,6 +13,7 @@ import { fillInState } from "@/rules/fillins";
 import { hasHadFirstLesson } from "@/rules/first-sunday";
 import { BY_THE_SCHOOL, OfferProblemError, classWords, waitlistItems } from "@/rules/offers";
 import { owedState, type OwedState } from "@/rules/owed";
+import { unpairedItems } from "@/rules/partners";
 
 export interface TalkItem {
   child: Child;
@@ -80,6 +81,7 @@ export interface InboxCounts {
   talks: number;
   owed: number;
   waitlist: number;
+  partners: number;
   notes: number;
 }
 
@@ -89,6 +91,7 @@ export function inboxCounts(data: Readonly<AppData>, today: DateOnly): InboxCoun
     talks: talkItems(data, today).length,
     owed: owedToDo(data, today).filter((x) => x.state.kind !== "waiting").length,
     waitlist: waitlistItems(data, today).filter((i) => !i.pending && i.open.length > 0).length,
+    partners: unpairedItems(data, today).length,
     notes: notesForAPerson(data, today).length,
   };
 }
@@ -146,6 +149,12 @@ export function doneItems(data: Readonly<AppData>, today: DateOnly, limit = 8): 
     }
     if (state.kind === "credited") items.push({ at: owed.creditApprovedAt!, line: `Approved a credit for ${name(owed.childRecordId)}'s lesson on ${longDate(owed.cancelledDate, today)}.` });
     if (state.kind === "closed") items.push({ at: state.offer.answeredAt ?? state.offer.offeredAt, line: `Closed with no credit: ${name(owed.childRecordId)}'s lesson on ${longDate(owed.cancelledDate, today)}.` });
+  }
+  for (const n of data.partnerNotices) {
+    const enrollment = data.enrollments.find((e) => e.id === n.enrollmentId);
+    const info = enrollment ? lessonInfo(data, enrollment) : null;
+    const what = info ? `${classWords(info)} at ${info.pool.name}` : "class";
+    items.push({ at: n.sentAt, line: `Sent ${family(n.familyId)} a note about ${name(n.childRecordId)}'s ${what.replace(/^the /, "")}: no partner yet; nothing changes before ${longDate(n.nothingChangesBefore, today)}.` });
   }
   for (const f of data.fillIns) {
     const o = f.offer;

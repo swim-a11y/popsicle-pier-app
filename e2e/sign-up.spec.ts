@@ -155,6 +155,8 @@ test.beforeAll(async ({ browser }) => {
     hasTouch: true,
   });
   page = await context.newPage();
+  // The walk-throughs are written for Friday, October 30, 2026 at the school; the clock starts there and runs on, so dates and counts don't drift with the real date.
+  await page.clock.setSystemTime(new Date("2026-10-30T15:00:00Z"));
 });
 
 test.afterAll(() => writeReport());
@@ -1295,5 +1297,51 @@ test("walk-through 13: a different time, from the family's note", async () => {
   run!.notes.push(
     "Mia's family asked for a different time; nothing else that fit was open at Madison, so a person put her on the Madison waitlist for any time that fits; when a family left the full Wednesday class, a person offered it in place of her Sunday class; the family said yes and the Sunday class ended.",
   );
+  run!.passed = true;
+});
+
+test("walk-through 14: no partner after the first month", async () => {
+  begin(
+    14,
+    "Theo, in the family that moved over, has been the only child in his Wednesday class since October 7; once that first month has passed, the owner sends the drafted note, and the family reads it in Messages and on Home",
+  );
+  // Monday, November 9: Theo's first month with no partner ended on Friday, November 6.
+  await page.clock.setSystemTime(new Date("2026-11-09T17:00:00Z"));
+
+  screen("Sandbox: play as the owner");
+  await page.goto("/");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Owner/ }));
+
+  screen("Inbox: no partner after the first month");
+  const card = page.getByTestId("inbox-partner").filter({ hasText: "Theo" });
+  await expect(card).toContainText("since Wednesday, October 7. The first month at the semi-private price ended Friday, November 6.");
+  await expect(card.getByTestId("draft-words")).toContainText("Nothing about Theo's class or its price changes before Wednesday, December 2.");
+  await check("inbox-no-partner", { family: false });
+  await tap(card.getByRole("button", { name: "Send the note (sample)" }));
+  await expect(page.getByTestId("inbox-partner")).toHaveCount(0);
+  await expect(page.getByTestId("inbox-done")).toContainText("Sent Dana Whitcombe a note about Theo's Wednesday 5:00");
+
+  screen("Sandbox: play as the family that moved over");
+  await openSandbox();
+  await tap(page.getByRole("button", { name: /^Family moving over/ }));
+
+  screen("Home: Theo's class");
+  const theo = page.getByTestId("home-child").filter({ hasText: "Theo" });
+  await expect(theo.getByTestId("home-no-partner")).toContainText("We sent you a note about it in Messages: nothing about this class or its price changes before Wednesday, December 2.");
+  await check("home-no-partner");
+  await tap(page.getByRole("navigation", { name: "Family tabs" }).getByRole("link", { name: "More" }));
+  await tap(page.getByRole("link", { name: /^Messages/ }));
+
+  screen("Messages: the note");
+  const note = page.getByTestId("school-partner-note");
+  await expect(note.getByRole("heading", { name: "About Theo's class" })).toBeVisible();
+  await expect(note).not.toContainText(/Yes|No, thanks/);
+  await check("messages-no-partner");
+  const data = await stored();
+  expect(data.partnerNotices).toHaveLength(1);
+  const theoRow = data.enrollments.find((e: { id: string }) => e.id === data.partnerNotices[0].enrollmentId);
+  expect([theoRow.lessonTypeId, theoRow.unpairedSince, theoRow.endedOn]).toEqual(["lt-mad-semi", "2026-10-07", null]);
+  run!.notes.push("Theo's class had no partner after its first month; a person sent the drafted note; the family saw it in Messages and on Home; the class and its price stayed as they were.");
   run!.passed = true;
 });

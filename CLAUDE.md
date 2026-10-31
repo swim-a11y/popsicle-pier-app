@@ -24,8 +24,9 @@ The owner answered three questions on October 30, 2026, after the first build. T
 
 4. **Two readings confirmed.** Asked to confirm them, the owner answered "yes to both, keep building" (October 30, 2026): a family joining after the 19th has its first month drafted on the next 1st at least 10 days after its bill, with the following month's (DECISIONS.md 82); and Messages keeps the "We'd like a different time" and "We'd like to stop lessons" notes beside the missed-lesson note (DECISIONS.md 73).
 5. **Fill-ins: yes.** Asked whether to build fill-ins for a family's own miss, the owner said "yes build fill-ins, keep building" (October 30, 2026). The rule is the brief's: "A family's own miss gets a fill-in only: same instructor, the week after." A person offers each fill-in from the inbox when a family's "We'll miss" note arrives; the family answers in Messages.
+6. **No partner after the first month: the drafted notice.** Asked which later-room rule to build next, the owner picked "drafted notice when a semiprivate has no partner" (October 31, 2026). The rule is the brief's: "An unpaired semi-private child pays the semi-private price for the first month from the first lesson. If there's still no partner, the family hears at least three weeks before the price changes. The month starts again when a partner leaves." Once a class's first month with no partner has passed, the inbox drafts a note and a person sends it; the family reads it in Messages. The app never pairs anyone and never changes or names a price.
 
-These rulings build parts of the RULES FOR LATER ROOMS that the brief said not to build yet (waitlist offers, owed lessons and fill-ins from Schedule, monthly bills from Money, the inbox from Office and Owner). Every other rule on that list stays unbuilt and shown on the staff page.
+These rulings build parts of the RULES FOR LATER ROOMS that the brief said not to build yet (waitlist offers, owed lessons and fill-ins from Schedule, monthly bills and the note about a class with no partner from Money, the inbox from Office and Owner). Every other rule on that list stays unbuilt and shown on the staff page.
 
 ## How to run, test and deploy
 
@@ -33,7 +34,7 @@ These rulings build parts of the RULES FOR LATER ROOMS that the brief said not t
 - `npm run dev` for local work, `npm run build && npm run start` for the real build.
 - `npm test` runs Vitest (unit and render tests in `tests/`).
 - `npm run typecheck` runs `tsc --noEmit`. `npm run lint` runs ESLint.
-- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the thirteen walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`.
+- `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the fourteen walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`. Their browser clock starts at Friday, October 30, 2026 at the school and runs on (walk-through 14 moves it to November 9), so dates don't drift with the real date.
 - Deploy: any Node host that runs `next build` and `next start`. No vercel.json, no Vercel CLI. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ## Where things are
@@ -46,7 +47,7 @@ These rulings build parts of the RULES FOR LATER ROOMS that the brief said not t
 - `src/sandbox/`: everything sandbox-only behind the one `SANDBOX` switch: seeds, role switcher, erase, sample fill, the sample code, "Pretend the first lesson happened".
 - `src/config.ts`: payment settings (cardPricing, evaluationAsksForCard).
 - `src/rules/add.ts`: adding a brother or sister, or another class (times, checks, the one transaction). `src/rules/closures.ts`: closed days and cancelled class dates. Screens in `src/components/screens/add/` and `src/components/screens/lesson-dates.tsx`.
-- From the owner's rulings: `src/rules/bills.ts` (monthly bills, worked out, never stored), `src/rules/notes.ts` (the three ready-made notes), `src/rules/offers.ts` (waitlist offers, leaving a class, a different time after a family's note), `src/rules/owed.ts` (lessons the school cancels, and the coach-slot search), `src/rules/fillins.ts` (fill-ins for a family's own miss), `src/rules/holds.ts` (places an open offer holds), `src/rules/inbox.ts` (the inbox's lists and the Done list). Screens: `bills.tsx`, `messages.tsx`, `send-note.tsx` and the owner's `inbox.tsx` in `src/components/screens/`. Sandbox: `src/sandbox/pretend-school.ts`.
+- From the owner's rulings: `src/rules/bills.ts` (monthly bills, worked out, never stored), `src/rules/notes.ts` (the three ready-made notes), `src/rules/offers.ts` (waitlist offers, leaving a class, a different time after a family's note), `src/rules/owed.ts` (lessons the school cancels, and the coach-slot search), `src/rules/fillins.ts` (fill-ins for a family's own miss), `src/rules/partners.ts` (the note about a class with no partner after its first month), `src/rules/holds.ts` (places an open offer holds), `src/rules/inbox.ts` (the inbox's lists and the Done list). Screens: `bills.tsx`, `messages.tsx`, `send-note.tsx` and the owner's `inbox.tsx` in `src/components/screens/`. Sandbox: `src/sandbox/pretend-school.ts`.
 
 ## The app: six rooms plus two later wings
 
@@ -63,7 +64,7 @@ This build fills the parent's side only; the rest is named so later rooms fit.
 
 ## Records the later rooms will need (not in code yet)
 
-In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, WaitlistOffer, FamilyNote, TalkRecord and FillIn (the owner's rulings). Bills are worked out from lesson dates, not stored. The inbox's items are worked out from those records, so there's no ApprovalItem record yet.
+In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, WaitlistOffer, FamilyNote, TalkRecord, FillIn and PartnerNotice (the owner's rulings). Bills are worked out from lesson dates, not stored. The inbox's items are worked out from those records, so there's no ApprovalItem record yet.
 
 - Deck: RosterDay (a person builds it), CheckIn (the attendance record), Incident (holds that lesson's video), HoldFlag (health or custody yes, no details).
 - Money: Bill, BillLine (both prices), Charge (scheduled, pending, settled, returned, refunded, disputed), Credit (owner approves), RegistrationFee, CountyFee, FoundingMarker, FacilityShareReport, Deposit and DepositLine, PaymentCostMonth.
@@ -85,6 +86,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 - Next phase (the owner said to keep building with best judgement, inside the HARD RULES): Lesson dates with closed days, the parent's side of the Schedule room (a Closure record, sample closed days, first and next lessons skip them, Lesson dates under More); and Add a child or a class behind Home's card (a brother or sister gets a coverage row with their own answers, nothing new to sign; another class at either pool keeps one ID). Walk-through 7 covers it.
 - The owner's rulings (October 30, 2026): Bills for lessons only (both prices on every line, closed days not billed, billed by the 19th and drafted on the 1st, or 10 days after a later bill); Messages with three ready-made notes and the school's offers to answer; the approvals inbox (talks about a custody or health yes, owed lessons offered with the same coach, waitlist offers a person chooses and sends, notes to read, Done), as the owner's first tab; two sandbox shortcuts (the school cancels a lesson, a family leaves a full class). Walk-throughs 8, 9 and 10 cover it.
 - After the rulings ("keep building"): leaving a waitlist from Home (walk-through 11); fill-ins for a family's own miss, ruling 5 (walk-through 12); following up a "different time" note from the inbox, at the family's own pool, one open offer per child (walk-through 13). Every screen reads one rule for whether a new date or fill-in still stands. Each round had a design-critic and a rules-checker pass, logged in docs/check-report.md.
+- Ruling 6 (October 31, 2026): the note about a semi-private class with no partner after its first month, drafted in the inbox, sent by a person, read in Messages and on Home. Walk-through 14 covers it.
 
 ## Next
 
@@ -96,13 +98,14 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 211 unit tests and 50 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 219 unit tests and 51 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone the family release runs about twelve screens by design (every line visible, never folded).
 - The sample banner wraps to four lines at 375px, not the three planned (DECISIONS.md 32).
 - Times stay in time order, so a Full time can come first in the list (DECISIONS.md 47).
 - The inbox has no sign-in or roles: anyone on this phone can open it. Real data needs both first.
+- In the live sandbox the first note about a class with no partner (Theo's, in the family moving over) is due from Saturday, November 7, 2026; walk-through 14 shows it on a clock set to November 9.
 - Screenshots are made by `npm run e2e` into `screenshots/` and aren't committed.
 
 ## Keep for later (from the owner's handoff notes)

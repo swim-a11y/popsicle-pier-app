@@ -1,9 +1,10 @@
 /*
   RULES FOR LATER ROOMS. Shown on the staff page. The words are the
   owner's, copied exactly; a test checks them against CLAUDE.md. Each rule
-  names the room that will follow it. The owner's rulings of October 30,
-  2026 built a few of them (bills, waitlist offers, owed lessons, the
-  inbox); those say where (builtIn). The rest aren't built yet.
+  names the room that will follow it. The owner's rulings of October 30
+  and 31, 2026 built a few of them (bills, waitlist offers, owed lessons,
+  fill-ins, the inbox, the note about a class with no partner); those say
+  where (builtIn). The rest aren't built yet.
 */
 
 export type RoomId = "schedule" | "deck" | "money" | "office-owner" | "progress-video" | "every-room";
@@ -62,6 +63,7 @@ export const LATER_ROOM_RULES: readonly LaterRoomRule[] = [
   {
     room: "money",
     text: "An unpaired semi-private child pays the semi-private price for the first month from the first lesson. If there's still no partner, the family hears at least three weeks before the price changes. The month starts again when a partner leaves.",
+    builtIn: "the inbox's notes about a class with no partner, read in Messages; the price never changes on its own",
   },
   {
     room: "money",

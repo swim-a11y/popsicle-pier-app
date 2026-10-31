@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { MESSAGES_LINE } from "@/content/messages";
 import { getStore } from "@/data/app-store";
 import { newId } from "@/data/ids";
-import type { AppData, DateOnly, FamilyNote, FillIn, OwedLesson, WaitlistOffer } from "@/data/types";
+import type { AppData, DateOnly, FamilyNote, FillIn, OwedLesson, PartnerNotice, WaitlistOffer } from "@/data/types";
 import { useAppData } from "@/data/use-data";
 import { useGo, useQueryValue } from "@/lib/nav";
 import { firstWeeklyDate } from "@/rules/closures";
@@ -21,6 +21,7 @@ import { offerOpen } from "@/rules/holds";
 import { notesForFamily } from "@/rules/notes";
 import { answerWaitlistOffer, classFullWords, offersForFamily } from "@/rules/offers";
 import { answerOwedOffer, answersWaiting, owedForFamily, owedState } from "@/rules/owed";
+import { partnerNoticeNow, partnerNoticesForFamily } from "@/rules/partners";
 
 function AnswerButtons({ yes, no = "No, thanks", onAnswer, busy }: { yes: string; no?: string; onAnswer: (answer: "yes" | "no") => void; busy: boolean }) {
   return (
@@ -291,6 +292,24 @@ function FillInCard({ data, fillIn, today, first }: { data: Readonly<AppData>; f
   );
 }
 
+/** The school's note about a semi-private class with no partner after its first month. Nothing to answer; it opens a talk. */
+function PartnerNoticeCard({ data, notice }: { data: Readonly<AppData>; notice: PartnerNotice }) {
+  const child = data.children.find((c) => c.id === notice.childRecordId);
+  if (!child) return null;
+  const now = partnerNoticeNow(data, notice);
+  return (
+    <article className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card" aria-labelledby={`partner-${notice.id}`} data-testid="school-partner-note">
+      <h3 id={`partner-${notice.id}`} className="font-heading text-big text-heading">
+        About {child.firstName}&apos;s class
+      </h3>
+      <p data-testid="partner-note-words">{notice.words}</p>
+      <p>Sent {shownAtSchool(notice.sentAt)}</p>
+      {now === "partner" ? <p data-testid="partner-note-status">A partner has joined that class since.</p> : null}
+      {now === "ended" ? <p data-testid="partner-note-status">That class has since ended for {child.firstName}.</p> : null}
+    </article>
+  );
+}
+
 /** Notes between the family and the school: ready-made notes only, and the school's offers to answer. */
 export function MessagesScreen() {
   const loaded = useAppData();
@@ -325,6 +344,7 @@ export function MessagesScreen() {
     ...offers.map((o) => ({ key: o.id, at: o.answeredAt ?? o.offeredAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <WaitlistOfferCard key={o.id} data={data} offer={o} today={today} first={first} /> })),
     ...owed.map((o) => ({ key: o.id, at: o.offers[o.offers.length - 1]?.offeredAt ?? o.createdAt, open: waiting.some((w) => w.id === o.id), card: (first: boolean) => <CancelledCard key={o.id} data={data} owed={o} today={today} first={first} /> })),
     ...fillInsForFamily(data, family.id).map((f) => ({ key: f.id, at: f.offer.answeredAt ?? f.offer.offeredAt, open: waiting.some((w) => w.id === f.id), card: (first: boolean) => <FillInCard key={f.id} data={data} fillIn={f} today={today} first={first} /> })),
+    ...partnerNoticesForFamily(data, family.id).map((n) => ({ key: n.id, at: n.sentAt, open: false, card: () => <PartnerNoticeCard key={n.id} data={data} notice={n} /> })),
   ].sort((a, b) => (a.open !== b.open ? (a.open ? -1 : 1) : a.at < b.at ? 1 : -1));
 
   return (

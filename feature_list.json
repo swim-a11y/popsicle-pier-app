@@ -1591,5 +1591,54 @@
     "description": "A booked date on a day the pool closes, or a fill-in the school cancels, says so on Lesson dates, Bills and Messages and isn't Your first lesson's; Home's \"New class from\" line goes after that class's first lesson.",
     "test": "tests/unit/rooms-render.test.tsx: one-off lessons and offers, as each screen says them > a booked date whose day is closed, or a fill-in the school cancels, says so on Lesson dates, Bills, Messages and Your first lesson; a different time, from the inbox > the family sees now and new before answering; a yes says the old class ended, and Home says so until the first lesson",
     "passes": true
+  },
+  {
+    "id": "ruling-6-recorded",
+    "area": "docs",
+    "description": "The owner's pick of October 31, 2026 (\"drafted notice when a semiprivate has no partner\") is in CLAUDE.md as ruling 6 and in DECISIONS.md, and the staff page marks the later-room rule built.",
+    "test": "tests/unit/rooms-render.test.tsx: staff page > marks the later-room rules the owner's rulings built",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-due",
+    "area": "schedule",
+    "description": "A semi-private class with no other child in it a calendar month after it became unpaired (its first lesson, or the next lesson after a partner leaves) is listed for a note, once per unpaired stretch; a partner joining takes it off; a partner leaving starts the month again; a class the family has left has none.",
+    "test": "tests/unit/partners.test.ts: no partner after the first month > a semi-private class with no partner waits out its first month, then a note is due / a partner joining ends it; a partner leaving starts the month again / only a class still running: none for a class the family has left",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-words",
+    "area": "family",
+    "description": "The drafted note says how long the class has had no partner, that the first month at the semi-private price has passed, invites a talk (the pool's email as plain text), and that nothing about the class or its price changes before the class's first lesson at least three weeks on, past closed days; it names no new price and no partner.",
+    "test": "tests/unit/partners.test.ts: no partner after the first month > the note says what happened, opens a talk, and that nothing changes for three weeks: no new price, no partner named / nothing changes before a real lesson: a closed day three weeks on moves it a week",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-send",
+    "area": "office",
+    "description": "The inbox's \"No partner after the first month\" section shows each such class with the drafted words; a person sends it (\"Send the note (sample)\"); the family gets exactly those words; the class, its lesson type and its price stay as they are; the item leaves, Done says it was sent, and it can't be sent twice.",
+    "test": "tests/unit/partners.test.ts: no partner after the first month > a person sends it; the class and its price stay as they are, and nothing more is due for that stretch; tests/unit/rooms-render.test.tsx: no partner after the first month > the inbox drafts the note once the first month has passed; a person sends it; Done says so",
+    "passes": true
+  },
+  {
+    "id": "partner-notice-family",
+    "area": "family",
+    "description": "The family reads the note in Messages (\"About Theo's class\", nothing to answer; later it says when a partner has joined or the class has ended); Home shows sign-up's \"No partner yet\" line on a class with no partner, then that nothing changes before the note's date.",
+    "test": "tests/unit/rooms-render.test.tsx: no partner after the first month > the family reads it in Messages, and Home says no partner yet, then that nothing changes before that date; tests/unit/partners.test.ts: no partner after the first month > a partner joining ends it; a partner leaving starts the month again",
+    "passes": true
+  },
+  {
+    "id": "walkthrough-14",
+    "area": "walkthrough",
+    "description": "Walk-through 14: on a clock set to Monday, November 9, 2026, the owner sends the drafted note about Theo's Wednesday class (no partner since October 7); the family that moved over sees it on Home and in Messages; the class and its price stay as they were.",
+    "test": "e2e/sign-up.spec.ts: walk-through 14",
+    "passes": true
+  },
+  {
+    "id": "e2e-clock",
+    "area": "walkthrough",
+    "description": "The walk-throughs run on a browser clock that starts Friday, October 30, 2026 at the school and runs on, so their dates and counts don't drift with the real date.",
+    "test": "e2e/sign-up.spec.ts: walk-through 12",
+    "passes": true
   }
 ]

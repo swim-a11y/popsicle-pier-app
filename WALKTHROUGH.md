@@ -4,7 +4,7 @@ The finish line: a new parent books one child and signs on a phone in under 2 mi
 
 **Owner's stopwatch time for walk-through 5 (typing everything, on a phone): ________** (fill in by hand)
 
-All thirteen run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 to 13 from 1). Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
+All fourteen run in order in `e2e/sign-up.spec.ts` at 375x667, as one serial group sharing one page, so later walk-throughs pick up the families from earlier ones (6 from 1 and 2, 7 and 8 from 1, 9 from 2 and 8, 10 from 1 and 5, 11 to 13 from 1, 14 from 4). The page's clock starts at Friday, October 30, 2026 at the school and runs on; walk-through 14 moves it to Monday, November 9. Each step saves `screenshots/walkthrough-<n>-<step>.png`, runs axe (no serious or critical issues) and checks the family words, and the counts per screen land in `docs/check-report.md`. The rule behind each step also has a unit test in `tests/unit/walkthrough-rules.test.ts`.
 
 Run them with `npm run e2e` (or `npx playwright test e2e/sign-up.spec.ts`).
 
@@ -62,6 +62,10 @@ Walk-through 1's family sends "We'll miss Mia's lesson on ..." (the next date sh
 
 Walk-through 1's family sends "We'd like a different time" for Mia. As the owner, the note's card says no other time that fits Mia is open at Madison now; put her on the Madison waitlist for any time that fits. Pretend a family left a full class: the Wednesday 4:30 class opens. Mia's waitlist card offers it; pick "In place of the Sunday 10:00 am class", see the drafted words ("You asked about a different time for Mia."), send. As the family: Home asks for the answer ("See Mia's new time"); Messages shows Now and New ("Same as now."); Yes, move Mia, and the note says "The school offered a different time, above."; Home marks her new class "New" and says the Sunday class has ended. As the owner again: Done shows the offer and the yes.
 
+## 14. No partner after the first month
+
+The family that moved over (walk-through 4) has Theo alone in the Wednesday 5:00 pm class at Madison since October 7. On Monday, November 9, as the owner: the inbox's "No partner after the first month" section shows Theo's class and the drafted note ("... Nothing about Theo's class or its price changes before Wednesday, December 2."); Send the note (sample); Done says it was sent. As the family: Home's Theo card says "No partner yet. We sent you a note about it in Messages: ..."; More, Messages shows "About Theo's class", with nothing to answer. The class and its price stay as they were.
+
 ## Counts
 
 The latest counts per screen are in `docs/check-report.md`. Totals from the last full run:
@@ -81,5 +85,6 @@ The latest counts per screen are in `docs/check-report.md`. Totals from the last
 | 11. Join a waitlist, then leave it | 7 | 10 | 0 |
 | 12. A fill-in for a lesson the family will miss | 10 | 15 | 0 |
 | 13. A different time, from the family's note | 14 | 19 | 0 |
+| 14. No partner after the first month | 5 | 7 | 0 |
 
 The finish-line walk-through is 5: one child, every field typed, 23 taps and 13 typed fields (child's first name and three birth-date boxes; your name, email, phone and the code; two emergency contacts' names and phones; your full name to sign). Eight of the taps are the release's required boxes and two are its yes-or-no answers.

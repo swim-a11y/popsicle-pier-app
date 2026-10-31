@@ -20,6 +20,7 @@ import { markNoteRead } from "@/rules/notes";
 import {
   ANSWER_DAYS,
   BY_THE_SCHOOL,
+  classFullWords,
   classWords,
   differentTimes,
   nearOwnClassWords,
@@ -33,6 +34,7 @@ import {
 import { closedBeforeAnswer, familyLessons, hasLessonPayment, oneOffOfOwed } from "@/rules/family";
 import { offerOpen } from "@/rules/holds";
 import { approveOwedCredit, owedOfferWords, sendOwedOffer, type OwedSlot, type OwedState } from "@/rules/owed";
+import { partnerNoticeWords, sendPartnerNotice, unpairedItems, type UnpairedItem } from "@/rules/partners";
 
 /** One person's action, saved once (double taps ignored); a problem shows on the card. */
 function useAct() {
@@ -402,6 +404,27 @@ function MoveNoteTools({ data, note, today, busy, act, markRead }: { data: Reado
   );
 }
 
+/** A semi-private class past its first month with no partner: the drafted note a person sends. Nothing changes on its own. */
+function PartnerCard({ data, item, today }: { data: Readonly<AppData>; item: UnpairedItem; today: DateOnly }) {
+  const { busy, problem, act } = useAct();
+  return (
+    <Card title={childTitle(data, item.child.id)} sub={familyLine(data, item.family.id, item.pool.id)} testId="inbox-partner">
+      <p>
+        No partner in {classFullWords(item.cls, item.pool.name)}, since {longDate(item.since, today)}. The first month at the semi-private price ended {longDate(item.monthEnded, today)}.
+      </p>
+      <p>The app doesn&apos;t pair anyone or change the price. This note opens a talk with the family.</p>
+      <Draft
+        words={partnerNoticeWords({ childFirstName: item.child.firstName, cls: item.cls, pool: item.pool, since: item.since, before: item.before, today })}
+        to={item.family.parentFullName}
+        busy={busy}
+        sendLabel="Send the note (sample)"
+        onSend={() => void act((tx, t, now) => sendPartnerNotice(tx, { enrollmentId: item.info.enrollment.id, today: t, now, newId }))}
+      />
+      <Problem text={problem} />
+    </Card>
+  );
+}
+
 /** A family's note. A "We'll miss" note can get one fill-in (same coach, the week after): a person picks the date, or none. */
 function NoteItem({ data, note, today }: { data: Readonly<AppData>; note: FamilyNote; today: DateOnly }) {
   const { busy, problem, act } = useAct();
@@ -513,12 +536,19 @@ export function InboxScreen() {
   const talks = talkItems(data, today);
   const owed = owedToDo(data, today);
   const waits = waitlistItems(data, today);
+  const partners = unpairedItems(data, today);
   const notes = notesForAPerson(data, today);
   const done = doneItems(data, today);
   const sections = [
     { id: "talks", title: "Talk with a family first", count: counts.talks, items: talks.map((t) => <TalkCard key={t.child.id} data={data} item={t} today={today} />) },
     { id: "owed", title: "Owed lessons", count: counts.owed, items: owed.map((o) => <OwedCard key={o.owed.id} data={data} owed={o.owed} state={o.state} today={today} />) },
     { id: "waitlist", title: "Waitlist", count: counts.waitlist, items: waits.map((w) => <WaitCard key={w.entry.id} data={data} item={w} today={today} />) },
+    {
+      id: "partners",
+      title: "No partner after the first month",
+      count: counts.partners,
+      items: partners.map((p) => <PartnerCard key={p.info.enrollment.id} data={data} item={p} today={today} />),
+    },
     { id: "notes", title: "Notes from families", count: counts.notes, items: notes.map((n) => <NoteItem key={n.id} data={data} note={n} today={today} />) },
   ];
 

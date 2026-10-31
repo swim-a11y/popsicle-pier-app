@@ -563,6 +563,28 @@ export interface DeviceState {
   currentFamilyId: string | null;
 }
 
+/**
+ * A semi-private class with no partner after its first month (owner ruling
+ * 6, building the later-room rule): a person sends the family this note, at
+ * least three weeks before anything about the class or its price changes.
+ * The app never pairs partners or changes a price; the note only opens the
+ * talk. One per unpaired stretch: the month starts again when a partner leaves.
+ */
+export interface PartnerNotice {
+  id: string;
+  familyId: string;
+  childRecordId: string;
+  enrollmentId: string;
+  /** The stretch this note is about: the enrollment's unpairedSince when it was sent. */
+  unpairedSince: DateOnly;
+  /** Exactly the words the person saw and the family sees. */
+  words: string;
+  /** Nothing about the class or its price changes before this lesson date, at least three weeks after the note. */
+  nothingChangesBefore: DateOnly;
+  sentAt: IsoTime;
+  sentBy: string;
+}
+
 export interface Rows {
   pools: Pool;
   lessonTypes: LessonType;
@@ -595,6 +617,7 @@ export interface Rows {
   familyNotes: FamilyNote;
   talkRecords: TalkRecord;
   fillIns: FillIn;
+  partnerNotices: PartnerNotice;
 }
 
 export type CollectionName = keyof Rows;
@@ -631,6 +654,7 @@ export const COLLECTIONS: readonly CollectionName[] = [
   "familyNotes",
   "talkRecords",
   "fillIns",
+  "partnerNotices",
 ];
 
 /** Add and list only: no edit, no delete. Only the sandbox erase wipes them. */
