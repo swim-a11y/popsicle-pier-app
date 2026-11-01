@@ -45,3 +45,7 @@ next-env.d.ts
 screenshots/
 test-results/
 playwright-report/
+
+# one-file preview (preview/build.mjs)
+/preview/.build/
+/preview/dist/

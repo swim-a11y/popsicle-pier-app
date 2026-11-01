@@ -1684,5 +1684,12 @@
     "description": "The walk-throughs' typed birth dates count back from the same fixed start as the page's clock; walk-through 12 checks the page's date is October 30, 2026, and walk-through 8 checks exactly two bills, November first.",
     "test": "e2e/sign-up.spec.ts: walk-through 12 / walk-through 8",
     "passes": true
+  },
+  {
+    "id": "preview-one-file",
+    "area": "tooling",
+    "description": "A one-file copy of the sample (npm run preview) runs every screen with no server and nothing fetched: screens held in memory (a reload keeps the screen, a query like ?child=2 reads as in the app), the compiled styles and fonts inside the page; its check signs up a family, opens the owner's inbox and reloads at phone size with no script errors and no outside requests; its artifact copy is the owner's private link.",
+    "test": "tests/unit/preview-nav.test.ts: the one-file preview keeps its screen in memory > goes to a screen with its query, remembers it for a reload, and steps back",
+    "passes": true
   }
 ]

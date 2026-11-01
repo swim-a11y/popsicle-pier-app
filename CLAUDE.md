@@ -35,6 +35,7 @@ These rulings build parts of the RULES FOR LATER ROOMS that the brief said not t
 - `npm test` runs Vitest (unit and render tests in `tests/`).
 - `npm run typecheck` runs `tsc --noEmit`. `npm run lint` runs ESLint.
 - `npm run e2e` runs Playwright at 375x667 (it builds and starts the app itself, or reuses one already on port 3000). Screenshots land in `screenshots/` (not committed). `e2e/sign-up.spec.ts` plays the fourteen walk-throughs and writes their tap and typed-field counts into `docs/check-report.md`. Their browser clock starts at Friday, October 30, 2026 at the school and runs on (walk-through 14 moves it to November 9), so dates don't drift with the real date.
+- `npm run preview` builds the one-file copy of the sample (`preview/build.mjs`: every screen in one page, screens held in memory, styles and fonts inside, nothing fetched) and checks it at phone size (`preview/check.mjs`). Its artifact copy, `preview/dist/popsicle-pier-sample.artifact.html`, is the owner's private link, https://claude.ai/artifact/6QidTjYAmwPVDnF28GniZi: republish that file to that URL after a change.
 - Deploy: any Node host that runs `next build` and `next start`. No vercel.json, no Vercel CLI. Vercel's free plan is for non-commercial personal use, so real families need a paid plan or another host.
 
 ## Where things are
@@ -98,7 +99,7 @@ In code now: Closure (Lesson dates); Cancellation, OwedLesson with its offers, W
 
 ## Known issues
 
-Nothing is failing: every entry in feature_list.json passes, with 225 unit tests and 51 e2e tests. Still open, none of them blockers:
+Nothing is failing: every entry in feature_list.json passes, with 226 unit tests and 51 e2e tests. Still open, none of them blockers:
 
 - The finish line (a new parent books one child and signs in under 2 minutes, typing everything) needs the owner's stopwatch; WALKTHROUGH.md has the blank line. Walk-through 5 counts 23 taps and 13 typed fields.
 - On a 375x667 phone the family release runs about twelve screens by design (every line visible, never folded).
